@@ -112,8 +112,19 @@ class Spacecraft(Hardware):
         self._specs = specs  # TODO define default params type so name is required but others use defaults
         # TODO feature: allow passing of arguments as a dictionary, so a dict for Spacecraft that contains
         #  one for Thrusters too
-        self._name = self._specs['name']
+        # self._name = self._specs['name']
         self._gmat_obj = gmat.Construct("Spacecraft", specs['name'])
+
+        for key in specs:
+            setattr(self, key, specs[key])
+
+        tanks_list = specs['hardware']['tanks']
+        if tanks_list:  # the specs listed tanks to be built
+            self._tanks = []
+            print('Making tanks...')
+            print(f'Number of tanks to make: {len(tanks_list)}')
+            self.construct_tanks()
+            # TODO: set GMAT sat Tanks field
 
         # if thrusters is None:
         #     thrusters = {"number": 0, "names": ["Jeff", "Cheers"], }
@@ -123,7 +134,7 @@ class Spacecraft(Hardware):
         # if orbit:
         #     # use passed orbit params (args)
         #     pass
-        if specs['gmat_init']:
+        if self._specs['gmat_init']:
             gmat.Initialize()
 
         # if thrusters:
@@ -141,6 +152,19 @@ class Spacecraft(Hardware):
 
     def __str__(self):
         return f'Spacecraft with name {self._name}'
+
+    @property
+    def specs(self):
+        return self._specs
+
+    def construct_tanks(self):
+        for index, tank in enumerate(self._specs['hardware']['tanks']):
+            fuel_mass = tank['FuelMass']
+            if fuel_mass or fuel_mass == 0:
+                self._tanks.append(ElectricTank(tank['name'], self, fuel_mass))
+            else:
+                self._tanks.append(ElectricTank(tank['name'], self))
+        print(self._tanks)
 
 
 class FiniteBurn(GmatObject):
@@ -187,18 +211,19 @@ sat_params = {
     },
     'dry_mass': 756,  # kg
     'hardware': {'prop_type': 'EP',  # or 'CP'
-                 'tanks': [{'name': 'ElectricTank1', 'FuelMass': 0}],
+                 'tanks': [{'name': 'ElectricTank1', 'FuelMass': 0},
+                           {'name': 'ElectricTank2', 'FuelMass': 10}],
                  'thrusters': {'num': 1}}
 }
 
 sat = Spacecraft(sat_params)
-print(sat)
+# print(json.dumps(sat.specs, indent=4))
 
 ep_tank = ElectricTank('EP_Tank', sat)
-print(ep_tank)
+# print(ep_tank)
 
 ep_thruster = ElectricThruster('EP_Thruster', sat, ep_tank)
-print(ep_thruster)
+# print(ep_thruster)
 
 # gmat.ShowObjects()
 # sat.Help()
