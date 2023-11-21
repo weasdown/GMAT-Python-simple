@@ -157,8 +157,8 @@ class Spacecraft(Hardware):
     def specs(self):
         return self._specs
 
-    def construct_tanks(self):
-        for index, tank in enumerate(self._specs['hardware']['tanks']):
+    def construct_tanks(self, tanks_list):
+        for index, tank in enumerate(tanks_list):
             fuel_mass = tank['FuelMass']
             if fuel_mass or fuel_mass == 0:
                 self._tanks.append(ElectricTank(tank['name'], self, fuel_mass))
