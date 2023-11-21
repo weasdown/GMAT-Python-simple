@@ -123,7 +123,7 @@ class Spacecraft(Hardware):
             self._tanks = []
             print('Making tanks...')
             print(f'Number of tanks to make: {len(tanks_list)}')
-            self.construct_tanks()
+            self.construct_tanks(tanks_list)
             # TODO: set GMAT sat Tanks field
 
         # if thrusters is None:
