@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 
 from load_gmat import gmat
@@ -26,6 +28,30 @@ class GmatObject:
         if not self._gmat_obj:
             raise AttributeError(f'No GMAT object found for object {self.__name__} of type {type(self.__name__)}')
         self._gmat_obj.Help()
+
+    def SetField(self, field: str, val: str | int | bool):
+        """
+        Set a field in the Object's GMAT model.
+
+        :param field:
+        :param val:
+        :return:
+        """
+        self.gmat_object.SetField(field, val)
+
+    def SetFields(self, fields_to_set: dict):
+        """
+        Set a list of fields in the Object's GMAT model.
+
+        :param fields_to_set:
+        :return:
+        """
+        if not fields_to_set:
+            raise SyntaxError('fields_to_set must not be empty')
+        specs = fields_to_set.items()
+        fields, values = zip(*specs)  # make lists of fields and values from the specs_to_set dict
+        for index, _ in enumerate(specs):
+            self.SetField(fields[index], values[index])
 
 
 class OrbitState:
@@ -165,37 +191,64 @@ class ElectricTank(Hardware):  # TODO make this a child of a new class, Tank, th
 
 
 class Spacecraft(Hardware):
-    def __init__(self, specs: dict):
-        super().__init__('Spacecraft', specs['name'])
-        self._specs = specs  # TODO define default params type so name is required but others use defaults
-        for key in specs:
-            setattr(self, key, specs[key])  # set object attributes based on passed specs dict
-        self._gmat_obj = gmat.Construct("Spacecraft", specs['name'])
+    def __init__(self, name: str, gmat_init: bool, orbit: dict, hardware: dict):  # specs: dict):
+        super().__init__('Spacecraft', name)
+
+        # TODO: consider removing - hides available attrs
+        # print('')
+        # for key in specs:
+        #     print(f'Setting attribute {key}, {specs[key]}')
+        #     setattr(self, key, specs[key])  # set object attributes based on passed specs dict
+        # print('')
+
+        # self._gmat_obj = gmat.Construct("Spacecraft", specs['name'])
 
         # Default orbit specs
-        self._epoch = '21545'
-        self._state_type = 'Cartesian'
-        self._display_state_type = 'Cartesian'
-        self._coord_sys = 'EarthMJ2000Eq'
+        # self._epoch = '21545'
+        # self._state_type = 'Cartesian'
+        # self._display_state_type = 'Cartesian'
+        # self._coord_sys = 'EarthMJ2000Eq'
 
-        tanks_list = specs['hardware']['tanks']
+        # Default physical properties
+        # self._dry_mass = 756  # kg
+
+        # TODO generate a list of specs to set, which will be append to self._specs_to_set then set by set_specs()
+        # self._specs_to_set = {'Epoch': self._epoch,
+        #                       'StateType': self._state_type,
+        #                       'DisplayStateType': self._display_state_type,
+        #                       'CoordinateSystem': self._coord_sys}
+
+        # TODO: Parse other specs here, append results to self._specs_to_set then set all at end. Rely on *GMAT* (and
+        #  not even our lower-level classes/methods) to supply defaults if not provided. We should still check the
+        #  compatibility of the various specs provided, to avoid an incompatible set that GMAT doesn't catch.
+
+        # self.SetFields(self._specs_to_set)  # TODO uncomment
+
+        tanks_list = hardware['tanks']
         if tanks_list:  # the specs listed tanks to be built
             self._tanks = []
             self.construct_tanks(tanks_list)
             # TODO: set GMAT sat Tanks field
 
-        print(f'Orbit specs passed to Spacecraft init: {specs["orbit"]}')
+        print(f'Orbit specs passed to Spacecraft init: {orbit}')
 
-        if specs['orbit']:
-            self.construct_orbit_state(specs['orbit'])
-        else:
-            print('No orbit params found while build Spacecraft - using defaults')
+        self.construct_orbit_state(orbit)
 
-        init_value = specs['gmat_init']
-        if init_value:
-            if not isinstance(init_value, bool):
+        if gmat_init:
+            if not isinstance(gmat_init, bool):
                 raise SyntaxError('gmat_init must be True or False')
             gmat.Initialize()
+
+    @classmethod
+    def from_dict(cls, specs_dict):
+        # See https://stackoverflow.com/questions/12179271/meaning-of-classmethod-and-staticmethod-for-beginner
+        # Parse in gmat_init, orbit, hardware from specs_dict
+        name = ''
+        gmat_init = False
+        orbit = {}
+        hardware = {}
+        sc = cls(name, gmat_init, orbit, hardware)
+        return sc
 
     def __repr__(self):
         return f'Spacecraft with name {self._name} and specifications:\n{json.dumps(self._specs, indent=4)}'
@@ -218,18 +271,19 @@ class Spacecraft(Hardware):
 
     def construct_orbit_state(self, orbit_specs):
         print(f'Orbit specs passed to construct_orbit_state: {orbit_specs}')
+        kwargs = []
+        # Consider doing the in checking below in OrbitState __init__ rather than here
         if 'epoch' in orbit_specs:
             print('Epoch found in specs')
-            self._epoch = orbit_specs['epoch']
+            kwargs.append(orbit_specs['epoch'])
         if 'state_type' in orbit_specs:
             print('State type found in specs')
-            self._state_type = orbit_specs['state_type']
+            kwargs.append(orbit_specs['state_type'])
         if 'coord_sys' in orbit_specs:
             print(f'Coordinate system found in specs: {orbit_specs["coord_sys"]}')
-            self._coord_sys = orbit_specs['coord_sys']
-        sc_orbit = OrbitState(self, epoch=self._epoch,
-                              state_type=self._state_type,
-                              display_state_type=self._display_state_type, )
+            kwargs.append(orbit_specs['coord_sys'])
+
+        sc_orbit = OrbitState(self, kwargs)  # TODO syntax: need to include sc arg in kwargs
         # coord_sys=self._coord_sys)
 
 
@@ -282,12 +336,11 @@ sat_params = {
                  'thrusters': {'num': 1}}
 }
 
-sat = Spacecraft(sat_params)
-print('sat specs:')
-print(json.dumps(sat.specs, indent=4))
-print(sat.specs['orbit'])
+sat = Spacecraft(sat_params['name'], sat_params['gmat_init'],sat_params['orbit'], sat_params['hardware'])
+# print(f'sat specs:\n{json.dumps(sat.specs, indent=4)}')
+# print(f'sat orbit specs: {sat.specs["orbit"]}')
 gmat.Initialize()
-sat.Help()
+# sat.Help()
 
 ep_tank = ElectricTank('EP_Tank', sat)
 # print(ep_tank)
@@ -307,3 +360,7 @@ burn = FiniteBurn('FiniteBurn1', sat, ep_thruster)
 finite_thrust = FiniteThrust('FiniteThrust1', sat, burn)
 
 burn.BeginFiniteBurn(finite_thrust)
+
+print('')
+for attribute, value in Spacecraft.__dict__.items():
+    print(f'{attribute} = {value}')
