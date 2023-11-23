@@ -1,9 +1,20 @@
-from __future__ import annotations
-
+from typing import Union
 import inspect
-import json
-
+import logging
 from load_gmat import gmat
+
+
+def class_string_to_GMAT_string(string):
+    """
+    Convert PEP8-compliant string to GMAT format (CamelCase)
+    :param string:
+    :return:
+    """
+    string_parts_list = [part.capitalize() for part in string.split('_')]
+    string = ''.join(string_parts_list)
+    if string == 'CoordSys':
+        string = 'CoordinateSystem'
+    return string
 
 
 class GmatObject:
@@ -30,7 +41,7 @@ class GmatObject:
             raise AttributeError(f'No GMAT object found for object {self.__name__} of type {type(self.__name__)}')
         self._gmat_obj.Help()
 
-    def SetField(self, field: str, val: str | int | bool):
+    def SetField(self, field: str, val: Union[str, int, bool]):
         """
         Set a field in the Object's GMAT model.
 
@@ -59,13 +70,13 @@ class OrbitState:
     def __init__(self, **kwargs):
         self._allowed_values = {'display_state_type': ['Cartesian', 'Keplerian', 'ModifiedKeplerian', 'SphericalAZFPA',
                                                        'SphericalRADEC', 'Equinoctial'],
-                                'coord_sys': [],  # TODO: define valid coord_sys values
+                                'coord_sys': ['EarthMJ2000Eq', ],  # TODO: define valid coord_sys values
                                 # TODO: define valid state_type values - using display_state_type ones for now
                                 'state_type': ['Cartesian', 'Keplerian', 'ModifiedKeplerian', 'SphericalAZFPA',
                                                'SphericalRADEC', 'Equinoctial'],
                                 }
         self._elements_cartesian = ['X', 'Y', 'Z', 'VX', 'VY', 'VZ']
-        self._elements_keplerian = ['SMA', 'INC', '']  # TOD COMPLETE
+        self._elements_keplerian = ['SMA', 'ECC', 'INC', 'RAAN', 'AOP', 'TA']
 
         self._key_params = ['_epoch', '_state_type', '_display_state_type', '_coord_sys']
 
@@ -104,8 +115,9 @@ class OrbitState:
             self._state_type = 'Cartesian'
 
         if 'coord_sys' in kwargs:
-            if kwargs['coord_sys'] not in self._allowed_values['coord_sys']:
-                raise SyntaxError(f'Invalid coordinate system passed to OrbitState __init__. '
+            coord_sys = kwargs['coord_sys']
+            if coord_sys not in self._allowed_values['coord_sys']:
+                raise SyntaxError(f'Invalid coordinate system passed to OrbitState __init__: {coord_sys}. '
                                   f'Allowed values are: {self._allowed_values["coord_sys"]}')
             else:
                 self._coord_sys = kwargs['coord_sys']
@@ -230,14 +242,18 @@ class ElectricTank(Hardware):  # TODO make this a child of a new class, Tank, th
 
 
 class Spacecraft(Hardware):
-    def __init__(self, name: str, orbit: dict, hardware: dict):  # specs: dict):
+    def __init__(self, name: str):  # specs: dict):
         self._allowed_fields = set()
-        self._gmat_allowed_fields = {'NAIF', 'DryMass', 'Another', 'Weeee'}  # TODO: list of fields from sat.Help()
+        # TODO tidy up list
+        self._gmat_allowed_fields = {'NAIF', 'DryMass', }  # TODO: list of fields from sat.Help()
         self._allowed_fields.update(self._gmat_allowed_fields,
                                     ['name', 'orbit', 'hardware', 'dry_mass'])
         print(f'Allowed fields according to Spacecraft: {self._allowed_fields}')
 
         super().__init__('Spacecraft', name)
+        self._dry_mass = None
+        self._thrusters = []
+        self._tanks = []
 
         # TODO: consider removing - hides available attrs
         # print('')
@@ -269,14 +285,6 @@ class Spacecraft(Hardware):
 
         # self.SetFields(self._specs_to_set)  # TODO uncomment
 
-        tanks_list = hardware['tanks']
-        if tanks_list:  # the specs listed tanks to be built
-            self._tanks = []
-            self.construct_tanks(tanks_list)
-            # TODO: set GMAT sat Tanks field
-
-        self.construct_orbit_state(orbit)
-
         gmat.Initialize()
 
     @classmethod
@@ -284,6 +292,14 @@ class Spacecraft(Hardware):
         # TODO remove comment when able
         # See https://stackoverflow.com/questions/12179271/meaning-of-classmethod-and-staticmethod-for-beginner
         # Parse in gmat_init, orbit, hardware from specs_dict
+
+        # TODO: convert all keys to [agreed text case (snake or camel?)]
+
+        try:
+            sc = cls(specs_dict['name'])
+        except KeyError:
+            raise SyntaxError('Spacecraft name required')
+
         fields = inspect.getfullargspec(Spacecraft.__init__).args[1:]  # get Spacecraft __init__ params, except self
         args = [None] * len(fields)
         for index, field in enumerate(fields):
@@ -293,7 +309,21 @@ class Spacecraft(Hardware):
                 print(f'Key {field} not found in the specs_dict passed to Spacecraft.from_dict')
                 raise
 
-        sc = cls(*args)
+        # sc = cls(*args)
+        #
+        # tanks_list = hardware['tanks']
+        # if tanks_list:  # the specs listed tanks to be built
+        #     self._tanks = []
+        #     self.construct_tanks(tanks_list)
+        #     # TODO: set GMAT sat Tanks field
+
+        # Find and apply orbit parameters
+        try:
+            orbit = specs_dict['orbit']
+        except KeyError:
+            print('No orbit parameters specified in Spacecraft dictionary - using defaults')
+            orbit = {}
+        sc.construct_orbit_state(orbit)
 
         # now that the basic spacecraft has been created, set other fields from values in specs_dict
         # TODO handle snake case vs CamelCase difference
@@ -318,8 +348,17 @@ class Spacecraft(Hardware):
     def __str__(self):
         return f'Spacecraft with name {self._name}'
 
-    def construct_tanks(self, tanks_list: dict):
-        for index, tank in enumerate(tanks_list):
+    @property
+    def dry_mass(self):
+        """Return Spacecraft's dry mass"""
+        return self._dry_mass
+
+    @dry_mass.setter
+    def dry_mass(self, value):
+        self._dry_mass = value
+
+    def construct_tanks(self, tanks_dict: dict):
+        for index, tank in enumerate(tanks_dict):
             fuel_mass = tank['FuelMass']
             if fuel_mass or fuel_mass == 0:
                 # TODO error catch: handle case of no tank name provided
@@ -328,17 +367,36 @@ class Spacecraft(Hardware):
                 self._tanks.append(ElectricTank(tank['name'], self))
 
     def construct_orbit_state(self, orbit_specs):
+        if orbit_specs == {}:  # empty dict was passed
+            return
+
+        orbit = OrbitState()
+        print(orbit)
+
         kwargs = {'sc': self.gmat_object}
-        # Consider doing the in checking below in OrbitState __init__ rather than here
-        if 'epoch' in orbit_specs:
-            print('Epoch found in specs')
-            kwargs['epoch'] = orbit_specs['epoch']
-        if 'state_type' in orbit_specs:
-            print('State type found in specs')
-            kwargs['state_type'] = orbit_specs['state_type']
-        if 'coord_sys' in orbit_specs:
-            print(f'Coordinate system found in specs: {orbit_specs["coord_sys"]}')
-            kwargs['coord_sys'] = orbit_specs['coord_sys']
+
+        def pull_orbit_param(p: str):
+            try:
+                param_value = orbit_specs[p]
+                kwargs[p] = param_value
+                return param_value
+            except KeyError:  # key not found in orbit_specs
+                logging.warning(f'Could not pull parameter {p} from orbit_specs - using default')
+
+        def set_orbit_param(p: str, v: Union[str, int, float, bool]):
+            p = class_string_to_GMAT_string(p)  # convert param name to GMAT format
+            print(f'Setting field {class_string_to_GMAT_string(param)} to value {v}')
+            self.SetField(p, v)
+            # except gmatpy._py311.gmat_py.APIException:
+            #     raise SyntaxError('Ruh Roh')
+
+        def validate_param(p):
+            pass
+
+        for param in orbit_specs:
+            val = pull_orbit_param(param)
+            validate_param(param)
+            set_orbit_param(param, val)
 
         sc_orbit = OrbitState(**kwargs)  # TODO syntax: need to include sc arg in kwargs
         # coord_sys=self._coord_sys)
@@ -382,7 +440,7 @@ class FiniteThrust(GmatObject):  # TODO tidy: consider making subclass of Finite
 sat_params = {
     'name': 'Servicer',
     'orbit': {  # TODO: add other orbit params. Cartesian by default
-        # 'coord_sys': 'EarthMJ2000Eq sdfsdf',
+        'coord_sys': 'EarthMJ2000Eq',
         'state_type': 'Cartesian',
     },
     'dry_mass': 100,  # kg
@@ -392,8 +450,8 @@ sat_params = {
                  'thrusters': {'num': 1}}
 }
 
-# sat = Spacecraft(sat_params['name'], sat_params['orbit'], sat_params['hardware'])
-sat = Spacecraft.from_dict(sat_params)
+sat = Spacecraft(sat_params['name'])
+# sat = Spacecraft.from_dict(sat_params)
 # print(f'sat specs:\n{json.dumps(sat.specs, indent=4)}')
 # print(f'sat orbit specs: {sat.specs["orbit"]}')
 gmat.Initialize()
