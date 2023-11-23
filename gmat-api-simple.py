@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import json
 
 from load_gmat import gmat
@@ -55,7 +56,7 @@ class GmatObject:
 
 
 class OrbitState:
-    def __init__(self, sc, **kwargs):
+    def __init__(self, **kwargs):
         self._allowed_values = {'display_state_type': ['Cartesian', 'Keplerian', 'ModifiedKeplerian', 'SphericalAZFPA',
                                                        'SphericalRADEC', 'Equinoctial'],
                                 'coord_sys': [],  # TODO: define valid coord_sys values
@@ -63,58 +64,96 @@ class OrbitState:
                                 'state_type': ['Cartesian', 'Keplerian', 'ModifiedKeplerian', 'SphericalAZFPA',
                                                'SphericalRADEC', 'Equinoctial'],
                                 }
+        self._elements_cartesian = ['X', 'Y', 'Z', 'VX', 'VY', 'VZ']
+        self._elements_keplerian = ['SMA', 'INC', '']  # TOD COMPLETE
+
+        self._key_params = ['_epoch', '_state_type', '_display_state_type', '_coord_sys']
+
+        # Set initial default None values for all fundamental attributes
+        self._display_state_type = None
+        self._state_type = None
+        self._coord_sys = None
+        self._epoch = None
+
+        # Set whether to use explicit defaults or let GMAT choose.
+        # Latter risks clashing between specified parameters
+        explicit_defaults = True
 
         if 'display_state_type' in kwargs:
             if kwargs['display_state_type'] not in self._allowed_values['display_state_type']:
                 raise SyntaxError(f'Invalid display state type passed to OrbitState __init__. '
                                   f'Allowed values are: {self._allowed_values["display_state_type"]}')
             else:
-                display_state_type = kwargs['display_state_type']
-                sc.gmat_object.SetField('DisplayStateType', display_state_type)
-        else:
-            display_state_type = 'Cartesian'
+                self._display_state_type = kwargs['display_state_type']
+        elif explicit_defaults:
+            self._display_state_type = 'Cartesian'
 
         if 'epoch' in kwargs:
-            sc.gmat_object.SetField('Epoch', str(kwargs['epoch']))
+            # TODO add epoch validation e.g. str if Cartesian, correct date format
+            self._epoch = str(kwargs['epoch'])  # Should this always be str, or only for Cartesian states?
+        elif explicit_defaults:
+            self._epoch = None
 
         if 'state_type' in kwargs:
             if kwargs['state_type'] not in self._allowed_values['state_type']:
                 raise SyntaxError(f'Invalid state type passed to OrbitState __init__. '
                                   f'Allowed values are: {self._allowed_values["state_type"]}')
             else:
-                state_type = kwargs['state_type']
-                sc.gmat_object.SetField('StateType', state_type)
-        else:
-            state_type = 'Cartesian'
+                self._state_type = kwargs['state_type']
+        elif explicit_defaults:
+            self._state_type = 'Cartesian'
 
         if 'coord_sys' in kwargs:
             if kwargs['coord_sys'] not in self._allowed_values['coord_sys']:
                 raise SyntaxError(f'Invalid coordinate system passed to OrbitState __init__. '
                                   f'Allowed values are: {self._allowed_values["coord_sys"]}')
             else:
-                coord_sys = kwargs['coord_sys']
-                sc.gmat_object.SetField('CoordinateSystem', coord_sys)
-        else:
-            coord_sys = 'EarthMJ2000Eq'
+                self._coord_sys = kwargs['coord_sys']
+        elif explicit_defaults:
+            self._coord_sys = 'EarthMJ2000Eq'
+
+        if 'sc' in kwargs:
+            self.apply_to_spacecraft(kwargs['sc'])
+
+    def apply_to_spacecraft(self, sc):
+        """
+        Apply the properties of this OrbitState to a spacecraft.
+
+        :param sc:
+        :return:
+        """
+        # print(f'Epoch being set: {self._epoch}')
+        # for param in self._key_params:
+        #     if param is not None:
+        #         # convert param name to CamelCase without underscores, for GMAT
+        #         chunks = param.split("_")[1:]
+        #         print(chunks)
+        #         # gmat_field_name = f'{.replace("_","")}'
+        #         # sc.SetField(param, str(getattr(self, param)))
 
         try:
-            if state_type == 'Cartesian':
-                print(f'x: {kwargs["x"]}')
-                sc.gmat_object.SetField('X', kwargs['x'])
-                sc.gmat_object.SetField('Y', kwargs['y'])
-                sc.gmat_object.SetField('Z', kwargs['z'])
-                sc.gmat_object.SetField('VX', kwargs['vx'])
-                sc.gmat_object.SetField('VY', kwargs['vy'])
-                sc.gmat_object.SetField('VZ', kwargs['vz'])
+            if self._state_type == 'Cartesian':
+                # Check each element in self._elements_cartesian
+                # If there's an attribute for it, set it, otherwise move on to the next one
+
+                for element in self._elements_cartesian:
+                    element_string = f'_{element}'
+                    try:
+                        attr_value = getattr(self, element_string)
+                        sc.SetField(element, attr_value)
+
+                    except AttributeError:
+                        continue
+
             # TODO: implement non-Cartesian states
-            elif state_type == 'Keplerian':
+            elif self._state_type == 'Keplerian':
                 print('Keplerian state requested')
-                pass
+                raise NotImplementedError('Applying a Keplerian state to a spacecraft is not yet implemented')
             else:
                 raise SyntaxError('State type not recognised')
         except KeyError:  # jumps to here on *first* failed state element assignment
             print('OrbitState __init__ did not receive all the correct parameters for the specified state')
-            print(f'Using defaults of at least some state elements for state {state_type}')
+            print(f'Using defaults of at least some state elements for state {self._state_type}')
 
 
 class Hardware(GmatObject):
@@ -191,7 +230,13 @@ class ElectricTank(Hardware):  # TODO make this a child of a new class, Tank, th
 
 
 class Spacecraft(Hardware):
-    def __init__(self, name: str, gmat_init: bool, orbit: dict, hardware: dict):  # specs: dict):
+    def __init__(self, name: str, orbit: dict, hardware: dict):  # specs: dict):
+        self._allowed_fields = set()
+        self._gmat_allowed_fields = {'NAIF', 'DryMass', 'Another', 'Weeee'}  # TODO: list of fields from sat.Help()
+        self._allowed_fields.update(self._gmat_allowed_fields,
+                                    ['name', 'orbit', 'hardware', 'dry_mass'])
+        print(f'Allowed fields according to Spacecraft: {self._allowed_fields}')
+
         super().__init__('Spacecraft', name)
 
         # TODO: consider removing - hides available attrs
@@ -230,35 +275,48 @@ class Spacecraft(Hardware):
             self.construct_tanks(tanks_list)
             # TODO: set GMAT sat Tanks field
 
-        print(f'Orbit specs passed to Spacecraft init: {orbit}')
-
         self.construct_orbit_state(orbit)
 
-        if gmat_init:
-            if not isinstance(gmat_init, bool):
-                raise SyntaxError('gmat_init must be True or False')
-            gmat.Initialize()
+        gmat.Initialize()
 
     @classmethod
     def from_dict(cls, specs_dict):
+        # TODO remove comment when able
         # See https://stackoverflow.com/questions/12179271/meaning-of-classmethod-and-staticmethod-for-beginner
         # Parse in gmat_init, orbit, hardware from specs_dict
-        name = ''
-        gmat_init = False
-        orbit = {}
-        hardware = {}
-        sc = cls(name, gmat_init, orbit, hardware)
+        fields = inspect.getfullargspec(Spacecraft.__init__).args[1:]  # get Spacecraft __init__ params, except self
+        args = [None] * len(fields)
+        for index, field in enumerate(fields):
+            try:
+                args[index] = specs_dict[field]  # see if the param needed by Spacecraft.__init__ is in specs_dict
+            except KeyError:
+                print(f'Key {field} not found in the specs_dict passed to Spacecraft.from_dict')
+                raise
+
+        sc = cls(*args)
+
+        # now that the basic spacecraft has been created, set other fields from values in specs_dict
+        # TODO handle snake case vs CamelCase difference
+        for field in specs_dict:
+            print(f'Assessing field: {field}')
+            if field not in sc._gmat_allowed_fields:
+                print(f'{field} not found in set of GMAT allowed fields')
+                if field not in sc._allowed_fields:
+                    print(f'{field} not found in set of class allowed fields either')
+                    raise NotImplementedError('Error handling for non-allowed fields not implemented')
+                else:  # field not allowed by GMAT but allowed by class (further parsing needed)
+                    setattr(sc, f'_{field}', specs_dict[field])
+            else:  # field is GMAT allowed
+                setattr(sc, f'_{field}', specs_dict[field])
+                sc.SetField(field, specs_dict[field])
+
         return sc
 
     def __repr__(self):
-        return f'Spacecraft with name {self._name} and specifications:\n{json.dumps(self._specs, indent=4)}'
+        return f'Spacecraft with name {self._name}'
 
     def __str__(self):
         return f'Spacecraft with name {self._name}'
-
-    @property
-    def specs(self):
-        return self._specs
 
     def construct_tanks(self, tanks_list: dict):
         for index, tank in enumerate(tanks_list):
@@ -270,20 +328,19 @@ class Spacecraft(Hardware):
                 self._tanks.append(ElectricTank(tank['name'], self))
 
     def construct_orbit_state(self, orbit_specs):
-        print(f'Orbit specs passed to construct_orbit_state: {orbit_specs}')
-        kwargs = []
+        kwargs = {'sc': self.gmat_object}
         # Consider doing the in checking below in OrbitState __init__ rather than here
         if 'epoch' in orbit_specs:
             print('Epoch found in specs')
-            kwargs.append(orbit_specs['epoch'])
+            kwargs['epoch'] = orbit_specs['epoch']
         if 'state_type' in orbit_specs:
             print('State type found in specs')
-            kwargs.append(orbit_specs['state_type'])
+            kwargs['state_type'] = orbit_specs['state_type']
         if 'coord_sys' in orbit_specs:
             print(f'Coordinate system found in specs: {orbit_specs["coord_sys"]}')
-            kwargs.append(orbit_specs['coord_sys'])
+            kwargs['coord_sys'] = orbit_specs['coord_sys']
 
-        sc_orbit = OrbitState(self, kwargs)  # TODO syntax: need to include sc arg in kwargs
+        sc_orbit = OrbitState(**kwargs)  # TODO syntax: need to include sc arg in kwargs
         # coord_sys=self._coord_sys)
 
 
@@ -324,19 +381,19 @@ class FiniteThrust(GmatObject):  # TODO tidy: consider making subclass of Finite
 # TODO add parameter parsing to Spacecraft class
 sat_params = {
     'name': 'Servicer',
-    'gmat_init': False,
     'orbit': {  # TODO: add other orbit params. Cartesian by default
         # 'coord_sys': 'EarthMJ2000Eq sdfsdf',
-        'state_type': 'Keplerian',
+        'state_type': 'Cartesian',
     },
-    'dry_mass': 756,  # kg
+    'dry_mass': 100,  # kg
     'hardware': {'prop_type': 'EP',  # or 'CP'
                  'tanks': [{'name': 'ElectricTank1', 'FuelMass': 0},
                            {'name': 'ElectricTank2', 'FuelMass': 10}],
                  'thrusters': {'num': 1}}
 }
 
-sat = Spacecraft(sat_params['name'], sat_params['gmat_init'],sat_params['orbit'], sat_params['hardware'])
+# sat = Spacecraft(sat_params['name'], sat_params['orbit'], sat_params['hardware'])
+sat = Spacecraft.from_dict(sat_params)
 # print(f'sat specs:\n{json.dumps(sat.specs, indent=4)}')
 # print(f'sat orbit specs: {sat.specs["orbit"]}')
 gmat.Initialize()
@@ -361,6 +418,4 @@ finite_thrust = FiniteThrust('FiniteThrust1', sat, burn)
 
 burn.BeginFiniteBurn(finite_thrust)
 
-print('')
-for attribute, value in Spacecraft.__dict__.items():
-    print(f'{attribute} = {value}')
+sat.Help()
