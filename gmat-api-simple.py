@@ -286,6 +286,7 @@ class Spacecraft(Hardware):
         # self.SetFields(self._specs_to_set)  # TODO uncomment
 
         gmat.Initialize()
+        self.update_attrs()
 
     @classmethod
     def from_dict(cls, specs_dict):
@@ -400,6 +401,9 @@ class Spacecraft(Hardware):
 
         sc_orbit = OrbitState(**kwargs)  # TODO syntax: need to include sc arg in kwargs
         # coord_sys=self._coord_sys)
+
+    def update_attrs(self):
+        raise NotImplementedError('update_attrs not implemented for Spacecraft')
 
 
 class FiniteBurn(GmatObject):
