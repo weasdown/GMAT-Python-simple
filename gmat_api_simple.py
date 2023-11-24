@@ -7,47 +7,6 @@ import logging
 from load_gmat import gmat
 
 
-def class_string_to_GMAT_string(string):
-    """
-    Convert PEP8-compliant string to GMAT format (CamelCase)
-    :param string:
-    :return:
-    """
-    string_parts_list = [part.capitalize() for part in string.split('_')]
-    string = ''.join(string_parts_list)
-    if string == 'CoordSys':
-        string = 'CoordinateSystem'
-    return string
-
-
-def get_object_gmat_fields(gmat_obj):
-    """
-    Get GMAT's list of fields in a GMAT object
-
-    :param gmat_obj:
-    :return:
-    """
-    # Intercept stdout as that's where gmat_obj.Help() goes to
-    old_stdout = sys.stdout  # take snapshot of current (normal) stdout
-    # create a StringIO object, assign it to obj_help_stringio and set this as the target for stdout
-    sys.stdout = obj_help_stringio = StringIO()
-    gmat_obj.Help()
-    obj_help = obj_help_stringio.getvalue()  # Help() table text as a string
-
-    sys.stdout = old_stdout  # revert back to normal handling of stdout
-
-    rows = obj_help.split('\n')  # split the Help() text into rows for easier parsing
-    data_rows = rows[6:]  # first six rows are always headers etc. so remove them
-    fields = [None] * len(data_rows)  # create a list to store the fields
-    for index, row in enumerate(data_rows):
-        row = row[3:]
-        row = row.split(' ')[0]
-        fields[index] = row
-
-    print(fields)
-    return fields
-
-
 class GmatObject:
     def __init__(self):
         self._gmat_obj = None
@@ -483,7 +442,7 @@ class FiniteBurn(GmatObject):
 
     def BeginFiniteBurn(self, fin_thrust):  # TODO type: add FiniteThrust type to fin_thrust
         fin_thrust.EnableThrust()
-        sc = 'object that FiniteBurn is applied to'  # TODO complete
+        sc = 'GMAT object that FiniteBurn is applied to'  # TODO complete
         runtime_thruster = sc.gmat_object.GetRefObject(gmat.THRUSTER, self._thruster_name)
         runtime_thruster.SetField("IsFiring", True)
 
@@ -502,3 +461,181 @@ class FiniteThrust(GmatObject):  # TODO tidy: consider making subclass of Finite
     def EnableThrust(self):
         gmat.ConfigManager.Instance().AddPhysicalModel(self._gmat_obj)
 
+
+def class_string_to_GMAT_string(string):
+    """
+    Convert PEP8-compliant string to GMAT format (CamelCase)
+    :param string:
+    :return:
+    """
+    string_parts_list = [part.capitalize() for part in string.split('_')]
+    string = ''.join(string_parts_list)
+    if string == 'CoordSys':
+        string = 'CoordinateSystem'
+    return string
+
+
+def get_subs_of_gmat_class(gmat_class) -> list:
+    """
+    Get GMAT's list of fields in a GMAT class
+
+    :param gmat_class
+    :return: fields: list[str]
+    """
+    # Target: "GmatBase Exception Thrown: Parameter id = 6 not defined on object"
+    # Set: "Factory (sub)class exception: Generic factory creation method not implemented for Set"
+    # CallGmatFunction, Global, CallPythonFunction: see Set
+    disallowed_classes = ['CallFunction', 'Optimize', 'Propagate', 'ScriptEvent',
+                          'Target',
+                          'Set', 'CallGmatFunction', 'Global', 'CallPythonFunction', 'RunEstimator', 'RunSimulator', 'CommandEcho', 'BeginFileThrust', 'EndFileThrust', 'RunSmoother', 'ModEquinoctial', 'IncomingAsymptote']
+
+    print(f'argument gmat_class: {gmat_class}')
+    print(f'Subclasses of {gmat_class.__name__}:')
+    subs = [ty for ty in gmat_class.__subclasses__()]
+
+    # Save subs to a txt file
+    filename = f'Subclasses of GMAT class {gmat_class.__name__}.txt'
+    with open(filename, 'w') as file:
+        for sub in subs:
+            file.write(f'{sub}\n')
+
+    # print('Done')
+    #
+    # print(f'gmat_class: {gmat_class}')
+    # print(f'gmat_class type: {type(gmat_class)}')
+    #
+    # # Find subclasses of the gmat.GmatObject class, as they're the ones that will have user-set/gettable fields
+    #
+    # print(f'Parent class of current class: {type(gmat_class).__bases__}')
+    #
+    # sys.exit()
+    #
+    # # Intercept stdout as that's where gmat_obj.Help() goes to
+    # old_stdout = sys.stdout  # take snapshot of current (normal) stdout
+    # # create a StringIO object, assign it to obj_help_stringio and set this as the target for stdout
+    # sys.stdout = obj_help_stringio = StringIO()
+    # # raise NotImplementedError('Currently assuming a GMAT object rather than GMAT class')
+    #
+    # if gmat_class in disallowed_classes:
+    #     return None
+    # else:
+    #     temp = gmat.Construct(gmat_class)
+    #     temp.Help()
+    #     gmat.Clear(temp.GetName())
+    #
+    # sys.stdout = old_stdout  # revert back to normal handling of stdout
+    #
+    # obj_help = obj_help_stringio.getvalue()  # Help() table text as a string
+    #
+    # rows = obj_help.split('\n')  # split the Help() text into rows for easier parsing
+    # data_rows = rows[6:]  # first six rows are always headers etc. so remove them
+    # fields = [''] * len(data_rows)  # create a list to store the fields
+    # for index, row in enumerate(data_rows):
+    #     row = row[3:]
+    #     row = row.split(' ')[0]  # TODO tweak to get rid of any empty strings (also in get_gmat_classes)
+    #     fields[index] = row
+    #
+    # fields = list(filter(None, fields))  # filter out any empty strings
+    return subs
+
+
+def get_gmat_classes():
+    """
+    Get GMAT's list of possible classes
+
+    :return:
+    """
+    # Intercept stdout as that's where gmat_obj.Help() goes to
+    old_stdout = sys.stdout  # take snapshot of current (normal) stdout
+    # create a StringIO object, assign it to obj_help_stringio and set this as the target for stdout
+    sys.stdout = classes_stringio = StringIO()
+    gmat.ShowClasses()
+    classes_str = classes_stringio.getvalue()  # Help() table text as a string
+
+    sys.stdout = old_stdout  # revert back to normal handling of stdout
+
+    rows = classes_str.split('\n')  # split the Help() text into rows for easier parsing
+    data_rows = rows[:]  # first six rows are always headers etc. so remove them
+    classes = [None] * len(data_rows)  # create a list to store the fields
+    for index, row in enumerate(data_rows):
+        row = row[3:]
+        classes[index] = row
+
+    classes = list(filter(None, classes))  # filter out any empty strings
+    return classes
+
+
+def fields_for_gmat_base_gmat_command():
+    gmat_base_obj = type(gmat.Construct('Propagator')).__bases__[0]
+    gmat_base_subs = get_subs_of_gmat_class(gmat_base_obj)
+    print(gmat_base_subs)
+
+    constructible_objects = gmat_base_subs
+    non_constructible_objects = []
+
+    for sub in gmat_base_subs:
+        try:
+            obj = gmat.Construct(sub.__name__)
+            # obj.Help()
+        except AttributeError:
+            constructible_objects.remove(sub)
+            non_constructible_objects.append(sub)
+        except Exception:
+            raise
+
+    print(f'constructible_objects: {[o.__name__ for o in constructible_objects]}')
+
+    for o in constructible_objects:
+        # Intercept stdout as that's where gmat_obj.Help() goes to
+        old_stdout = sys.stdout  # take snapshot of current (normal) stdout
+        # create a StringIO object, assign it to obj_help_stringio and set this as the target for stdout
+
+        o_name_string = o.__name__
+        print(f'o_name_string: {o_name_string}')
+        temp = gmat.Construct(o_name_string, '')
+        print(f'Created object {temp.__name__} of type {type(temp)}')
+
+        sys.stdout = obj_help_stringio = StringIO()
+        # raise NotImplementedError('Currently assuming a GMAT object rather than GMAT class')
+        temp.Help()
+        gmat.Clear(temp.GetName())
+
+        sys.stdout = old_stdout  # revert back to normal handling of stdout
+
+        obj_help = obj_help_stringio.getvalue()  # Help() table text as a string
+
+        rows = obj_help.split('\n')  # split the Help() text into rows for easier parsing
+        data_rows = rows[6:]  # first six rows are always headers etc. so remove them
+        fields = [''] * len(data_rows)  # create a list to store the fields
+        for index, row in enumerate(data_rows):
+            row = row[3:]
+            row = row.split(' ')[0]  # TODO tweak to get rid of any empty strings (also in get_gmat_classes)
+            fields[index] = row
+
+        fields = list(filter(None, fields))  # filter out any empty strings
+        print(fields)
+
+        # o.Help()
+
+    # NOTE: GmatCommand is a subclass of GmatBase
+    # gmat_command_obj = type(gmat.Construct('Propagate')).__bases__[0].__bases__[0]
+    # gmat_command_subs = get_subs_of_gmat_class(gmat_command_obj)
+    # print(gmat_command_subs)
+
+    return
+
+    # classes = get_gmat_classes()
+    # classes_without_fields = []
+    #
+    # for gmat_class in classes:
+    #     try:
+    #         class_fields = get_subs_of_gmat_class(gmat_class)
+    #
+    #     except Exception:  # TODO add GMAT exception type
+    #         classes_without_fields.append(gmat_class)
+
+    # generate text files - one per class, each with list of classes, called [class]_fields.txt
+
+    # generate text file of classes_without_fields
+
+    pass

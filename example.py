@@ -41,4 +41,11 @@ finite_thrust = api.FiniteThrust('FiniteThrust1', sat, burn)
 
 # burn.BeginFiniteBurn(finite_thrust)
 
-api.get_object_gmat_fields(sat.gmat_object)
+# print(f'Spacecraft fields: {api.get_object_gmat_fields(sat.gmat_object)}')
+
+classes = api.get_gmat_classes()
+class_fields = {}
+# for cls in classes:
+# api.get_gmat_class_fields(sat.gmat_object)
+
+api.fields_for_gmat_base_gmat_command()
