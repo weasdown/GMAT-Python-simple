@@ -82,7 +82,9 @@ sat_params = {
 
 sat = gmat.Construct('Spacecraft', 'DefaultSC')
 
-hardware_obj = api.SpacecraftHardware(sat_params['Hardware'], sat)
+hardware_obj = api.SpacecraftHardware(sat_params['Hardware'])
 print(hardware_obj)
+
+sat_from_dict = api.Spacecraft.from_dict(sat_params)
 
 # sat.Help()
