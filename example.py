@@ -1,51 +1,88 @@
 from load_gmat import gmat
 import gmat_api_simple as api
 
+# TODO consider making enum that defines valid fields so they can be used in sat_params
+#  e.g. {DRYMASS = 100}
+
 # TODO add parameter parsing to Spacecraft class
 sat_params = {
-    'name': 'Servicer',
-    'orbit': {  # TODO: add other orbit params. Cartesian by default
+    'Name': 'Servicer',
+    'Orbit': {  # TODO: add other orbit params. Cartesian by default
         'coord_sys': 'EarthMJ2000Eq',
         'state_type': 'Cartesian',
     },
-    'dry_mass': 100,  # kg
-    'hardware': {'prop_type': 'EP',  # or 'CP'
-                 'tanks': [{'name': 'ElectricTank1', 'FuelMass': 0},
-                           {'name': 'ElectricTank2', 'FuelMass': 10}],
-                 'thrusters': {'num': 1}}
+    'DryMass': 100,  # kg
+    'Hardware': {'Tanks': {'Chemical': [{'Name': 'ChemicalTank1'}],
+                           'Electric': [{'Name': 'ElectricTank1'}]},
+                 'Thrusters': {'Chemical': [{'Name': 'ChemicalThruster1', 'Tanks': 'ChemicalTank1'}],
+                               'Electric': [{'Name': 'ElectricThruster1', 'Tanks': 'ElectricTank1'}]}
+                 }
 }
 
-sat = api.Spacecraft(sat_params['name'])
+# sat = api.Spacecraft.from_dict(sat_params)
+# sat = api.Spacecraft(sat_params['name'])
 # sat = Spacecraft.from_dict(sat_params)
 # print(f'sat specs:\n{json.dumps(sat.specs, indent=4)}')
 # print(f'sat orbit specs: {sat.specs["orbit"]}')
-gmat.Initialize()
+# gmat.Initialize()
 # sat.Help()
 
-ep_tank = api.ElectricTank('EP_Tank', sat)
+# ep_tank = api.ElectricTank('EP_Tank', sat)
 # print(ep_tank)
 
-ep_thruster = api.ElectricThruster('EP_Thruster', sat, ep_tank)
+# ep_thruster = api.ElectricThruster('EP_Thruster', sat, ep_tank)
 # print(ep_thruster)
 
 # gmat.ShowObjects()
 # sat.Help()
 
-gmat.Initialize()
-ep_thruster.IsInitialized()
-
-ep_thruster.mix_ratio = [1]
-
-burn = api.FiniteBurn('FiniteBurn1', sat, ep_thruster)
-finite_thrust = api.FiniteThrust('FiniteThrust1', sat, burn)
+# gmat.Initialize()
+# ep_thruster.IsInitialized()
+#
+# ep_thruster.mix_ratio = [1]
+#
+# burn = api.FiniteBurn('FiniteBurn1', sat, ep_thruster)
+# finite_thrust = api.FiniteThrust('FiniteThrust1', sat, burn)
 
 # burn.BeginFiniteBurn(finite_thrust)
 
 # print(f'Spacecraft fields: {api.get_object_gmat_fields(sat.gmat_object)}')
 
-classes = api.get_gmat_classes()
-class_fields = {}
+# classes = api.get_gmat_classes()
+# class_fields = {}
 # for cls in classes:
 # api.get_gmat_class_fields(sat.gmat_object)
 
-api.fields_for_gmat_base_gmat_command()
+# api.fields_for_gmat_base_gmat_command()
+
+# sat.Help()
+# sat.gmat_object.GetRefObjectTypeArray(): (150, 149, 117, 176, 179, 105)
+# 150 = EarthMJ2000Eq, 149 = Error, 117 = Error, 176 = Blank, 179 = Error, 105 = Error
+# print(sat.gmat_object.GetRefObject(150, 'EarthMJ2000Eq')): Object of type CoordinateSystem named EarthMJ2000Eq
+# print(sat.gmat_object.GetRefObjectTypeArray())
+# print(sat.gmat_object.GetRefObjectArray()
+
+# sat_coord_sys = sat.gmat_object.GetRefObject(150, 'EarthMJ2000Eq')
+
+# sat_coord_sys.Help()
+# sat_coord_sys.GetRefObjectTypeArray(): (116,) (PropertyObjectType 675)
+# print(sat_coord_sys.CanAssignStringToObjectProperty(116))
+
+# sat.Help()
+
+# print(f'sat.Thrusters: {sat.Thrusters}')
+# burn = api.FiniteBurn('FB1', sat, sat.thrusters[0])
+# burn.Help()
+
+# gmat.Help('Commands')
+
+# type(prop) == PropSetup
+# type(gator) == Propagator
+
+
+sat = gmat.Construct('Spacecraft', 'DefaultSC')
+
+hardware_obj = api.SpacecraftHardware(sat_params['Hardware'], sat)
+print(hardware_obj)
+
+# sat.Help()
