@@ -293,6 +293,7 @@ class SpacecraftHardware:
     # def Thrusters(self, value):
     #     self.Thrusters = value
 
+
 class Spacecraft(HardwareItem):
     def __init__(self, Name: str, **kwargs):  # specs: dict):
         # self.Help()
