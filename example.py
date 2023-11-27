@@ -19,6 +19,7 @@ sat_params = {
                  }
 }
 
+
 # sat = api.Spacecraft.from_dict(sat_params)
 # sat = api.Spacecraft(sat_params['name'])
 # sat = Spacecraft.from_dict(sat_params)
