@@ -644,9 +644,11 @@ class Spacecraft(HardwareItem):
     #     self.SetField('DryMass', value)
 
     def add_tank(self, tank: ChemicalTank | ElectricTank):
-        raise NotImplementedError
-        existing_tanks = self.GetField('Tanks')
-        # self.sc.gmat_obj.SetField('Tanks', self.Name)
+        tank_list = list(self.GetField('Tanks')[1:-1].split(','))
+        tank_list.append(tank)
+        tank_list_str = f'{{str(tank_list)[1:-1]}}'
+        print(f'tank_list_str: {tank_list_str}')
+        self.SetField('Tanks', tank_list_str)
 
     def construct_tanks(self, tanks_dict: dict):
         for index, tank in enumerate(tanks_dict):
@@ -956,7 +958,7 @@ class FiniteBurn(GmatObject):
 
 class FiniteThrust(GmatObject):  # TODO tidy: consider making subclass of FiniteBurn
     def __init__(self, name: str, spacecraft: Spacecraft, finite_burn: FiniteBurn):
-        super().__init__()
+        super().__init__('FiniteThrust', name)
         self.Name = name
         self.GmatObj = gmat.FiniteThrust(name)
         self._spacecraft = spacecraft
