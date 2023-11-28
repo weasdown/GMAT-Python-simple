@@ -202,7 +202,7 @@ class HardwareItem(GmatObject):
     #     self.Name = name
 
     def IsInitialized(self):
-        self.GmatObj.IsInitialized()
+        self.gmat_obj.IsInitialized()
 
 
 class SpacecraftHardware:
@@ -850,24 +850,6 @@ class Thruster(HardwareItem):
             thr.SetField(field, thr_dict[field])
 
         return thr
-
-    # @staticmethod
-    # def from_dict(th_dict: dict[str, Union[str, int, float]]):
-    #     # TODO parse th_dict for fields
-    #     name = th_dict['Name']
-    #     print(f'name in api.Thruster.from_dict: {name}')
-    #     # f'\nthr_type: {thr_type}')
-    #     # try:
-    #     #     thr = cls(thr_type, name)
-    #     # except AttributeError:
-    #     #     if thr_type == 'Chemical':
-    #     #         raise SyntaxError(f"thr_type given as 'Chemical' - did you mean 'ChemicalThruster'?")
-    #     #     elif thr_type == 'Electric':
-    #     #         raise SyntaxError(f"thr_type given as 'Electric' - did you mean 'ElectricThruster'?")
-    #     #     else:
-    #     #         raise
-    #
-    #     return name
 
     def attach_to_sat(self, sc: Spacecraft):
         # TODO feature: convert to append to existing Thrusters list
