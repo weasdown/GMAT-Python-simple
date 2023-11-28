@@ -10,20 +10,25 @@ prop_types = ['Chemical', 'Electric']
 
 
 class GmatObject:
-    def __init__(self):
-        self.GmatObj = None
-        self.Name = None
+    def __init__(self, obj_type: str, name: str):
+        self.ObjType = obj_type
+        self.Name = name
+        self._gmat_obj = gmat.Construct(self.ObjType, self.Name)
 
     @property
-    def gmat_object(self):
-        if not self.GmatObj:
+    def gmat_obj(self):
+        if not self._gmat_obj:
             raise Exception(f'No GMAT object found for {self.Name} of type {type(self).__name__}')
         else:
-            return self.GmatObj
+            return self._gmat_obj
+
+    @gmat_obj.setter
+    def gmat_obj(self, gmat_obj):
+        self._gmat_obj = gmat_obj
 
     @property
     def gmatName(self):
-        return self.GmatObj.GetName()
+        return self.gmat_obj.GetName()
 
     @staticmethod
     def get_name_from_kwargs(obj_type: object, kwargs: dict) -> str:
@@ -37,9 +42,9 @@ class GmatObject:
         return self.gmatName
 
     def Help(self):
-        if not self.GmatObj:
+        if not self.gmat_obj:
             raise AttributeError(f'No GMAT object found for object {self.__name__} of type {type(self.__name__)}')
-        self.GmatObj.Help()
+        self.gmat_obj.Help()
 
     def SetField(self, field: str, val: Union[str, int, bool]):
         """
@@ -49,7 +54,7 @@ class GmatObject:
         :param val:
         :return:
         """
-        self.gmat_object.SetField(field, val)
+        self.gmat_obj.SetField(field, val)
 
     def SetFields(self, fields_to_set: dict):
         """
@@ -72,7 +77,7 @@ class GmatObject:
         :param field:
         :return:
         """
-        return self.gmat_object.GetField(field)
+        return self.gmat_obj.GetField(field)
 
 
 class OrbitState:
@@ -182,11 +187,8 @@ class OrbitState:
 
 
 class HardwareItem(GmatObject):
-    def __init__(self, object_type, name: str):
-        super().__init__()
-        self.ObjType = object_type
-        self.Name = name
-        self.GmatObj = gmat.Construct(self.ObjType, self.Name)
+    def __init__(self, object_type: str, name: str):
+        super().__init__(object_type, name)
 
     def __repr__(self):
         return f'A piece of Hardware of type {self.ObjType} and name {self.Name}'
@@ -733,6 +735,14 @@ class Tank(HardwareItem):
         sat = self.Spacecraft
         sat.SetField('Tanks', self.Name)
 
+    def attach_to_tanks(self, tanks: list[str]):
+        # TODO complete
+        # convert Python list to GMAT list (convert to string and remove square brackets)
+        tanks = str(tanks)[1:-1]
+
+        # self.GmatObj.SetField('Tank', tanks)
+        raise NotImplementedError
+
 
 class ChemicalTank(Tank):
     def __init__(self, tank: Tank):
@@ -779,48 +789,70 @@ class ElectricTank(Tank):
 
 
 class Thruster(HardwareItem):
-    def __init__(self, name: str, thruster_type: str, **kwargs):
-        self.Spacecraft = None
-        self.thruster_type = thruster_type
+    # def __init__(self, name: str, thruster_type: str, **kwargs):
+    #     self.Spacecraft = None
+    #     self.thruster_type = thruster_type
+    #
+    #     super().__init__(thruster_type, name)
+    #     self.name = self.GmatObj.GetName()
+    #
+    #     try:
+    #         self.thrust = kwargs['thrust']
+    #     except KeyError:
+    #         pass
 
-        super().__init__(thruster_type, name)
-        self.name = self.GmatObj.GetName()
+    def __init__(self, thruster_type: str, name: str):
+        self.thruster_type = thruster_type  # 'ChemicalThruster' or 'ElectricThruster'
+        self.name = name
+        super().__init__(self.thruster_type, self.name)
 
-        try:
-            self.thrust = kwargs['thrust']
-        except KeyError:
-            pass
+    # @classmethod
+    # def from_dict(cls, prop_type: str, thruster_dict: dict, sc: Spacecraft = None, tanks: list['str'] = None) \
+    #         -> ChemicalThruster | ElectricThruster:
+    #
+    #     try:
+    #         name: str = thruster_dict['Name']
+    #     except KeyError:
+    #         raise SyntaxError('Required field Name not found for building Thruster')
+    #
+    #     if prop_type == 'Chemical':
+    #         thruster = ChemicalThruster(name, tanks)
+    #         thruster.prop_type = prop_type
+    #     elif prop_type == 'Electric':
+    #         thruster = ElectricThruster(name, tanks)
+    #         thruster.prop_type = prop_type
+    #     else:
+    #         raise SyntaxError(f'Invalid propulsion type found while building Thruster: {prop_type}')
+    #
+    #     if sc:
+    #         Thruster.attach_to_sat(sc, name)
+    #
+    #     return thruster
 
-    @classmethod
-    def from_dict(cls, prop_type: str, thruster_dict: dict, sc: Spacecraft = None, tanks: list['str'] = None) \
-            -> ChemicalThruster | ElectricThruster:
+    @staticmethod
+    def from_dict(th_dict: dict[str, Union[str, int, float]]):
+        # TODO parse th_dict for fields
+        name = th_dict['Name']
+        print(f'name in api.Thruster.from_dict: {name}')
+        # f'\nthr_type: {thr_type}')
+        # try:
+        #     thr = cls(thr_type, name)
+        # except AttributeError:
+        #     if thr_type == 'Chemical':
+        #         raise SyntaxError(f"thr_type given as 'Chemical' - did you mean 'ChemicalThruster'?")
+        #     elif thr_type == 'Electric':
+        #         raise SyntaxError(f"thr_type given as 'Electric' - did you mean 'ElectricThruster'?")
+        #     else:
+        #         raise
 
-        try:
-            name: str = thruster_dict['Name']
-        except KeyError:
-            raise SyntaxError('Required field Name not found for building Thruster')
-
-        if prop_type == 'Chemical':
-            thruster = ChemicalThruster(name, tanks)
-            thruster.prop_type = prop_type
-        elif prop_type == 'Electric':
-            thruster = ElectricThruster(name, tanks)
-            thruster.prop_type = prop_type
-        else:
-            raise SyntaxError(f'Invalid propulsion type found while building Thruster: {prop_type}')
-
-        if sc:
-            Thruster.attach_to_sat(sc, name)
-
-        return thruster
+        return name
 
     def attach_to_sat(self, sc: Spacecraft):
         # TODO feature: convert to append to existing Thrusters list
         sc.SetField('Tanks', self.Name)
 
-    @staticmethod
-    def attach_to_tanks(tanks: list[str]):
-        raise NotImplementedError
+    def attach_to_tanks(self, tanks: list[str]):
+        # raise NotImplementedError
         # convert Python list to GMAT list (convert to string and remove square brackets)
         tanks = str(tanks)[1:-1]
 
@@ -882,55 +914,79 @@ class ChemicalThruster(Thruster):
         self.GmatObj.SetField('Tank', tanks)
 
 
-class ElectricThruster(HardwareItem):  # TODO make this a child of a new class, Thruster, that inherits from Hardware
-    def __init__(self, name: str, tanks: list[str], decrement_mass: bool = True):
+class ElectricThruster(Thruster):  # TODO make this a child of a new class, Thruster, that inherits from Hardware
+    # def __init__(self, name: str, tanks: list[str], decrement_mass: bool = True):
+    #     super().__init__('ElectricThruster', name)
+    #     self._tank = tanks
+    #     self._decrement_mass = decrement_mass
+    #
+    #     # self.attach_to_sat(sc)
+    #     self.attach_to_tanks(tanks)
+    #
+    #     self.GmatObj.SetField('DecrementMass', self._decrement_mass)
+
+    def __init__(self, name: str):
         super().__init__('ElectricThruster', name)
-        self._tank = tanks
-        self._decrement_mass = decrement_mass
-
-        # self.attach_to_sat(sc)
-        self.attach_to_tanks(tanks)
-
-        self.GmatObj.SetField('DecrementMass', self._decrement_mass)
 
     def __repr__(self):
-        return f'An ElectricThruster with name {self.Name}'
+        return (f'An {type(self).__name__} with:'
+                f'\n- name: {self.name},'
+                f'\n- thruster type: {self.thruster_type},'
+                f'\n- GMAT object: {self.gmat_obj}')
 
     @classmethod
-    def from_dict(cls, ep_th_specs):
-        """
-        Generate an ElectricThruster from a dictionary.
-        :param ep_th_specs:
-        :return:
-        """
+    def from_dict(cls, ep_th_dict: dict[str, Union[str, int, float]]):
+        # TODO move to Thruster, then use super() here
 
-        try:
-            name: str = ep_th_specs['Name']
-            # sc: Spacecraft = ep_th_specs['Spacecraft']
-            tanks: str | list = ep_th_specs['Tanks']
+        ep_thr = cls(ep_th_dict['Name'])
 
-        except KeyError as e:
-            raise SyntaxError(f'Required field {e} was not provided for building Electric Thruster')
+        fields: list[str] = list(ep_th_dict.keys())
+        fields.remove('Name')
 
-        if isinstance(tanks, str):  # ensure a list of tanks is always provided
-            tanks = list(tanks.split(','))
+        # TODO convert to thr.SetFields
+        for field in fields:
+            ep_thr.SetField(field, ep_th_dict[field])
 
-        chem_thruster = cls(name, tanks)
+        return ep_thr
 
-        # TODO: pull out optional fields (Thrust, DecrementMass, etc - full ElectricThruster set)
-        #  then do chem_thruster.SetFields(...)
+    # def __repr__(self):
+    #     return f'An ElectricThruster with name {self.Name}'
 
-        return chem_thruster
+    # @classmethod
+    # def from_dict(cls, ep_th_specs):
+    #     """
+    #     Generate an ElectricThruster from a dictionary.
+    #     :param ep_th_specs:
+    #     :return:
+    #     """
+    #
+    #     try:
+    #         name: str = ep_th_specs['Name']
+    #         # sc: Spacecraft = ep_th_specs['Spacecraft']
+    #         tanks: str | list = ep_th_specs['Tanks']
+    #
+    #     except KeyError as e:
+    #         raise SyntaxError(f'Required field {e} was not provided for building Electric Thruster')
+    #
+    #     if isinstance(tanks, str):  # ensure a list of tanks is always provided
+    #         tanks = list(tanks.split(','))
+    #
+    #     ep_thruster = cls(name, tanks)
+    #
+    #     # TODO: pull out optional fields (Thrust, DecrementMass, etc - full ElectricThruster set)
+    #     #  then do chem_thruster.SetFields(...)
+    #
+    #     return ep_thruster
 
-    def attach_to_tanks(self, tanks: list[str]):
-        # convert Python list to GMAT list (convert to string and remove square brackets)
-        tanks = str(tanks)[1:-1]
-
-        self.GmatObj.SetField('Tank', tanks)
-
-    def attach_to_sat(self, sat: Spacecraft):
-        # TODO feature: convert to append to existing Thrusters list
-        sat.SetField('Thrusters', self.Name)
+    # def attach_to_tanks(self, tanks: list[str]):
+    #     # convert Python list to GMAT list (convert to string and remove square brackets)
+    #     tanks = str(tanks)[1:-1]
+    #
+    #     self.GmatObj.SetField('Tank', tanks)
+    #
+    # def attach_to_sat(self, sat: Spacecraft):
+    #     # TODO feature: convert to append to existing Thrusters list
+    #     sat.SetField('Thrusters', self.Name)
 
     @property
     def mix_ratio(self):

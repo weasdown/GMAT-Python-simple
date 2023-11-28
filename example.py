@@ -1,3 +1,5 @@
+from typing import Union
+
 from load_gmat import gmat
 import gmat_api_simple as api
 
@@ -86,6 +88,18 @@ sat_params = {
 # hardware_obj = api.SpacecraftHardware(sat_params['Hardware'])
 # print(hardware_obj)
 
-sat_from_dict = api.Spacecraft.from_dict(sat_params)
+# class Thruster(api.HardwareItem):
+#     def __init__(self, thruster_type: str, name: str):
+#         self.thruster_type = thruster_type  # 'ChemicalThruster' or 'ElectricThruster'
+#         self.name = name
+#         super().__init__(self.thruster_type, self.name)
+
+ep_thruster = api.ElectricThruster.from_dict({'Name': 'EP_Thruster1', 'ConstantThrust': 5})
+# print(ep_thruster)
+# print(type(ep_thruster))
+# assert (type(ep_thruster).__name__ == 'ElectricThruster')
+# ep_thruster.Help()
+
+# sat_from_dict = api.Spacecraft.from_dict(sat_params)
 
 # sat.Help()
