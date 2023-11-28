@@ -93,12 +93,13 @@ sat_params = {
 #         self.name = name
 #         super().__init__(self.thruster_type, self.name)
 
-ep_thruster = api.ElectricThruster.from_dict({'Name': 'EP_Thruster1', 'ConstantThrust': 15})
+# ep_thruster = api.ElectricThruster.from_dict({'Name': 'EP_Thruster1', 'ConstantThrust': 15})
 
-ep_thruster.Help()
+# ep_thruster.Help()
 
-cp_thruster = api.ChemicalThruster.from_dict({'Name': 'CP_Thruster1', 'C1': 15})
-cp_thruster.Help()
+# cp_thruster = api.ChemicalThruster.from_dict({'Name': 'CP_Thruster1', 'C1': 15})
+# cp_thruster.Help()
+# gmat.Clear()
 
-# sat_from_dict = api.Spacecraft.from_dict(sat_params)
-# sat_from_dict.Help()
+sat_from_dict = api.Spacecraft.from_dict(sat_params)
+sat_from_dict.Help()
