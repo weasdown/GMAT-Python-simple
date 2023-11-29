@@ -1,3 +1,4 @@
+import os
 from typing import Union
 
 from load_gmat import gmat

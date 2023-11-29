@@ -26,10 +26,6 @@ class GmatObject:
     # def gmat_obj(self, gmat_obj):
     #     self._gmat_obj = gmat_obj
 
-    @property
-    def gmatName(self):
-        return self.gmat_obj.GetName()
-
     @staticmethod
     def get_name_from_kwargs(obj_type: object, kwargs: dict) -> str:
         try:
@@ -39,7 +35,9 @@ class GmatObject:
         return name
 
     def GetName(self):
-        return self.gmatName
+        print('In GmatObj.GetName')
+        print(f'self.gmat_obj: {self.gmat_obj}')
+        return self.gmat_obj.GetName()
 
     def Help(self):
         if not self.gmat_obj:
@@ -490,7 +488,7 @@ class Spacecraft(HardwareItem):
 
         # gmat.ShowObjects()
 
-        sc.Help()
+        # sc.Help()
 
         gmat.Initialize()
 
@@ -570,6 +568,8 @@ class Spacecraft(HardwareItem):
         return f'Spacecraft with name {self.name}'
 
     def add_hardware(self, hardware: SpacecraftHardware):
+        print('Help at start of add_hardware:')
+        self.Help()
         self.Hardware = hardware
 
         self.Thrusters: dict[str, list[ChemicalThruster | ElectricThruster | None]] = self.Hardware.Thrusters
@@ -644,17 +644,26 @@ class Spacecraft(HardwareItem):
     #     self._dry_mass = value
     #     self.SetField('DryMass', value)
 
-    def add_tank(self, tank: ChemicalTank | ElectricTank):
+    def add_tanks(self, tanks: list[ChemicalTank | ElectricTank]):
         """
-        
-        :type tank: GMAT ChemicalTank or GMAT ElectricTank
-        :param tank: 
+        Add a tank object to a Spacecraft's list of Tanks.
+
+        Note: GMAT Spacecraft Tanks field takes a string containing strings for each tank, e.g.:
+         "'ChemicalTank1', 'ElectricTank1'". This is handled by this method.
+
+        :type tanks: list[ChemicalTank | ElectricTank]
+        :param tanks:
         :return: 
         """
-        tank_list = list(self.GetField('Tanks')[1:-1])
-        tank_list.append(tank.GetName())
-        print(f'New tank_list: {tank_list}')
-        self.SetField('Tanks', tank_list)
+        current_tanks_value: str = self.GetField('Tanks')
+        current_tanks_list: list = gmat_field_string_to_list(current_tanks_value)
+
+        # Add tanks by getting name of each tank, adding it to a list, then attaching this list to end of existing one
+        tanks_to_set: list = [tank.GetName() for tank in tanks]
+        current_tanks_list.extend(tanks_to_set)
+        value = list_to_gmat_field_string(current_tanks_list)
+        self.SetField('Tanks', value)
+        self.Help()
 
     def add_thruster(self, thruster: ChemicalThruster | ElectricThruster):
         thruster_list = list(self.GetField('Thrusters')[1:-1])
@@ -772,7 +781,7 @@ class Tank(HardwareItem):
 
     def attach_to_sat(self, sat: Spacecraft):
         self.spacecraft = sat
-        self.spacecraft.add_tank(self.gmat_obj)
+        self.spacecraft.add_tanks([self.gmat_obj])
 
 
 class ChemicalTank(Tank):
@@ -1172,3 +1181,33 @@ def fields_for_gmat_base_gmat_command():
     # generate text file of classes_without_fields
 
     pass
+
+
+def gmat_field_string_to_list(string: str) -> list[str]:
+    if string == '{}':  # GMAT list is empty
+        string_list = []
+
+    elif ',' not in string:  # GMAT list contains exactly one item
+        string_list = [string[1:-1]]  # remove GMAT's curly braces and replace with Python square brackets
+
+    else:  # GMAT list contains more than one item
+        string_no_curly_braces = f'{string[1:-1]}'
+        string_list = list(string_no_curly_braces.split(', '))  # convert to list using comma as separator
+        string_list = [substring[1:-1] for substring in string_list]  # remove extra quotes from each item
+
+    return string_list
+
+
+def list_to_gmat_field_string(data_list: list) -> str:
+    """
+    Convert a Python list to a format that GMAT can handle in SetField
+    :param data_list:
+    :return string:
+    """
+    if data_list is not []:  # Python list contains at least one item
+        string = ', '.join(data_list)  # convert the list to a string, with a comma between each item
+
+    else:  # Python list is empty
+        string = '{}'
+
+    return string
