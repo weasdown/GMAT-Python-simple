@@ -3,6 +3,7 @@ from typing import Union
 
 from load_gmat import gmat
 import gmat_api_simple as api
+import sys
 
 # TODO consider making enum that defines valid fields so they can be used in sat_params
 #  e.g. {DRYMASS = 100}
@@ -104,3 +105,5 @@ sat_params = {
 
 sat_from_dict = api.Spacecraft.from_dict(sat_params)
 sat_from_dict.Help()
+
+print(sat_from_dict.Thrusters)
