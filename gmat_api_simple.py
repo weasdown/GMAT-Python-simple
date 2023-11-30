@@ -960,7 +960,3 @@ def py_str_to_gmat_str(string: str) -> str:
     string = string.title()  # set first letter of each word to upper case
     string = string.replace(' ', '')  # remove spaces
     return string
-
-
-def gmat_str_to_py_str(string: str) -> str:
-    return str(string)[1:-1]
