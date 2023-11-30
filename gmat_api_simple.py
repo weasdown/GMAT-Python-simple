@@ -212,6 +212,7 @@ class Spacecraft(HardwareItem):
         def __init__(self, spacecraft: Spacecraft):
             self.spacecraft = spacecraft
 
+            # TODO see https://stackoverflow.com/a/18921333 for creating sub-attributes
             self.ChemicalTanks = [None]
             self.ElectricTanks = [None]
             self.Tanks = {'Chemical': self.ChemicalTanks,

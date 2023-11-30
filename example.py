@@ -112,7 +112,7 @@ sat.SetField('Epoch', '21550')
 sat.SetField('StateType', 'Keplerian')
 
 # sat.Help()
-cp_thrusters = sat.Thrusters['Chemical']
-first_cp_thr: api.ChemicalThruster = cp_thrusters[0]
-first_cp_thr.decrement_mass = True
-first_cp_thr.Help()
+# cp_thrusters = sat.Thrusters.Chemical
+# first_cp_thr: api.ChemicalThruster = cp_thrusters[0]
+# first_cp_thr.decrement_mass = True
+# first_cp_thr.Help()
