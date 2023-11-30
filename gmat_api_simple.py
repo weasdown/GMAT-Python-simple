@@ -78,108 +78,91 @@ class GmatObject:
 
 class OrbitState:
     def __init__(self, **kwargs):
-        self._allowed_values = {'display_state_type': ['Cartesian', 'Keplerian', 'ModifiedKeplerian', 'SphericalAZFPA',
-                                                       'SphericalRADEC', 'Equinoctial'],
+        self._allowed_state_elements = {
+            'Cartesian': {'X', 'Y', 'Z', 'VX', 'VY', 'VZ'},
+            'Keplerian': {'SMA', 'ECC', 'INC', 'RAAN', 'AOP', 'TA'},
+            'ModifiedKeplerian': {'RadApo', 'RadPer', 'INC', 'RAAN', 'AOP', 'TA'},
+            'SphericalAZFPA': {'RMAG', 'RA', 'DEC', 'VMAG', 'AZI', 'FPA'},
+            'SphericalRADEC': {'RMAG', 'RA', 'DEC', 'VMAG', 'RAV', 'DECV'},
+            'Equinoctial': {'SMA', 'EquinoctialH', 'EquinoctialK',
+                            'EquinoctialP', 'EquinoctialQ', 'MLONG'},
+            'ModifiedEquinoctial': {'SemilatusRectum', 'ModEquinoctialF', 'ModEquinoctialG',
+                                    'ModEquinoctialH', 'ModEquinoctialH', 'TLONG'},
+            'AlternativeEquinoctial': {'SMA', 'EquinoctialH', 'EquinoctialK',
+                                       'AltEquinoctialP', 'AltEquinoctialQ', 'MLONG'},
+            'Delaunay': {'Delaunayl', 'Delaunayg', 'Delaunayh', 'DelaunayL', 'DelaunayG', 'DelaunayH'},
+            'OutgoingAsymptote': {'OutgoingRadPer', 'OutgoingC3Energy', 'OutgoingRHA',
+                                  'OutgoingDHA', 'OutgoingBVAZI', 'TA'},
+            'IncomingAsymptote': {'IncomingRadPer', 'IncomingC3Energy', 'IncomingRHA',
+                                  'IncomingDHA', 'IncomingBVAZI', 'TA'},
+            'BrouwerMeanShort': {'BrouwerShortSMA', 'BrouwerShortECC', 'BrouwerShortINC',
+                                 'BrouwerShortRAAN', 'BrouwerShortAOP', 'BrouwerShortMA'},
+            'BrouwerMeanLong': {'BrouwerLongSMA', 'BrouwerLongECC', 'BrouwerLongINC',
+                                'BrouwerLongRAAN', 'BrouwerLongAOP', 'BrouwerLongMA'}
+        }
+        # TODO complete self._allowed_values - see pg 599 of GMAT User Guide (currently missing Planetodetic)
+        self._allowed_values = {'display_state_type': self._allowed_state_elements.keys(),
                                 'coord_sys': ['EarthMJ2000Eq', ],  # TODO: define valid coord_sys values
                                 # TODO: define valid state_type values - using display_state_type ones for now
-                                'state_type': ['Cartesian', 'Keplerian', 'ModifiedKeplerian', 'SphericalAZFPA',
-                                               'SphericalRADEC', 'Equinoctial'],
+                                'state_type': self._allowed_state_elements,
                                 }
-        self._elements_cartesian = ['X', 'Y', 'Z', 'VX', 'VY', 'VZ']
-        self._elements_keplerian = ['SMA', 'ECC', 'INC', 'RAAN', 'AOP', 'TA']
 
-        self._key_params = ['_epoch', '_state_type', '_display_state_type', '_coord_sys']
+        self._key_params = ['_epoch', '_state_type', '_display_state_type', '_coord_sys', '_sc']
 
-        # Set initial default None values for all fundamental attributes
-        self._display_state_type = None
-        self._state_type = None
-        self._coord_sys = None
-        self._epoch = None
-
-        # Set whether to use explicit defaults or let GMAT choose.
-        # Latter risks clashing between specified parameters
-        explicit_defaults = True
-
-        # TODO convert these to try-excepts
-        if 'display_state_type' in kwargs:
-            if kwargs['display_state_type'] not in self._allowed_values['display_state_type']:
-                raise SyntaxError(f'Invalid display state type passed to OrbitState __init__. '
-                                  f'Allowed values are: {self._allowed_values["display_state_type"]}')
-            else:
-                self._display_state_type = kwargs['display_state_type']
-        elif explicit_defaults:
-            self._display_state_type = 'Cartesian'
-
-        if 'epoch' in kwargs:
-            # TODO add epoch validation e.g. str if Cartesian, correct date format
-            self._epoch = str(kwargs['epoch'])  # Should this always be str, or only for Cartesian states?
-        elif explicit_defaults:
-            self._epoch = None
-
-        if 'state_type' in kwargs:
-            if kwargs['state_type'] not in self._allowed_values['state_type']:
-                raise SyntaxError(f'Invalid state type passed to OrbitState __init__. '
-                                  f'Allowed values are: {self._allowed_values["state_type"]}')
+        if 'state_type' not in kwargs:
+            raise SyntaxError('state_type not found when creating OrbitState object')
+        else:  # state_type is specified but may not be valid
+            if kwargs['state_type'] not in self._allowed_state_elements.keys():  # invalid state_type given
+                raise SyntaxError(f'Invalid state_type parameter given: {kwargs["state_type"]}\n'
+                                  f'Valid values are: {self._allowed_state_elements.keys()}')
             else:
                 self._state_type = kwargs['state_type']
-        elif explicit_defaults:
-            self._state_type = 'Cartesian'
 
-        if 'coord_sys' in kwargs:
-            coord_sys = kwargs['coord_sys']
-            if coord_sys not in self._allowed_values['coord_sys']:
-                raise SyntaxError(f'Invalid coordinate system passed to OrbitState __init__: {coord_sys}. '
-                                  f'Allowed values are: {self._allowed_values["coord_sys"]}')
+        # Set key parameters to value in kwargs, or None if not specified
+        for param in self._key_params:
+            if param[1:] in kwargs:
+                setattr(self, param, kwargs[param[1:]])
             else:
-                self._coord_sys = kwargs['coord_sys']
-        elif explicit_defaults:
-            self._coord_sys = 'EarthMJ2000Eq'
+                setattr(self, param, None)
 
-        if 'sc' in kwargs:
-            self.apply_to_spacecraft(kwargs['sc'])
-
-        # Theoretically, create GMAT's OrbitState class, but it doesn't exist...
-        # Maybe CoordinateSystem is the closest? But don't same able to Construct it directly
-
-    def apply_to_spacecraft(self, sc):
+    def apply_to_spacecraft(self, sc: Spacecraft):
         """
         Apply the properties of this OrbitState to a spacecraft.
 
         :param sc:
         :return:
         """
-        # print(f'Epoch being set: {self._epoch}')
-        # for param in self._key_params:
-        #     if param is not None:
-        #         # convert param name to CamelCase without underscores, for GMAT
-        #         chunks = param.split("_")[1:]
-        #         print(chunks)
-        #         # gmat_fieldName = f'{.replace("_","")}'
-        #         # sc.SetField(param, str(getattr(self, param)))
 
-        try:
-            if self._state_type == 'Cartesian':
-                # Check each element in self._elements_cartesian
-                # If there's an attribute for it, set it, otherwise move on to the next one
+        attrs_to_set = []
+        # Find out which class attributes are set and apply all of them to the spacecraft
+        instance_attrs = self.__dict__.copy()  # get a copy of the instance's current attributes
 
-                for element in self._elements_cartesian:
-                    element_string = f'_{element}'
-                    try:
-                        attr_value = getattr(self, element_string)
-                        sc.SetField(element, attr_value)
+        # remove attributes that are just for internal class use and shouldn't be applied to a spacecraft
+        for attr in ('_allowed_state_elements', '_allowed_values', '_key_params', '_sc'):
+            instance_attrs.pop(attr)
 
-                    except AttributeError:
-                        continue
+        attrs_to_set.extend(list(instance_attrs))
 
-            # TODO: implement non-Cartesian states
-            elif self._state_type == 'Keplerian':
-                print('Keplerian state requested')
-                raise NotImplementedError('Applying a Keplerian state to a spacecraft is not yet implemented')
-            else:
-                raise SyntaxError('State type not recognised')
-        except KeyError:  # jumps to here on *first* failed state element assignment
-            print('OrbitState __init__ did not receive all the correct parameters for the specified state')
-            print(f'Using defaults of at least some state elements for state {self._state_type}')
+        # extend attrs_to_set with the elements corresponding to the current state_type
+        try:  # state_type is recognized
+            attrs_to_set.extend(self._allowed_state_elements[self._state_type])
+        except KeyError:  # state_type attribute invalid
+            raise AttributeError(f'Invalid state_type set as attribute: {self._state_type}')
+
+        for attr in attrs_to_set:
+            try:
+                gmat_attr = py_str_to_gmat_str(attr)
+                val = getattr(self, attr)
+                if val is not None:
+                    sc.SetField(gmat_attr, val)
+                raise AttributeError
+            except AttributeError:
+                # print(f'No value set for attr {attr} - skipping')
+                pass
+
+    @classmethod
+    def from_dict(cls):
+        pass
 
 
 class HardwareItem(GmatObject):
@@ -311,23 +294,6 @@ class Spacecraft(HardwareItem):
             # TODO: parse SolarPowerSystem, NuclearPowerSystem, Imager
 
             return sc_hardware
-
-        # @property
-        # def Thrusters(self):
-        #     return self.Thrusters
-        #
-        # @Thrusters.setter
-        # def Thrusters(self, thrusters):
-        #     self.Thrusters = thrusters
-
-        # @property
-        # def Thrusters(self) -> list:  # TODO: specify return type is list of ChemicalThrusters/ElectricThrusters
-        #     """Return SpacecraftHardware's list of Thrusters"""
-        #     return list(thruster.__name__ for thruster in self.Thrusters)
-        #
-        # @Thrusters.setter
-        # def Thrusters(self, value):
-        #     self.Thrusters = value
 
         @property
         def Tanks(self):
@@ -962,3 +928,39 @@ def list_to_gmat_field_string(data_list: list) -> str:
         string = '{}'
 
     return string
+
+
+def python_string_list_to_gmat_string_list(string_list: list[str]) -> list[str]:
+    for index, string in enumerate(string_list):
+        string_list[index] = py_str_to_gmat_str(string)  # convert each string and put it back in the list
+    return string_list
+
+
+def gmat_string_list_to_python_string_list(string_list: list[str], is_attr_list: bool = False) -> list[str]:
+    for index, string in enumerate(string_list):
+        new_string = ''
+        chars_added = 0
+        for i, char in enumerate(string):
+            if char.isupper():
+                new_string = new_string[0:i+chars_added+1] + '_' + char.lower()
+                chars_added += 1
+            else:
+                new_string = new_string + char
+
+        if not is_attr_list:  # don't want leading underscores
+            if new_string[0] == '_':
+                new_string = new_string[1:]
+        string_list[index] = new_string
+
+    return string_list
+
+
+def py_str_to_gmat_str(string: str) -> str:
+    string = string.replace('_', ' ')  # replace each underscore with a space
+    string = string.title()  # set first letter of each word to upper case
+    string = string.replace(' ', '')  # remove spaces
+    return string
+
+
+def gmat_str_to_py_str(string: str) -> str:
+    return str(string)[1:-1]

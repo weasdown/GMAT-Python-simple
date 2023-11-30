@@ -106,12 +106,17 @@ sat_params = {
 sat = api.Spacecraft.from_dict(sat_params)
 # sat.Help()
 
-print(f"sat's thrusters: {sat.Thrusters}")
+# print(f"sat's thrusters: {sat.Thrusters}")
 
-sat.SetField('Epoch', '21550')
-sat.SetField('StateType', 'Keplerian')
+# sat.SetField('Epoch', '21550')
+# sat.SetField('StateType', 'Keplerian')
 
 # sat.Help()
 cp_thrusters = sat.ChemicalThrusters
 
-cp_thrusters[0].Help()
+# cp_thrusters[0].Help()
+
+orbit_state = api.OrbitState(state_type='Keplerian')
+orbit_state.apply_to_spacecraft(sat)
+
+sat.Help()
