@@ -103,7 +103,16 @@ sat_params = {
 # cp_thruster.Help()
 # gmat.Clear()
 
-sat_from_dict = api.Spacecraft.from_dict(sat_params)
-sat_from_dict.Help()
+sat = api.Spacecraft.from_dict(sat_params)
+# sat.Help()
 
-print(sat_from_dict.Thrusters)
+print(sat.Thrusters)
+
+sat.SetField('Epoch', '21550')
+sat.SetField('StateType', 'Keplerian')
+
+# sat.Help()
+cp_thrusters = sat.Thrusters['Chemical']
+first_cp_thr: api.ChemicalThruster = cp_thrusters[0]
+first_cp_thr.decrement_mass = True
+first_cp_thr.Help()

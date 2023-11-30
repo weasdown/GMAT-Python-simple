@@ -203,127 +203,126 @@ class HardwareItem(GmatObject):
         self.gmat_obj.IsInitialized()
 
 
-class SpacecraftHardware:
-    """
-    Container for a Spacecraft's hardware objects.
-    """
-
-    def __init__(self, spacecraft: Spacecraft):
-        self.spacecraft = spacecraft
-
-        self.ChemicalTanks = [None]
-        self.ElectricTanks = [None]
-        self.Tanks = {'Chemical': self.ChemicalTanks,
-                      'Electric': self.ElectricTanks}
-
-        self.ChemicalThrusters = [None]
-        self.ElectricThrusters = [None]
-        self.Thrusters = {'Chemical': self.ChemicalThrusters,
-                          'Electric': self.ElectricThrusters}
-
-        self.SolarPowerSystem = None
-        self.NuclearPowerSystem = None
-
-        self.Imagers = [None]
-
-        # self.from_dict(hardware)
-
-    def __repr__(self):
-        return (f'{type(self).__name__} object with the following parameters:'
-                # f'\n- Spacecraft: {self.Spacecraft.GetName()},'
-                f'\n- Tanks: {self.Tanks},'
-                f'\n- Thrusters: {self.Thrusters},'
-                f'\n- SolarPowerSystem: {self.SolarPowerSystem},'
-                f'\n- NuclearPowerSystem: {self.NuclearPowerSystem},'
-                f'\n- Imagers: {self.Imagers}')
-
-    @classmethod
-    def from_dict(cls, hw: dict, sc: Spacecraft):
-        sc_hardware = cls(sc)
-
-        # parse tanks
-        try:
-            tanks: dict = hw['Tanks']
-
-            # parse ChemicalTanks
-            try:
-                cp_tanks_list: list[dict] = tanks['Chemical']
-                cp_tanks_objs = []
-                for index, cp_tank in enumerate(cp_tanks_list):
-                    cp_tanks_objs.append(ChemicalTank.from_dict(cp_tank))
-                sc_hardware.ChemicalTanks = cp_tanks_objs
-            except KeyError:
-                raise
-
-            # parse ElectricTanks
-            try:
-                ep_tanks_list: list[dict] = tanks['Electric']
-                ep_tanks_objs = []
-                for index, ep_tank in enumerate(ep_tanks_list):
-                    ep_tanks_objs.append(ElectricTank.from_dict(ep_tank))
-                sc_hardware.ElectricTanks = ep_tanks_objs
-            except KeyError:
-                raise
-
-            sc_hardware.Tanks = {'Chemical': sc_hardware.ChemicalTanks,
-                                 'Electric': sc_hardware.ElectricTanks}
-
-        except KeyError as ke:
-            raise KeyError(f'No tanks found in Hardware dict parsing, key error: {ke}')
-
-        # parse thrusters
-        try:
-            thrusters: dict = hw['Thrusters']
-
-            # parse ChemicalThrusters
-            try:
-                cp_thrusters_list: list[dict] = thrusters['Chemical']
-                cp_thruster_objs = []
-                for index, cp_thruster in enumerate(cp_thrusters_list):
-                    cp_thruster_objs.append(ChemicalThruster.from_dict(cp_thruster))
-                sc_hardware.ChemicalThrusters = cp_thruster_objs
-            except KeyError:
-                raise
-
-            # parse ElectricThrusters
-            try:
-                ep_thrusters_list: list[dict] = thrusters['Electric']
-                ep_thruster_objs = []
-                for index, ep_thruster in enumerate(ep_thrusters_list):
-                    ep_thruster_objs.append(ElectricThruster.from_dict(ep_thruster))
-                sc_hardware.ElectricThrusters = ep_thruster_objs
-            except KeyError:
-                raise
-
-            sc_hardware.Thrusters = {'Chemical': sc_hardware.ChemicalThrusters,
-                                     'Electric': sc_hardware.ElectricThrusters}
-
-        except KeyError as ke:
-            raise KeyError(f'No thrusters found in Hardware dict parsing, key error: {ke}')
-
-        # TODO: parse SolarPowerSystem, NuclearPowerSystem, Imager
-
-        return sc_hardware
-
-    # @property
-    # def Thrusters(self):
-    #     return self.Thrusters
-    #
-    # @Thrusters.setter
-    # def Thrusters(self, thrusters):
-    #     self.Thrusters = thrusters
-
-    # @property
-    # def Thrusters(self) -> list:  # TODO: specify return type is list of ChemicalThrusters/ElectricThrusters
-    #     """Return SpacecraftHardware's list of Thrusters"""
-    #     return list(thruster.__name__ for thruster in self.Thrusters)
-    #
-    # @Thrusters.setter
-    # def Thrusters(self, value):
-    #     self.Thrusters = value
-
-
 class Spacecraft(HardwareItem):
+    class SpacecraftHardware:
+        """
+        Container for a Spacecraft's hardware objects.
+        """
+
+        def __init__(self, spacecraft: Spacecraft):
+            self.spacecraft = spacecraft
+
+            self.ChemicalTanks = [None]
+            self.ElectricTanks = [None]
+            self.Tanks = {'Chemical': self.ChemicalTanks,
+                          'Electric': self.ElectricTanks}
+
+            self.ChemicalThrusters = [None]
+            self.ElectricThrusters = [None]
+            self.Thrusters = {'Chemical': self.ChemicalThrusters,
+                              'Electric': self.ElectricThrusters}
+
+            self.SolarPowerSystem = None
+            self.NuclearPowerSystem = None
+
+            self.Imagers = [None]
+
+            # self.from_dict(hardware)
+
+        def __repr__(self):
+            return (f'{type(self).__name__} object with the following parameters:'
+                    # f'\n- Spacecraft: {self.Spacecraft.GetName()},'
+                    f'\n- Tanks: {self.Tanks},'
+                    f'\n- Thrusters: {self.Thrusters},'
+                    f'\n- SolarPowerSystem: {self.SolarPowerSystem},'
+                    f'\n- NuclearPowerSystem: {self.NuclearPowerSystem},'
+                    f'\n- Imagers: {self.Imagers}')
+
+        @classmethod
+        def from_dict(cls, hw: dict, sc: Spacecraft):
+            sc_hardware = cls(sc)
+
+            # parse tanks
+            try:
+                tanks: dict = hw['Tanks']
+
+                # parse ChemicalTanks
+                try:
+                    cp_tanks_list: list[dict] = tanks['Chemical']
+                    cp_tanks_objs = []
+                    for index, cp_tank in enumerate(cp_tanks_list):
+                        cp_tanks_objs.append(ChemicalTank.from_dict(cp_tank))
+                    sc_hardware.ChemicalTanks = cp_tanks_objs
+                except KeyError:
+                    raise
+
+                # parse ElectricTanks
+                try:
+                    ep_tanks_list: list[dict] = tanks['Electric']
+                    ep_tanks_objs = []
+                    for index, ep_tank in enumerate(ep_tanks_list):
+                        ep_tanks_objs.append(ElectricTank.from_dict(ep_tank))
+                    sc_hardware.ElectricTanks = ep_tanks_objs
+                except KeyError:
+                    raise
+
+                sc_hardware.Tanks = {'Chemical': sc_hardware.ChemicalTanks,
+                                     'Electric': sc_hardware.ElectricTanks}
+
+            except KeyError as ke:
+                raise KeyError(f'No tanks found in Hardware dict parsing, key error: {ke}')
+
+            # parse thrusters
+            try:
+                thrusters: dict = hw['Thrusters']
+
+                # parse ChemicalThrusters
+                try:
+                    cp_thrusters_list: list[dict] = thrusters['Chemical']
+                    cp_thruster_objs = []
+                    for index, cp_thruster in enumerate(cp_thrusters_list):
+                        cp_thruster_objs.append(ChemicalThruster.from_dict(cp_thruster))
+                    sc_hardware.ChemicalThrusters = cp_thruster_objs
+                except KeyError:
+                    raise
+
+                # parse ElectricThrusters
+                try:
+                    ep_thrusters_list: list[dict] = thrusters['Electric']
+                    ep_thruster_objs = []
+                    for index, ep_thruster in enumerate(ep_thrusters_list):
+                        ep_thruster_objs.append(ElectricThruster.from_dict(ep_thruster))
+                    sc_hardware.ElectricThrusters = ep_thruster_objs
+                except KeyError:
+                    raise
+
+                sc_hardware.Thrusters = {'Chemical': sc_hardware.ChemicalThrusters,
+                                         'Electric': sc_hardware.ElectricThrusters}
+
+            except KeyError as ke:
+                raise KeyError(f'No thrusters found in Hardware dict parsing, key error: {ke}')
+
+            # TODO: parse SolarPowerSystem, NuclearPowerSystem, Imager
+
+            return sc_hardware
+
+        # @property
+        # def Thrusters(self):
+        #     return self.Thrusters
+        #
+        # @Thrusters.setter
+        # def Thrusters(self, thrusters):
+        #     self.Thrusters = thrusters
+
+        # @property
+        # def Thrusters(self) -> list:  # TODO: specify return type is list of ChemicalThrusters/ElectricThrusters
+        #     """Return SpacecraftHardware's list of Thrusters"""
+        #     return list(thruster.__name__ for thruster in self.Thrusters)
+        #
+        # @Thrusters.setter
+        # def Thrusters(self, value):
+        #     self.Thrusters = value
+
     def __init__(self, name, **kwargs):
         super().__init__('Spacecraft', name)
 
@@ -377,7 +376,7 @@ class Spacecraft(HardwareItem):
             print('No hardware parameters specified in Spacecraft dictionary - none will be built')
             hardware = {}
 
-        hardware_obj = SpacecraftHardware.from_dict(hardware, sc)
+        hardware_obj = Spacecraft.SpacecraftHardware.from_dict(hardware, sc)
         sc.Hardware = sc.add_hardware(hardware_obj)
 
         gmat.Initialize()
@@ -630,15 +629,9 @@ class ChemicalTank(Tank):
 
 
 class ElectricTank(Tank):
-    # def __init__(self, tank: Tank):
-    #     name = tank.Name
-    #     sc = tank.Spacecraft
-    #     self.Tank = super().__init__(name, sc, 'ElectricTank')
-    #
     #     # TODO add FuelMass and other fields
     #     # self.fuel_mass = fuel_mass
     #     # self.GmatObj.SetField('FuelMass', self.fuel_mass)
-    #     self.attach_to_sat()
 
     def __init__(self, name: str):
         super().__init__('ElectricTank', name)
@@ -650,18 +643,6 @@ class ElectricTank(Tank):
 
 
 class Thruster(HardwareItem):
-    # def __init__(self, name: str, thruster_type: str, **kwargs):
-    #     self.Spacecraft = None
-    #     self.thruster_type = thruster_type
-    #
-    #     super().__init__(thruster_type, name)
-    #     self.name = self.GmatObj.GetName()
-    #
-    #     try:
-    #         self.thrust = kwargs['thrust']
-    #     except KeyError:
-    #         pass
-
     def __init__(self, thruster_type: str, name: str):
         super().__init__(thruster_type, name)
         self.thruster_type = thruster_type  # 'ChemicalThruster' or 'ElectricThruster'
@@ -669,35 +650,10 @@ class Thruster(HardwareItem):
 
         self.spacecraft = None
         self.tanks: list[ChemicalTank | ElectricTank] | None = None
-
-        # if 'tanks' in kwargs:
-        #     self.tanks = kwargs['tanks']
+        self._decrement_mass = self.decrement_mass
 
     def __repr__(self):
         return f'A {self.thruster_type} with name {self.name}'
-
-    # @classmethod
-    # def from_dict(cls, prop_type: str, thruster_dict: dict, sc: Spacecraft = None, tanks: list['str'] = None) \
-    #         -> ChemicalThruster | ElectricThruster:
-    #
-    #     try:
-    #         name: str = thruster_dict['Name']
-    #     except KeyError:
-    #         raise SyntaxError('Required field Name not found for building Thruster')
-    #
-    #     if prop_type == 'Chemical':
-    #         thruster = ChemicalThruster(name, tanks)
-    #         thruster.prop_type = prop_type
-    #     elif prop_type == 'Electric':
-    #         thruster = ElectricThruster(name, tanks)
-    #         thruster.prop_type = prop_type
-    #     else:
-    #         raise SyntaxError(f'Invalid propulsion type found while building Thruster: {prop_type}')
-    #
-    #     if sc:
-    #         Thruster.attach_to_sat(sc, name)
-    #
-    #     return thruster
 
     @staticmethod
     def from_dict(thr_type: str, thr_dict: dict[str, Union[str, int, float]]):
@@ -723,7 +679,6 @@ class Thruster(HardwareItem):
             else:
                 thr.SetField(field, thr_dict[field])
             setattr(thr, field, thr_dict[field])
-        # thr.Help()
 
         return thr
 
@@ -734,6 +689,24 @@ class Thruster(HardwareItem):
     def attach_to_tanks(self, tanks: list[ChemicalTank | ElectricTank]):
         self.gmat_obj.SetField('Tank', tanks)
 
+    @property
+    def decrement_mass(self):
+        gmat_value = self.GetField('DecrementMass')
+        if gmat_value == 'false':
+            return False
+        elif gmat_value == 'true':
+            return True
+        else:
+            raise AttributeError(f'Could not get valid DecrementMass value from GMAT object. Value found: {gmat_value}')
+
+    @decrement_mass.setter
+    def decrement_mass(self, true_false: bool):
+        if type(true_false) is not bool:
+            raise SyntaxError('decrement_mass takes either True or False')
+
+        self._decrement_mass = true_false
+        self.SetField('DecrementMass', true_false)
+
 
 class ChemicalThruster(Thruster):
     def __init__(self, name: str):
@@ -741,22 +714,11 @@ class ChemicalThruster(Thruster):
 
     @classmethod
     def from_dict(cls, cp_thr_dict: dict) -> ChemicalThruster:
-        # cp_thr = cls(cp_thr_dict['Name'])
         cp_thr: ChemicalThruster = Thruster.from_dict('ChemicalThruster', cp_thr_dict)
         return cp_thr
 
 
 class ElectricThruster(Thruster):
-    # def __init__(self, name: str, tanks: list[str], decrement_mass: bool = True):
-    #     super().__init__('ElectricThruster', name)
-    #     self._tank = tanks
-    #     self._decrement_mass = decrement_mass
-    #
-    #     # self.attach_to_sat(sc)
-    #     self.attach_to_tanks(tanks)
-    #
-    #     self.GmatObj.SetField('DecrementMass', self._decrement_mass)
-
     def __init__(self, name: str):
         super().__init__('ElectricThruster', name)
 
