@@ -112,11 +112,21 @@ sat = api.Spacecraft.from_dict(sat_params)
 # sat.SetField('StateType', 'Keplerian')
 
 # sat.Help()
-cp_thrusters = sat.ChemicalThrusters
 
-# cp_thrusters[0].Help()
+fred = gmat.Construct('CoordinateSystem', 'Fred', 'Earth', 'MJ2000Eq')
+# gmat.ShowObjects('CoordinateSystem')
+# gmat.ShowObjects()
+
+# fred.Help()
+
+bob = api.OrbitState.CoordinateSystem('Bob', 'MJ2000Eq')
+# bob.Help()
 
 orbit_state = api.OrbitState(state_type='Keplerian')
 orbit_state.apply_to_spacecraft(sat)
 
-sat.Help()
+# sat.Help()
+
+print(api.GetCelestialBodies())
+
+# gmat.Help('SolarSystemBarycenter')

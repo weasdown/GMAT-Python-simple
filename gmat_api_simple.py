@@ -77,6 +77,39 @@ class GmatObject:
 
 
 class OrbitState:
+    class CoordinateSystem(GmatObject):
+        def __init__(self, name: str, axes: str, central_body: str = 'Earth'):
+            super().__init__('CoordinateSystem', name)
+            gmat.Clear(name)
+
+            # TODO complete allowed values - see User Guide pages 335-339 (PDF pg 344-348)
+            self._allowed_values = {'Axes': ['MJ2000Eq', 'MJ2000Ec', 'ICRF',
+                                             'MODEq', 'MODEc', 'TODEq', 'TODEc', 'MOEEq', 'MOEEc', 'TOEEq', 'TOEEc',
+                                             'ObjectReferenced', 'Equator', 'BodyFixed', 'BodyInertial',
+                                             'GSE', 'GSM', 'Topocentric', 'BodySpinSun'],
+                                    'Origin': (GetCelestialBodies() + GetSpacecraftObjs() + GetLibrationPoints() +
+                                               GetBarycenter() + ['SolarSystemBarycenter'] + GetGroundStation()),
+                                    }
+            self._allowed_values['Primary'] = self._allowed_values['Origin']
+
+            print(f'Currently allowed Origin values:\n{self._allowed_values["Origin"]}')
+
+            if axes in self._allowed_values['Axes']:
+                self.axes = axes
+            else:
+                raise AttributeError(f'Invalid axes parameter provided - {axes}\n'
+                                     f'Must provide one of: {self._allowed_values["Axes"]}')
+
+            self.central_body = central_body
+
+            self.gmat_obj = gmat.Construct('CoordinateSystem', name, self.central_body, self.axes)
+
+    class Epoch:
+        def __init__(self, epoch_format: str, epoch: str):
+            self._allowed_types = {'EpochFormat': ['int', 'str']}
+            self.format = epoch_format
+            self.epoch = epoch
+
     def __init__(self, **kwargs):
         self._allowed_state_elements = {
             'Cartesian': {'X', 'Y', 'Z', 'VX', 'VY', 'VZ'},
@@ -102,10 +135,29 @@ class OrbitState:
         }
         # TODO complete self._allowed_values - see pg 599 of GMAT User Guide (currently missing Planetodetic)
         self._allowed_values = {'display_state_type': self._allowed_state_elements.keys(),
-                                'coord_sys': ['EarthMJ2000Eq', ],  # TODO: define valid coord_sys values
+                                # TODO: get names of any other user-defined coordinate systems and add to allowlist
+                                'coord_sys': GetCoordSystems(),
                                 # TODO: define valid state_type values - using display_state_type ones for now
                                 'state_type': self._allowed_state_elements,
                                 }
+
+        # TODO complete this list
+        self._gmat_fields = {'EpochFormat': {'A1ModJulian',
+                                             'TAIModJulian',
+                                             'UTCModJulian',
+                                             'TDBModJulian',
+                                             'TTModJulian',
+                                             'A1Gregorian',
+                                             'TAIGregorian',
+                                             'UTCGregorian',
+                                             'TDBGregorian',
+                                             'TTGregorian'},
+                             'Epoch': type(int),
+                             # 'CoordinateSystem' will also include user-defined ones
+                             'CoordinateSystem': {'EarthMJ2000Eq', 'EarthMJ2000Ec', 'EarthFixed', 'EarthICRF'},
+                             'StateType': {},
+                             'DisplayStateType': {}
+                             }
 
         self._key_params = ['_epoch', '_state_type', '_display_state_type', '_coord_sys', '_sc']
 
@@ -120,7 +172,7 @@ class OrbitState:
 
         # Set key parameters to value in kwargs, or None if not specified
         for param in self._key_params:
-            if param[1:] in kwargs:
+            if param[1:] in kwargs:  # arguments must be without leading underscores
                 setattr(self, param, kwargs[param[1:]])
             else:
                 setattr(self, param, None)
@@ -138,7 +190,7 @@ class OrbitState:
         instance_attrs = self.__dict__.copy()  # get a copy of the instance's current attributes
 
         # remove attributes that are just for internal class use and shouldn't be applied to a spacecraft
-        for attr in ('_allowed_state_elements', '_allowed_values', '_key_params', '_sc'):
+        for attr in ('_allowed_state_elements', '_allowed_values', '_gmat_fields', '_key_params', '_sc'):
             instance_attrs.pop(attr)
 
         attrs_to_set.extend(list(instance_attrs))
@@ -161,8 +213,16 @@ class OrbitState:
                 pass
 
     @classmethod
-    def from_dict(cls):
-        pass
+    def from_dict(cls, orbit_dict: dict, sc: Spacecraft = None) -> OrbitState:
+        o_s: OrbitState = cls(sc=sc)  # create OrbitState object, with sc attr set to None by default
+        for attr in o_s._key_params:  # initialize other key attrs to None
+            setattr(o_s, attr, None)
+
+        o_s._allowed_values['coord_sys'] = GetCoordSystems()
+
+        # TODO parse orbit params in orbit_dict
+
+        return o_s
 
 
 class HardwareItem(GmatObject):
@@ -228,7 +288,7 @@ class Spacecraft(HardwareItem):
                     f'\n- Imagers: {self.Imagers}')
 
         @classmethod
-        def from_dict(cls, hw: dict, sc: Spacecraft):
+        def from_dict(cls, hw: dict, sc: Spacecraft) -> Spacecraft.SpacecraftHardware:
             sc_hardware = cls(sc)
 
             # parse tanks
@@ -763,6 +823,7 @@ def class_string_to_GMAT_string(string):
     :param string:
     :return:
     """
+    # TODO compare against gmat_str_to_py_str - maybe don't need both
     string_parts_list = [part.capitalize() for part in string.split('_')]
     string = ''.join(string_parts_list)
     if string == 'CoordSys':
@@ -804,9 +865,9 @@ def get_gmat_classes():
 
     :return:
     """
-    # Intercept stdout as that's where gmat_obj.Help() goes to
+    # Intercept stdout as that's where gmat.ShowClasses goes to
     old_stdout = sys.stdout  # take snapshot of current (normal) stdout
-    # create a StringIO object, assign it to obj_help_stringio and set this as the target for stdout
+    # create a StringIO object, assign it to obj_help_stringio and set as the target for stdout
     sys.stdout = classes_stringio = StringIO()
     gmat.ShowClasses()
     classes_str = classes_stringio.getvalue()  # Help() table text as a string
@@ -822,6 +883,60 @@ def get_gmat_classes():
 
     classes = list(filter(None, classes))  # filter out any empty strings
     return classes
+
+
+def get_gmat_objects_of_type(obj_type: str) -> list[str]:
+    """
+    Return GMAT's list of currently defined objects of a given type
+    :param obj_type:
+    :return:
+    """
+    # Intercept stdout as that's where gmat.Showcoord_syses goes to
+    old_stdout = sys.stdout  # take snapshot of current (normal) stdout
+    # create a StringIO object, assign it to objs_stringio and set as the target for stdout
+    sys.stdout = objs_stringio = StringIO()
+    gmat.ShowObjects(obj_type)
+    objs_str = objs_stringio.getvalue()  # ShowObjects() table text as a string
+
+    sys.stdout = old_stdout  # revert back to normal handling of stdout
+
+    rows = objs_str.split('\n')  # split the returned text into rows for easier parsing
+    data_rows = rows[2:]  # first two rows are always title and blank so remove them
+    coord_syses = [None] * len(data_rows)  # create a list to store the coord_syses
+    for index, row in enumerate(data_rows):
+        row = row[3:]  # remove indent
+        coord_syses[index] = row
+
+    coord_syses = list(filter(None, coord_syses))  # filter out any empty strings
+    return coord_syses
+
+
+def GetCoordSystems() -> list[str]:
+    """
+    Return GMAT's list of currently defined CoordinateSystems
+    :return:
+    """
+    return get_gmat_objects_of_type('CoordinateSystem')
+
+
+def GetCelestialBodies() -> list[str]:
+    return get_gmat_objects_of_type('CelestialBody')
+
+
+def GetSpacecraftObjs() -> list[str]:
+    return get_gmat_objects_of_type('Spacecraft')
+
+
+def GetLibrationPoints() -> list[str]:
+    return get_gmat_objects_of_type('LibrationPoint')
+
+
+def GetBarycenter() -> list[str]:
+    return get_gmat_objects_of_type('Barycenter')
+
+
+def GetGroundStation() -> list[str]:
+    return get_gmat_objects_of_type('GroundStation')
 
 
 def fields_for_gmat_base_gmat_command():
@@ -942,7 +1057,7 @@ def gmat_string_list_to_python_string_list(string_list: list[str], is_attr_list:
         chars_added = 0
         for i, char in enumerate(string):
             if char.isupper():
-                new_string = new_string[0:i+chars_added+1] + '_' + char.lower()
+                new_string = new_string[0:i + chars_added + 1] + '_' + char.lower()
                 chars_added += 1
             else:
                 new_string = new_string + char
@@ -960,3 +1075,13 @@ def py_str_to_gmat_str(string: str) -> str:
     string = string.title()  # set first letter of each word to upper case
     string = string.replace(' ', '')  # remove spaces
     return string
+
+
+def ls2str(py_list: list) -> str:
+    """
+    Convert a list to a string
+    :param py_list:
+    :return:
+    """
+    # return ', '.join(py_list)
+    return str(py_list)[1:-1]
