@@ -6,7 +6,7 @@ sat_params = {
     'Name': 'Servicer',
     'Orbit': {  # TODO: add other orbit params. Cartesian by default
         'coord_sys': 'EarthMJ2000Eq',
-        'state_type': 'Cartesian',
+        'StateType': 'Keplerian',
     },
     'DryMass': 100,  # kg
     'Hardware': {'Tanks': {'Chemical': [{'Name': 'ChemicalTank1'}],
@@ -83,6 +83,7 @@ sat_params = {
 # gmat.Clear()
 
 sat = gpy.Spacecraft.from_dict(sat_params)
+
 # sat.Help()
 
 # print(f"sat's thrusters: {sat.Thrusters}")
@@ -92,28 +93,9 @@ sat = gpy.Spacecraft.from_dict(sat_params)
 
 # sat.Help()
 
-fred = gmat.Construct('CoordinateSystem', 'Fred', 'Earth', 'MJ2000Eq')
-# gmat.ShowObjects('CoordinateSystem')
-# gmat.ShowObjects()
-
-# fred.Help()
-
-bob = gpy.OrbitState.CoordinateSystem('Bob', axes='MJ2000Eq')
-print(f'bob type: {type(bob).__name__}')
-# bob.Help()
-
 orbit_state = gpy.OrbitState(state_type='Keplerian')
 orbit_state.apply_to_spacecraft(sat)
 
-# sat.Help()
-
-# print(api.GetCelestialBodies())
-
-# gmat.Help('SolarSystemBarycenter')
-
-# sat_coord_sys: gpy.OrbitState.CoordinateSystem = sat.gmat_obj.GetRefObject(150, 'EarthMJ2000Eq')
-# # sat_coord_sys.Help()
-# print(sat_coord_sys)
-# print(type(sat_coord_sys).__name__)
-
 sat_coord_sys = gpy.OrbitState.CoordinateSystem.from_sat(sat)
+print(sat_coord_sys)
+# sat.Help()

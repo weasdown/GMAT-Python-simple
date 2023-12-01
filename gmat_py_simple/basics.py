@@ -80,3 +80,14 @@ class GmatObject:
         :return:
         """
         return self.gmat_obj.GetField(field)
+
+
+class HardwareItem(GmatObject):
+    def __init__(self, obj_type: str, name: str):
+        super().__init__(obj_type, name)
+
+    def __repr__(self):
+        return f'A piece of Hardware of type {self.obj_type} and name {self.name}'
+
+    def IsInitialized(self):
+        self.gmat_obj.IsInitialized()

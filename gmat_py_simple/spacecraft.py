@@ -1,31 +1,13 @@
 from __future__ import annotations
 
 from load_gmat import gmat
+from . import HardwareItem
 
 from .basics import GmatObject
 from .utils import *
 
 from typing import Union
 import logging
-
-
-class HardwareItem(GmatObject):
-    def __init__(self, obj_type: str, name: str):
-        super().__init__(obj_type, name)
-
-    def __repr__(self):
-        return f'A piece of Hardware of type {self.obj_type} and name {self.name}'
-
-    # @property
-    # def Name(self) -> str:
-    #     return self.Name
-    #
-    # @Name.setter
-    # def Name(self, name: str):
-    #     self.Name = name
-
-    def IsInitialized(self):
-        self.gmat_obj.IsInitialized()
 
 
 class OrbitState:
@@ -44,35 +26,32 @@ class OrbitState:
             self._allowed_values['Primary'] = self._allowed_values['Origin']
 
             self._name = name
+            self._origin = None
+            self._axes = None
+            self._central_body = None
 
-            # assume axes is in kwargs
-            try:
-                axes = kwargs['axes']
-                if axes in self._allowed_values['Axes']:
-                    self.axes = axes
-                else:
-                    raise AttributeError(f'Invalid axes parameter provided - {axes}\n'
-                                         f'Must provide one of: {self._allowed_values["Axes"]}')
-            except KeyError:  # not in kwargs
-                self.axes = 'MJ2000Eq'  # default value
+            defaults = {'axes': 'MJ2000Eq', 'central_body': 'Earth', 'origin': 'Earth'}
+            for attr in list(defaults.keys()):
+                try:  # assume attr is in kwargs
+                    val = kwargs[attr]
+                    valid_values = self._allowed_values[attr]
+                    if val in valid_values:
+                        setattr(self, f'_{attr}', val)
+                    else:
+                        raise AttributeError(f'Invalid {attr} parameter provided - {val}\n'
+                                             f'Must provide one of: {valid_values}')
+                except KeyError:  # not in kwargs
+                    setattr(self, f'_{attr}', defaults[attr])  # set attribute's default value
 
-            # assume central_body is in kwargs
-            try:
-                central_body = kwargs['central_body']
-                if central_body in self._allowed_values['CentralBody']:
-                    self.central_body = central_body
-                else:
-                    raise AttributeError(f'Invalid central_body parameter provided - {central_body}\n'
-                                         f'Must provide one of: {self._allowed_values["CentralBody"]}')
-            except KeyError:  # not in kwargs
-                self.central_body = 'Earth'  # use default
-
-            gmat_obj = gmat.Construct('CoordinateSystem', self._name, self.central_body, self.axes)
-            print(f'cs go type: {type(gmat_obj)}')
-            self.gmat_obj = GmatObject.from_gmat_obj(gmat_obj)
+            if 'no_gmat_object' not in kwargs:
+                gmat_obj = gmat.Construct('CoordinateSystem', self._name, self._central_body, self._axes)
+                self.gmat_obj = GmatObject.from_gmat_obj(gmat_obj)
 
             # TODO parse Origin parameter
-            print(f'Currently allowed Origin values:\n{self._allowed_values["Origin"]}')
+            # print(f'Currently allowed Origin values:\n{self._allowed_values["Origin"]}')
+
+        def __repr__(self):
+            return f'A CoordinateSystem with origin {self._origin} and axes {self._axes}'
 
         @staticmethod
         def Construct(name: str, central_body: str, axes: str):
@@ -80,8 +59,11 @@ class OrbitState:
 
         @classmethod
         def from_sat(cls, sc: Spacecraft) -> OrbitState.CoordinateSystem:
-            gmat_obj = sc.gmat_obj.GetRefObject(150, sc.gmat_obj.GetRefObjectName(150))
-            coord_sys = cls(name=gmat_obj.GetName())
+            name = sc.gmat_obj.GetRefObjectName(gmat.COORDINATE_SYSTEM)
+            sc_cs_gmat_obj = sc.gmat_obj.GetRefObject(150, name)
+            origin = sc_cs_gmat_obj.GetField('Origin')
+            axes = sc_cs_gmat_obj.GetField('Axes')
+            coord_sys = cls(name=name, origin=origin, axes=axes, no_gmat_object=True)
             return coord_sys
 
         @property
@@ -94,12 +76,6 @@ class OrbitState:
             self._name = name
             self.gmat_obj.SetName(name)
             print(f'New name in GMAT: {self.gmat_obj.GetName()}')
-
-    class Epoch:
-        def __init__(self, epoch_format: str, epoch: str):
-            self._allowed_types = {'EpochFormat': ['int', 'str']}
-            self.format = epoch_format
-            self.epoch = epoch
 
     def __init__(self, **kwargs):
         self._allowed_state_elements = {
@@ -127,7 +103,7 @@ class OrbitState:
         # TODO complete self._allowed_values - see pg 599 of GMAT User Guide (currently missing Planetodetic)
         self._allowed_values = {'display_state_type': self._allowed_state_elements.keys(),
                                 # TODO: get names of any other user-defined coordinate systems and add to allowlist
-                                'coord_sys': GetCoordSystems(),
+                                'coord_sys': CoordSystems(),
                                 # TODO: define valid state_type values - using display_state_type ones for now
                                 'state_type': self._allowed_state_elements,
                                 }
@@ -150,23 +126,29 @@ class OrbitState:
                              'DisplayStateType': {}
                              }
 
-        self._key_params = ['_epoch', '_state_type', '_display_state_type', '_coord_sys', '_sc']
+        self._key_param_defaults = {'date_format': 'TAIModJulian', 'epoch': str(21545), 'coord_sys': 'EarthMJ2000Eq',
+                                    'state_type': 'Cartesian', 'display_state_type': 'Cartesian', 'sc': None}
 
+        fields_remaining: list[str] = list(self._key_param_defaults.keys())
+
+        # use Cartesian as default StateType
         if 'state_type' not in kwargs:
-            raise SyntaxError('state_type not found when creating OrbitState object')
+            self._state_type = 'Cartesian'
         else:  # state_type is specified but may not be valid
             if kwargs['state_type'] not in self._allowed_state_elements.keys():  # invalid state_type given
                 raise SyntaxError(f'Invalid state_type parameter given: {kwargs["state_type"]}\n'
                                   f'Valid values are: {self._allowed_state_elements.keys()}')
             else:
                 self._state_type = kwargs['state_type']
+        fields_remaining.remove('state_type')
 
         # Set key parameters to value in kwargs, or None if not specified
-        for param in self._key_params:
-            if param[1:] in kwargs:  # arguments must be without leading underscores
-                setattr(self, param, kwargs[param[1:]])
+        # TODO: add validity checking of other kwargs against StateType
+        for param in fields_remaining:
+            if param in kwargs:  # arguments must be without leading underscores
+                setattr(self, f'_{param}', kwargs[param])
             else:
-                setattr(self, param, None)
+                setattr(self, f'_{param}', self._key_param_defaults[param])
 
     def apply_to_spacecraft(self, sc: Spacecraft):
         """
@@ -181,14 +163,15 @@ class OrbitState:
         instance_attrs = self.__dict__.copy()  # get a copy of the instance's current attributes
 
         # remove attributes that are just for internal class use and shouldn't be applied to a spacecraft
-        for attr in ('_allowed_state_elements', '_allowed_values', '_gmat_fields', '_key_params', '_sc'):
+        for attr in ('_allowed_state_elements', '_allowed_values', '_gmat_fields', '_key_param_defaults', '_sc'):
             instance_attrs.pop(attr)
 
         attrs_to_set.extend(list(instance_attrs))
 
         # extend attrs_to_set with the elements corresponding to the current state_type
         try:  # state_type is recognized
-            attrs_to_set.extend(self._allowed_state_elements[self._state_type])
+            elements_for_given_state_type = self._allowed_state_elements[self._state_type]
+            attrs_to_set.extend(elements_for_given_state_type)
         except KeyError:  # state_type attribute invalid
             raise AttributeError(f'Invalid state_type set as attribute: {self._state_type}')
 
@@ -196,6 +179,8 @@ class OrbitState:
             try:
                 gmat_attr = py_str_to_gmat_str(attr)
                 val = getattr(self, attr)
+                if gmat_attr == 'CoordSys':
+                    gmat_attr = 'CoordinateSystem'
                 if val is not None:
                     sc.SetField(gmat_attr, val)
                 raise AttributeError
@@ -205,13 +190,19 @@ class OrbitState:
 
     @classmethod
     def from_dict(cls, orbit_dict: dict, sc: Spacecraft = None) -> OrbitState:
-        o_s: OrbitState = cls(sc=sc)  # create OrbitState object, with sc attr set to None by default
-        for attr in o_s._key_params:  # initialize other key attrs to None
-            setattr(o_s, attr, None)
+        if 'StateType' not in orbit_dict.keys():
+            raise KeyError(f"Required parameter 'StateType' was not found in OrbitState.from_dict")
+        else:
+            state_type = orbit_dict['StateType']  # extract state_type from dict (required)
+        orbit_dict.pop('StateType')  # remove StateType so we don't try setting it again later
 
-        o_s._allowed_values['coord_sys'] = GetCoordSystems()
+        o_s: OrbitState = cls(sc=sc, state_type=state_type)  # create OrbitState object, with sc set as None by default
+        o_s._allowed_values['coord_sys'] = CoordSystems()
 
         # TODO parse orbit params in orbit_dict
+
+        for attr in orbit_dict:  # initialize other key attrs to None
+            setattr(o_s, f'_{attr}', orbit_dict[attr])
 
         return o_s
 
@@ -384,6 +375,8 @@ class Spacecraft(HardwareItem):
         self._Tanks: Spacecraft.SpacecraftHardware.PropList | None = None
         self._Thrusters: Spacecraft.SpacecraftHardware.PropList | None = None
 
+        self._orbit = None
+
         # TODO: replace below with method/loop that extracts all params from GMAT object once initialised
         self.dry_mass = self.GetField('DryMass')
 
@@ -391,24 +384,38 @@ class Spacecraft(HardwareItem):
         return f'Spacecraft with name {self.name}'
 
     @classmethod
-    def from_dict(cls, specs_dict):
+    def from_dict(cls, specs_dict: dict):
         # Get spacecraft name
         try:
             name = specs_dict['Name']
         except KeyError:
             raise SyntaxError('Spacecraft name required')
 
-        sc = cls(name)
+        sc = cls(name)  # create an instance of the Spacecraft class
 
         # Get spacecraft hardware specs
         try:
             hardware = specs_dict['Hardware']
         except KeyError:
-            print('No hardware parameters specified in Spacecraft dictionary - none will be built')
+            logging.warning('No hardware parameters specified in Spacecraft dictionary - none will be built')
             hardware = {}
 
         hardware_obj = Spacecraft.SpacecraftHardware.from_dict(hardware, sc)
-        sc.Hardware = sc.add_hardware(hardware_obj)
+        sc.Hardware = sc.update_hardware(hardware_obj)
+
+        # represent sc's orbit with an OrbitState, with Cartesian as the default state_type
+        try:
+            orbit = specs_dict['Orbit']
+        except KeyError:
+            logging.warning('No hardware parameters specified in Spacecraft dictionary - none will be built')
+            orbit = {}
+
+        if not orbit:  # orbit dict is empty
+            sc.orbit = OrbitState()
+        else:
+            sc.orbit = OrbitState.from_dict(orbit)
+
+        sc.orbit.apply_to_spacecraft(sc)
 
         gmat.Initialize()
 
@@ -443,7 +450,7 @@ class Spacecraft(HardwareItem):
 
         return sc
 
-    def add_hardware(self, hardware: SpacecraftHardware):
+    def update_hardware(self, hardware: SpacecraftHardware):
         self.Hardware = hardware
 
         # Attach thrusters and tanks to the Spacecraft
@@ -470,6 +477,10 @@ class Spacecraft(HardwareItem):
             tank.attach_to_sat(self)
 
         return self.Hardware
+
+    def update_orbit(self, orbit: OrbitState):
+        self.orbit = orbit
+        pass
 
     @property
     def Thrusters(self):

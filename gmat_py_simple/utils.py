@@ -98,7 +98,7 @@ def get_gmat_objects_of_type(obj_type: str) -> list[str]:
     return coord_syses
 
 
-def GetCoordSystems() -> list[str]:
+def CoordSystems() -> list[str]:
     """
     Return GMAT's list of currently defined CoordinateSystems
     :return:
