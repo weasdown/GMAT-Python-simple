@@ -1,14 +1,7 @@
-import os
-from typing import Union
-
 from load_gmat import gmat
-import gmat_api_simple as api
-import sys
 
-# TODO consider making enum that defines valid fields so they can be used in sat_params
-#  e.g. {DRYMASS = 100}
+import gmat_py_simple as gpy
 
-# TODO add parameter parsing to Spacecraft class
 sat_params = {
     'Name': 'Servicer',
     'Orbit': {  # TODO: add other orbit params. Cartesian by default
@@ -31,20 +24,6 @@ sat_params = {
 # gmat.Initialize()
 # sat.Help()
 
-# ep_tank = api.ElectricTank('EP_Tank', sat)
-# print(ep_tank)
-
-# ep_thruster = api.ElectricThruster('EP_Thruster', sat, ep_tank)
-# print(ep_thruster)
-
-# gmat.ShowObjects()
-# sat.Help()
-
-# gmat.Initialize()
-# ep_thruster.IsInitialized()
-#
-# ep_thruster.mix_ratio = [1]
-#
 # burn = api.FiniteBurn('FiniteBurn1', sat, ep_thruster)
 # finite_thrust = api.FiniteThrust('FiniteThrust1', sat, burn)
 
@@ -103,7 +82,7 @@ sat_params = {
 # cp_thruster.Help()
 # gmat.Clear()
 
-sat = api.Spacecraft.from_dict(sat_params)
+sat = gpy.Spacecraft.from_dict(sat_params)
 # sat.Help()
 
 # print(f"sat's thrusters: {sat.Thrusters}")
@@ -119,14 +98,22 @@ fred = gmat.Construct('CoordinateSystem', 'Fred', 'Earth', 'MJ2000Eq')
 
 # fred.Help()
 
-bob = api.OrbitState.CoordinateSystem('Bob', 'MJ2000Eq')
+bob = gpy.OrbitState.CoordinateSystem('Bob', axes='MJ2000Eq')
+print(f'bob type: {type(bob).__name__}')
 # bob.Help()
 
-orbit_state = api.OrbitState(state_type='Keplerian')
+orbit_state = gpy.OrbitState(state_type='Keplerian')
 orbit_state.apply_to_spacecraft(sat)
 
 # sat.Help()
 
-print(api.GetCelestialBodies())
+# print(api.GetCelestialBodies())
 
 # gmat.Help('SolarSystemBarycenter')
+
+# sat_coord_sys: gpy.OrbitState.CoordinateSystem = sat.gmat_obj.GetRefObject(150, 'EarthMJ2000Eq')
+# # sat_coord_sys.Help()
+# print(sat_coord_sys)
+# print(type(sat_coord_sys).__name__)
+
+sat_coord_sys = gpy.OrbitState.CoordinateSystem.from_sat(sat)
