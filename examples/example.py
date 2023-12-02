@@ -16,14 +16,6 @@ sat_params = {
                  }
 }
 
-# sat = api.Spacecraft.from_dict(sat_params)
-# sat = api.Spacecraft(sat_params['name'])
-# sat = Spacecraft.from_dict(sat_params)
-# print(f'sat specs:\n{json.dumps(sat.specs, indent=4)}')
-# print(f'sat orbit specs: {sat.specs["orbit"]}')
-# gmat.Initialize()
-# sat.Help()
-
 # burn = api.FiniteBurn('FiniteBurn1', sat, ep_thruster)
 # finite_thrust = api.FiniteThrust('FiniteThrust1', sat, burn)
 

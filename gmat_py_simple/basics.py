@@ -8,7 +8,7 @@ prop_types = ['Chemical', 'Electric']
 
 
 class GmatObject:
-    def __init__(self, obj_type: str, name: str, *args):
+    def __init__(self, obj_type: str, name: str):
         self.obj_type = obj_type
         self.name = name
         self.gmat_obj = gmat.Construct(self.obj_type, self.name)

@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 from load_gmat import gmat
-from . import HardwareItem
 
-from .basics import GmatObject
+from .basics import *
 from .utils import *
 
 from typing import Union
