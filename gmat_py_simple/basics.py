@@ -4,8 +4,6 @@ from load_gmat import gmat
 
 from typing import Union
 
-prop_types = ['Chemical', 'Electric']
-
 
 class GmatObject:
     def __init__(self, obj_type: str, name: str):
@@ -80,6 +78,12 @@ class GmatObject:
         :return:
         """
         return self.gmat_obj.GetField(field)
+
+    def SetOnOffParameter(self, field: str, OnOff: str):
+        if (OnOff == 'On') or (OnOff == 'Off'):
+            self.gmat_obj.SetOnOffParameter(field, OnOff)
+        else:
+            raise SyntaxError(f'Invalid argument OnOff - {OnOff} - must be "On" or "Off"')
 
 
 class HardwareItem(GmatObject):

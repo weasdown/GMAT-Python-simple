@@ -74,7 +74,7 @@ sat_params = {
 # cp_thruster.Help()
 # gmat.Clear()
 
-sat = gpy.Spacecraft.from_dict(sat_params)
+# sat = gpy.Spacecraft.from_dict(sat_params)
 
 # sat.Help()
 
@@ -85,9 +85,23 @@ sat = gpy.Spacecraft.from_dict(sat_params)
 
 # sat.Help()
 
-orbit_state = gpy.OrbitState(state_type='Keplerian')
-orbit_state.apply_to_spacecraft(sat)
-
-sat_coord_sys = gpy.OrbitState.CoordinateSystem.from_sat(sat)
-print(sat_coord_sys)
+# orbit_state = gpy.OrbitState(state_type='Keplerian')
+# orbit_state.apply_to_spacecraft(sat)
+#
+# sat_coord_sys = gpy.OrbitState.CoordinateSystem.from_sat(sat)
+# print(sat_coord_sys)
 # sat.Help()
+
+gmat_fm = gmat.Construct('ODEModel', 'GMAT_FM')
+# gmat_srp = gmat.Construct('SolarRadiationPressure', 'srp')
+
+# gmat.ShowObjects()
+# gmat_srp.Help()
+
+fm = gpy.ForceModel()
+fm.Help()
+
+df = gmat.Construct('DragForce', 'df')
+df.Help()
+
+# fm.AddForce(gpy.ForceModel.DragForce(fm))
