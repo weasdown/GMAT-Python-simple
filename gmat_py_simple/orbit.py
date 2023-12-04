@@ -2,8 +2,12 @@ from __future__ import annotations
 
 from load_gmat import gmat
 
+from gmat_py_simple import basics, utils
+# CelestialBodies, SpacecraftObjs, LibrationPoints, Barycenter, GroundStations, GmatObject, \
+#     Spacecraft, CoordSystems, py_str_to_gmat_str, gmat_str_to_py_str
 from gmat_py_simple.basics import GmatObject
-from gmat_py_simple.spacecraft import Spacecraft
+import gmat_py_simple.spacecraft as spc
+from gmat_py_simple.utils import *
 
 
 class AtmosphereModel(GmatObject):
@@ -218,7 +222,7 @@ class PropSetup(GmatObject):  # variable called prop in GMAT Python examples
         self.SetReference(self.gator)
         self.SetReference(self.force_model)
 
-    def AddPropObject(self, sc: Spacecraft):
+    def AddPropObject(self, sc: spc.Spacecraft):
         self.gmat_obj.AddPropObject(sc.gmat_obj)
 
     def PrepareInternals(self):
@@ -229,3 +233,208 @@ class PropSetup(GmatObject):  # variable called prop in GMAT Python examples
 
     def GetState(self):
         return self.gator.GetState()
+
+
+class OrbitState:
+    class CoordinateSystem:
+        # TODO consider setting __init__ params mostly as kwargs
+        def __init__(self, name: str, **kwargs):
+            # TODO complete allowed values - see User Guide pages 335-339 (PDF pg 344-348)
+            self._allowed_values = {'Axes': ['MJ2000Eq', 'MJ2000Ec', 'ICRF',
+                                             'MODEq', 'MODEc', 'TODEq', 'TODEc', 'MOEEq', 'MOEEc', 'TOEEq', 'TOEEc',
+                                             'ObjectReferenced', 'Equator', 'BodyFixed', 'BodyInertial',
+                                             'GSE', 'GSM', 'Topocentric', 'BodySpinSun'],
+                                    'CentralBody': CelestialBodies(),
+                                    'Origin': [CelestialBodies() + SpacecraftObjs() + LibrationPoints() + Barycenter() +
+                                               GroundStations()],
+                                    }
+            self._allowed_values['Primary'] = self._allowed_values['Origin']
+
+            self._name = name
+            self._origin = None
+            self._axes = None
+            self._central_body = None
+
+            defaults = {'axes': 'MJ2000Eq', 'central_body': 'Earth', 'origin': 'Earth'}
+            for attr in list(defaults.keys()):
+                try:  # assume attr is in kwargs
+                    val = kwargs[attr]
+                    valid_values = self._allowed_values[attr]
+                    if val in valid_values:
+                        setattr(self, f'_{attr}', val)
+                    else:
+                        raise AttributeError(f'Invalid {attr} parameter provided - {val}\n'
+                                             f'Must provide one of: {valid_values}')
+                except KeyError:  # not in kwargs
+                    setattr(self, f'_{attr}', defaults[attr])  # set attribute's default value
+
+            if 'no_gmat_object' not in kwargs:
+                gmat_obj = gmat.Construct('CoordinateSystem', self._name, self._central_body, self._axes)
+                self.gmat_obj = GmatObject.from_gmat_obj(gmat_obj)
+
+            # TODO parse Origin parameter
+            # print(f'Currently allowed Origin values:\n{self._allowed_values["Origin"]}')
+
+        def __repr__(self):
+            return f'A CoordinateSystem with origin {self._origin} and axes {self._axes}'
+
+        @staticmethod
+        def Construct(name: str, central_body: str, axes: str):
+            return gmat.Construct('CoordinateSystem', name, central_body, axes)
+
+        @classmethod
+        def from_sat(cls, sc: spc.Spacecraft) -> OrbitState.CoordinateSystem:
+            name = sc.gmat_obj.GetRefObjectName(gmat.COORDINATE_SYSTEM)
+            sc_cs_gmat_obj = sc.gmat_obj.GetRefObject(150, name)
+            origin = sc_cs_gmat_obj.GetField('Origin')
+            axes = sc_cs_gmat_obj.GetField('Axes')
+            coord_sys = cls(name=name, origin=origin, axes=axes, no_gmat_object=True)
+            return coord_sys
+
+        @property
+        def name(self) -> str:
+            name = getattr(self, '_name', self.gmat_obj.GetName())
+            return name
+
+        @name.setter
+        def name(self, name):
+            self._name = name
+            self.gmat_obj.SetName(name)
+            print(f'New name in GMAT: {self.gmat_obj.GetName()}')
+
+    def __init__(self, **kwargs):
+        self._allowed_state_elements = {
+            'Cartesian': {'X', 'Y', 'Z', 'VX', 'VY', 'VZ'},
+            'Keplerian': {'SMA', 'ECC', 'INC', 'RAAN', 'AOP', 'TA'},
+            'ModifiedKeplerian': {'RadApo', 'RadPer', 'INC', 'RAAN', 'AOP', 'TA'},
+            'SphericalAZFPA': {'RMAG', 'RA', 'DEC', 'VMAG', 'AZI', 'FPA'},
+            'SphericalRADEC': {'RMAG', 'RA', 'DEC', 'VMAG', 'RAV', 'DECV'},
+            'Equinoctial': {'SMA', 'EquinoctialH', 'EquinoctialK',
+                            'EquinoctialP', 'EquinoctialQ', 'MLONG'},
+            'ModifiedEquinoctial': {'SemilatusRectum', 'ModEquinoctialF', 'ModEquinoctialG',
+                                    'ModEquinoctialH', 'ModEquinoctialH', 'TLONG'},
+            'AlternativeEquinoctial': {'SMA', 'EquinoctialH', 'EquinoctialK',
+                                       'AltEquinoctialP', 'AltEquinoctialQ', 'MLONG'},
+            'Delaunay': {'Delaunayl', 'Delaunayg', 'Delaunayh', 'DelaunayL', 'DelaunayG', 'DelaunayH'},
+            'OutgoingAsymptote': {'OutgoingRadPer', 'OutgoingC3Energy', 'OutgoingRHA',
+                                  'OutgoingDHA', 'OutgoingBVAZI', 'TA'},
+            'IncomingAsymptote': {'IncomingRadPer', 'IncomingC3Energy', 'IncomingRHA',
+                                  'IncomingDHA', 'IncomingBVAZI', 'TA'},
+            'BrouwerMeanShort': {'BrouwerShortSMA', 'BrouwerShortECC', 'BrouwerShortINC',
+                                 'BrouwerShortRAAN', 'BrouwerShortAOP', 'BrouwerShortMA'},
+            'BrouwerMeanLong': {'BrouwerLongSMA', 'BrouwerLongECC', 'BrouwerLongINC',
+                                'BrouwerLongRAAN', 'BrouwerLongAOP', 'BrouwerLongMA'}
+        }
+        # TODO complete self._allowed_values - see pg 599 of GMAT User Guide (currently missing Planetodetic)
+        self._allowed_values = {'display_state_type': list(self._allowed_state_elements.keys()),
+                                # TODO: get names of any other user-defined coordinate systems and add to allowlist
+                                'coord_sys': CoordSystems(),
+                                # TODO: define valid state_type values - using display_state_type ones for now
+                                'state_type': list(self._allowed_state_elements.keys()),
+                                }
+
+        # TODO complete this list
+        self._gmat_fields = {'EpochFormat': {'A1ModJulian',
+                                             'TAIModJulian',
+                                             'UTCModJulian',
+                                             'TDBModJulian',
+                                             'TTModJulian',
+                                             'A1Gregorian',
+                                             'TAIGregorian',
+                                             'UTCGregorian',
+                                             'TDBGregorian',
+                                             'TTGregorian'},
+                             'Epoch': type(int),
+                             # 'CoordinateSystem' will also include user-defined ones
+                             'CoordinateSystem': {'EarthMJ2000Eq', 'EarthMJ2000Ec', 'EarthFixed', 'EarthICRF'},
+                             'StateType': {},
+                             'DisplayStateType': {}
+                             }
+
+        self._key_param_defaults = {'date_format': 'TAIModJulian', 'epoch': str(21545), 'coord_sys': 'EarthMJ2000Eq',
+                                    'state_type': 'Cartesian', 'sc': None}
+
+        fields_remaining: list[str] = list(self._key_param_defaults.keys())
+
+        # use Cartesian as default StateType
+        if 'state_type' not in kwargs:
+            self._state_type = 'Cartesian'
+        else:  # state_type is specified but may not be valid
+            if kwargs['state_type'] not in list(self._allowed_state_elements.keys()):  # invalid state_type was given
+                raise SyntaxError(f'Invalid state_type parameter given: {kwargs["state_type"]}\n'
+                                  f'Valid values are: {self._allowed_state_elements.keys()}')
+            else:
+                self._state_type = kwargs['state_type']
+            fields_remaining.remove('state_type')
+
+        # Set key parameters to value in kwargs, or None if not specified
+        # TODO: add validity checking of other kwargs against StateType
+        for param in fields_remaining:
+            if param in kwargs:  # arguments must be without leading underscores
+                setattr(self, f'_{param}', kwargs[param])
+            else:
+                setattr(self, f'_{param}', self._key_param_defaults[param])
+
+    def apply_to_spacecraft(self, sc: spc.Spacecraft):
+        """
+        Apply the properties of this OrbitState to a spacecraft.
+
+        :param sc:
+        :return:
+        """
+
+        attrs_to_set = []
+        # Find out which class attributes are set and apply all of them to the spacecraft
+        instance_attrs = self.__dict__.copy()  # get a copy of the instance's current attributes
+
+        # remove attributes that are just for internal class use and shouldn't be applied to a spacecraft
+        for attr in ('_allowed_state_elements', '_allowed_values', '_gmat_fields', '_key_param_defaults', '_sc'):
+            instance_attrs.pop(attr)
+
+        attrs_to_set.extend(list(instance_attrs))
+
+        # extend attrs_to_set with the elements corresponding to the current state_type
+        try:  # state_type is recognized
+            elements_for_given_state_type = self._allowed_state_elements[self._state_type]
+            attrs_to_set.extend(elements_for_given_state_type)
+        except KeyError:  # state_type attribute invalid
+            raise AttributeError(f'Invalid state_type set as attribute: {self._state_type}')
+
+        for attr in attrs_to_set:
+            try:
+                # TODO bugfix: setting element e.g. ECC to 'Cartesian'
+                # TODO bugfix: setting DisplayStateType to 'Cartesian'
+                gmat_attr = py_str_to_gmat_str(attr)
+                val = getattr(self, attr)
+                if gmat_attr == 'CoordSys':
+                    gmat_attr = 'CoordinateSystem'
+                if val is not None:
+                    if (gmat_attr == 'Epoch') and (not isinstance(val, str)):
+                        val = str(val)
+                    sc.SetField(gmat_attr, val)
+                raise AttributeError
+            except AttributeError:
+                # print(f'No value set for attr {attr} - skipping')
+                pass
+
+    @classmethod
+    def from_dict(cls, orbit_dict: dict, sc: spc.Spacecraft = None) -> OrbitState:
+        o_s: OrbitState = cls()  # create OrbitState object, with sc set as None by default
+
+        try:
+            o_s._state_type = orbit_dict['StateType']  # extract state_type from dict (required)
+        except KeyError:
+            raise KeyError(f"Required parameter 'StateType' was not found in OrbitState.from_dict")
+
+        orbit_dict.pop('StateType')  # remove StateType so we don't try setting it again later
+
+        o_s._allowed_values['coord_sys'] = CoordSystems()
+
+        # TODO parse orbit params in orbit_dict
+
+        for attr in orbit_dict:  # initialize other key attrs to None
+            if attr[0].islower():
+                raise SyntaxError(f'Invalid attribute found - {attr}. Must be in GMAT string format')
+            setattr(o_s, gmat_str_to_py_str(attr, True), orbit_dict[attr])
+
+        return o_s

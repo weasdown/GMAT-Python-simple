@@ -7,12 +7,23 @@ import gmat_py_simple as gpy
 sat_params = {
     'Name': 'DefaultSat',
     'Orbit': {
-        'coord_sys': 'EarthMJ2000Eq',
+        'Epoch': '22 Jul 2014 11:29:10.811',
+        'DateFormat': 'UTCGregorian',
+        'CoordSys': 'EarthMJ2000Eq',
         'StateType': 'Keplerian',
+        'SMA': 83474.31800000001,
+        'ECC': 0.89652,
+        'INC': 12.4606,
+        'RAAN': 292.8362,
+        'AOP': 218.9805,
+        'TA': 180,
     },
-    'Hardware': {}
 }
 sat = gpy.Spacecraft.from_dict(sat_params)
 
+sat.Help()
+
 default_prop = gpy.PropSetup('DefaultProp', gator=gpy.PropSetup.Propagator('RungeKutta89'))
-gpy.Propagate(sat, 'ElapsedSecs', 12000, propagator=default_prop)
+gpy.Propagate(default_prop, sat, 'ElapsedSecs', 12000)
+
+# sat.Help()

@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from gmat_py_simple.spacecraft import Spacecraft, ElectricThruster
+import gmat_py_simple.spacecraft as sc
 from gmat_py_simple.basics import GmatObject
 
 from load_gmat import gmat
 
 
 class FiniteBurn(GmatObject):
-    def __init__(self, name, sc_to_manoeuvre: Spacecraft, thruster: ElectricThruster):
+    def __init__(self, name, sc_to_manoeuvre: sc.Spacecraft, thruster: sc.ElectricThruster):
         # TODO generic: convert thruster type to Thruster once class created
         super().__init__('FiniteBurn', name)
         self.Name = name
@@ -29,7 +29,7 @@ class FiniteBurn(GmatObject):
 
 
 class FiniteThrust(GmatObject):  # TODO tidy: consider making subclass of FiniteBurn
-    def __init__(self, name: str, spacecraft: Spacecraft, finite_burn: FiniteBurn):
+    def __init__(self, name: str, spacecraft: sc.Spacecraft, finite_burn: FiniteBurn):
         super().__init__('FiniteThrust', name)
         self.Name = name
         self.GmatObj = gmat.FiniteThrust(name)
