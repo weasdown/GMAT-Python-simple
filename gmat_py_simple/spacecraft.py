@@ -602,6 +602,10 @@ class Spacecraft(HardwareItem):
         sc_orbit = OrbitState(**kwargs)  # TODO syntax: need to include sc arg in kwargs
         # coord_sys=self._coord_sys)
 
+    # propagation stop conditions
+    # def ElapsedSecs(self) -> orbit.PropSetup.:
+    #     return 'ElapsedSecs'
+
 
 class Tank(HardwareItem):
     def __init__(self, tank_type: str, name: str):

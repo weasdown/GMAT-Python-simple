@@ -3,7 +3,7 @@ from load_gmat import gmat
 import gmat_py_simple as gpy
 
 sat_params = {
-    'Name': 'Servicer',
+    'Name': 'DefaultSC',
     'Orbit': {
         'coord_sys': 'EarthMJ2000Eq',
         'StateType': 'Keplerian',
@@ -18,6 +18,7 @@ sat_params = {
 sat = gpy.Spacecraft.from_dict(sat_params)
 
 default_prop = gpy.PropSetup('DefaultProp', gator=gpy.PropSetup.Propagator('RungeKutta89'))
-gpy.Propagate(sat, 'ElapsedSecs', 12000, propagator=default_prop)
+gpy.Propagate(default_prop, sat, 'ElapsedSecs', 12000)
 
 sat.Help()
+gmat.ShowObjects('Spacecraft')
