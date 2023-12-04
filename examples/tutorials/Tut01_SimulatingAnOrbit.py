@@ -2,6 +2,8 @@ from load_gmat import gmat
 
 import gmat_py_simple as gpy
 
+# TODO !!! this currently simulates the default mission rather than the relevant tutorial
+
 sat_params = {
     'Name': 'DefaultSat',
     'Orbit': {
