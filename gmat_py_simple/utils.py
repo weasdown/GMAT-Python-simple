@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from load_gmat import gmat
 
 import sys
@@ -278,3 +280,18 @@ def ls2str(py_list: list) -> str:
     """
     # return ', '.join(py_list)
     return str(py_list)[1:-1]
+
+
+def rvector6_to_list(rv6) -> list[float | int]:
+    rv6_str: str = str(rv6)
+    list_str = rv6_str.split(' ')
+    ele_strs = [string for string in list_str if string != '']  # remove all the empty strings
+    eles_list: list[None | float | int] = [None] * 6
+    for index, ele in enumerate(ele_strs):
+        try:
+            num = float(ele)  # convert string to float
+        except ValueError:  # number is likely an int
+            num = int(ele)  # convert string to int
+        eles_list[index] = num
+
+    return eles_list

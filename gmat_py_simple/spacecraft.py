@@ -471,14 +471,10 @@ class Spacecraft(HardwareItem):
         return self.gmat_obj.GetState().GetState()
 
     def GetKeplerianState(self):
-        kep_str: str = str(self.gmat_obj.GetKeplerianState())  # get Keplerian state as string instead of Rvector6
-        kep_list: list[float] = list(map(float, kep_str.split(' ')))  # convert to list of floats
-        return kep_list
+        return rvector6_to_list(self.gmat_obj.GetKeplerianState())
 
     def GetCartesianState(self):
-        cart_str: str = str(self.gmat_obj.GetCartesianState())  # get Cartesian state as string instead of Rvector6
-        cart_list: list[float] = list(map(float, cart_str.split(' ')))  # convert to list of floats
-        return cart_list
+        return rvector6_to_list(self.gmat_obj.GetCartesianState())
 
     @property
     def Thrusters(self):

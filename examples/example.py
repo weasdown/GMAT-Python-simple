@@ -10,6 +10,7 @@ sat_params = {
         'CoordSys': 'EarthMJ2000Eq',
         'Epoch': '21545',
         'StateType': 'Keplerian',
+        'SMA': 7178
     },
     'DryMass': 100,  # kg
     'Hardware': {'Tanks': {'Chemical': [{'Name': 'ChemicalTank1'}],
