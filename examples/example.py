@@ -1,3 +1,5 @@
+import sys
+
 from load_gmat import gmat
 
 import gmat_py_simple as gpy
@@ -21,4 +23,9 @@ default_prop = gpy.PropSetup('DefaultProp', gator=gpy.PropSetup.Propagator('Rung
 gpy.Propagate(default_prop, sat, 'ElapsedSecs', 12000)
 
 sat.Help()
-gmat.ShowObjects('Spacecraft')
+
+try:
+    assert (sat.GetField('StateType') == 'Keplerian')
+except AssertionError:
+    print('FAILED')
+    sys.exit('000')

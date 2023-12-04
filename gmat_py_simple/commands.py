@@ -54,12 +54,14 @@ def Propagate(propagator: PropSetup, sc: Spacecraft, stop_param: str, stop_value
     else:
         raise NotImplementedError
 
+    # TODO use direction
     if direction == 'Forwards':
         direction = 1
     elif direction == 'Backwards':
         direction = -1
     else:
         raise SyntaxError('Invalid direction given - accepts only "Forwards" or "Backwards"')
+    propagator.gator.Help()
 
     propagator.AddPropObject(sc)  # add the spacecraft to the PropSetup (and hence Propagator)
     propagator.PrepareInternals()

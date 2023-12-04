@@ -232,36 +232,42 @@ def list_to_gmat_field_string(data_list: list) -> str:
     return string
 
 
-def python_string_list_to_gmat_string_list(string_list: list[str]) -> list[str]:
-    for index, string in enumerate(string_list):
-        string_list[index] = py_str_to_gmat_str(string)  # convert each string and put it back in the list
-    return string_list
-
-
-def gmat_string_list_to_python_string_list(string_list: list[str], is_attr_list: bool = False) -> list[str]:
-    for index, string in enumerate(string_list):
-        new_string = ''
-        chars_added = 0
-        for i, char in enumerate(string):
-            if char.isupper():
-                new_string = new_string[0:i + chars_added + 1] + '_' + char.lower()
-                chars_added += 1
-            else:
-                new_string = new_string + char
-
-        if not is_attr_list:  # don't want leading underscores
-            if new_string[0] == '_':
-                new_string = new_string[1:]
-        string_list[index] = new_string
-
-    return string_list
-
-
 def py_str_to_gmat_str(string: str) -> str:
     string = string.replace('_', ' ')  # replace each underscore with a space
     string = string.title()  # set first letter of each word to upper case
     string = string.replace(' ', '')  # remove spaces
     return string
+
+
+def gmat_str_to_py_str(string: str, is_attr: bool = False) -> str:
+    new_string = ''
+    chars_added = 0
+    for i, char in enumerate(string):
+        if char.isupper():
+            new_string = new_string[0:i + chars_added + 1] + '_' + char.lower()
+            chars_added += 1
+        else:
+            new_string = new_string + char
+
+    if not is_attr:  # don't want leading underscores
+        if new_string[0] == '_':
+            new_string = new_string[1:]
+
+    return new_string
+
+
+def python_liststr_to_gmat_liststr(string_list: list[str]) -> list[str]:
+    for index, string in enumerate(string_list):
+        string_list[index] = py_str_to_gmat_str(string)  # convert each string and put it back in the list
+    return string_list
+
+
+def gmat_liststr_to_python_liststr(string_list: list[str], is_attr_list: bool = False) -> list[str]:
+    for index, string in enumerate(string_list):
+        new_string = gmat_str_to_py_str(string, is_attr_list)
+        string_list[index] = new_string
+
+    return string_list
 
 
 def ls2str(py_list: list) -> str:

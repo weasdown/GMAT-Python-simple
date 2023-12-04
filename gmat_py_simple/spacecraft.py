@@ -100,11 +100,11 @@ class OrbitState:
                                 'BrouwerLongRAAN', 'BrouwerLongAOP', 'BrouwerLongMA'}
         }
         # TODO complete self._allowed_values - see pg 599 of GMAT User Guide (currently missing Planetodetic)
-        self._allowed_values = {'display_state_type': self._allowed_state_elements.keys(),
+        self._allowed_values = {'display_state_type': list(self._allowed_state_elements.keys()),
                                 # TODO: get names of any other user-defined coordinate systems and add to allowlist
                                 'coord_sys': CoordSystems(),
                                 # TODO: define valid state_type values - using display_state_type ones for now
-                                'state_type': self._allowed_state_elements,
+                                'state_type': list(self._allowed_state_elements.keys()),
                                 }
 
         # TODO complete this list
@@ -134,12 +134,12 @@ class OrbitState:
         if 'state_type' not in kwargs:
             self._state_type = 'Cartesian'
         else:  # state_type is specified but may not be valid
-            if kwargs['state_type'] not in self._allowed_state_elements.keys():  # invalid state_type given
+            if kwargs['state_type'] not in self._allowed_state_elements.keys():  # invalid state_type was given
                 raise SyntaxError(f'Invalid state_type parameter given: {kwargs["state_type"]}\n'
                                   f'Valid values are: {self._allowed_state_elements.keys()}')
             else:
                 self._state_type = kwargs['state_type']
-        fields_remaining.remove('state_type')
+            fields_remaining.remove('state_type')
 
         # Set key parameters to value in kwargs, or None if not specified
         # TODO: add validity checking of other kwargs against StateType
@@ -148,6 +148,8 @@ class OrbitState:
                 setattr(self, f'_{param}', kwargs[param])
             else:
                 setattr(self, f'_{param}', self._key_param_defaults[param])
+
+        print(f'OS.init state_type: {self._state_type}')
 
     def apply_to_spacecraft(self, sc: Spacecraft):
         """
@@ -176,6 +178,8 @@ class OrbitState:
 
         for attr in attrs_to_set:
             try:
+                # TODO bugfix: setting element e.g. ECC to 'Cartesian'
+                # TODO bugfix: setting DisplayStateType to 'Cartesian'
                 gmat_attr = py_str_to_gmat_str(attr)
                 val = getattr(self, attr)
                 if gmat_attr == 'CoordSys':
@@ -375,9 +379,7 @@ class Spacecraft(HardwareItem):
         self._Thrusters: Spacecraft.SpacecraftHardware.PropList | None = None
 
         self._orbit = None
-
-        # TODO: replace below with method/loop that extracts all params from GMAT object once initialised
-        self.dry_mass = self.GetField('DryMass')
+        self._dry_mass = self.GetField('DryMass')
 
     def __repr__(self):
         return f'Spacecraft with name {self.name}'
@@ -421,10 +423,16 @@ class Spacecraft(HardwareItem):
             sc.orbit = OrbitState.from_dict(orbit)
         sc.orbit.apply_to_spacecraft(sc)
 
+        print(f'DryMass before setting specs: {sc.GetField("DryMass")}, {sc._dry_mass}')
+        print(f'specs: {specs}')
+
         # Apply remaining specs
         for spec in specs:
-            setattr(sc, f'-{spec}', specs[spec])
+            attr_name = gmat_str_to_py_str(spec, True)
+            setattr(sc, attr_name, specs[spec])
             sc.SetField(spec, specs[spec])
+
+        print(f'DryMass after setting specs: {sc.GetField("DryMass")}, {sc._dry_mass}')
 
         gmat.Initialize()
 
