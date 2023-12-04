@@ -6,7 +6,7 @@ from gmat_py_simple.spacecraft import Spacecraft
 from gmat_py_simple.orbit import PropSetup
 
 
-def Propagate(propagator: PropSetup, sc: Spacecraft, stop_param: str, stop_value: str | int,
+def Propagate(propagator: PropSetup, sc: Spacecraft, stop_param: str, stop_value: str | int = None,
               stop_tolerance: str = None, backProp: bool = False):
     stop_param_allowed_values = {
         # TODO complete this properties list based on options available in GUI Propagate command

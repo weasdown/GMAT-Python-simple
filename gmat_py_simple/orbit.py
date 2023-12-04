@@ -48,7 +48,8 @@ class PhysicalModel(GmatObject):
 
 class ForceModel(GmatObject):
     def __init__(self, name: str = 'FM', central_body: str = 'Earth', primary_bodies=None,
-                 polyhedral_bodies: list = None, point_masses: list[PointMassForce] = None, drag=None,
+                 polyhedral_bodies: list = None, gravity_field: GravityField = None,
+                 point_masses: list[PointMassForce] = None, drag=None,
                  srp: bool = False, relativistic_correction: bool = False, error_control: list = None,
                  user_defined: list[str] = None):
         super().__init__('ODEModel', name)
@@ -197,12 +198,12 @@ class ForceModel(GmatObject):
             self._force_model.SetField('PointMasses', self._point_masses)
 
     class SolarRadiationPressure(PhysicalModel):
+        # TODO flux and nominal Sun needed as arguments?
         def __init__(self, fm: ForceModel, name: str = 'SRP', model: str = 'Spherical'):
             super().__init__('SolarRadiationPressure', name)
             self._force_model = fm
             self.model = model
 
-            print('Creating an SRP object')
             self._force_model.AddForce(self)
 
 
