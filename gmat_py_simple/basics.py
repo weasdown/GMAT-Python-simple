@@ -85,6 +85,9 @@ class GmatObject:
         else:
             raise SyntaxError(f'Invalid argument OnOff - {OnOff} - must be "On" or "Off"')
 
+    def SetReference(self, ref):
+        self.gmat_obj.SetReference(ref.gmat_obj)
+
 
 class HardwareItem(GmatObject):
     def __init__(self, obj_type: str, name: str):

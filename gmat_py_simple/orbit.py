@@ -54,10 +54,10 @@ class ForceModel(GmatObject):
         self._polyhedral_bodies = polyhedral_bodies
 
         self._gravity = self.GravityField()
-        self.AddForce(self._gravity.gmat_obj)
+        self.AddForce(self._gravity)
 
         self._point_masses = point_masses if point_masses else self.PointMassForce(self)
-        # self.AddForce(self._point_masses.gmat_obj)
+        # self.AddForce(self._point_masses)  # TODO cannot use as well as GravityField
 
         self._drag = False if drag is None else ForceModel.DragForce(self)
 
@@ -89,7 +89,7 @@ class ForceModel(GmatObject):
         gmat.Initialize()
 
     def AddForce(self, force: PhysicalModel):
-        self.gmat_obj.AddForce(force)
+        self.gmat_obj.AddForce(force.gmat_obj)
 
     class PrimaryBody:
         # TODO complete arguments
@@ -199,7 +199,7 @@ class ForceModel(GmatObject):
             self.model = model
 
             print('Creating an SRP object')
-            self._force_model.AddForce(self.gmat_obj)
+            self._force_model.AddForce(self)
 
 
 class PropSetup(GmatObject):  # prop
@@ -216,8 +216,8 @@ class PropSetup(GmatObject):  # prop
         self.force_model = fm if fm else ForceModel()
         self.gator = gator if gator else PropSetup.Propagator()
 
-        self.gmat_obj.SetReference(self.gator.gmat_obj)
-        self.gmat_obj.SetReference(self.force_model.gmat_obj)
+        self.SetReference(self.gator)
+        self.SetReference(self.force_model)
 
     def AddPropObject(self, sc: Spacecraft):
         self.gmat_obj.AddPropObject(sc.gmat_obj)
