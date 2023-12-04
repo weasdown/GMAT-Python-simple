@@ -206,7 +206,6 @@ class PropSetup(GmatObject):  # prop
     class Propagator(GmatObject):  # gator
         # Labelled in GMAT GUI as "Integrator"
         def __init__(self, integrator: str = 'PrinceDormand78', name: str = 'Prop', **kwargs):
-            # TODO confirm whether obj_type is PropSetup or Propagator
             integrator_allowed_types = ['']
             super().__init__(integrator, name)
             self.integrator = integrator
