@@ -387,8 +387,10 @@ class Spacecraft(HardwareItem):
         # TODO bugfix: StateType and DryMass values in dict not being used. Add parsing of CoordSys with correct case.
 
         # Get spacecraft name
+        specs = specs_dict.copy()  # take a copy of the dictionary to avoid editing the original
         try:
-            name = specs_dict['Name']
+            name = specs['Name']
+            specs.pop('Name')
         except KeyError:
             raise SyntaxError('Spacecraft name required')
 
@@ -396,7 +398,8 @@ class Spacecraft(HardwareItem):
 
         # Get spacecraft hardware specs
         try:
-            hardware = specs_dict['Hardware']
+            hardware = specs['Hardware']
+            specs.pop('Hardware')
         except KeyError:
             logging.warning('No hardware parameters specified in Spacecraft dictionary - none will be built')
             hardware = {}
@@ -406,7 +409,8 @@ class Spacecraft(HardwareItem):
 
         # represent sc's orbit with an OrbitState, with Cartesian as the default state_type
         try:
-            orbit = specs_dict['Orbit']
+            orbit = specs['Orbit']
+            specs.pop('Orbit')
         except KeyError:
             logging.warning('No hardware parameters specified in Spacecraft dictionary - none will be built')
             orbit = {}
@@ -415,8 +419,12 @@ class Spacecraft(HardwareItem):
             sc.orbit = OrbitState()
         else:
             sc.orbit = OrbitState.from_dict(orbit)
-
         sc.orbit.apply_to_spacecraft(sc)
+
+        # Apply remaining specs
+        for spec in specs:
+            setattr(sc, f'-{spec}', specs[spec])
+            sc.SetField(spec, specs[spec])
 
         gmat.Initialize()
 

@@ -19,3 +19,5 @@ sat = gpy.Spacecraft.from_dict(sat_params)
 
 default_prop = gpy.PropSetup('DefaultProp', gator=gpy.PropSetup.Propagator('RungeKutta89'))
 gpy.Propagate(sat, 'ElapsedSecs', 12000, propagator=default_prop)
+
+sat.Help()
