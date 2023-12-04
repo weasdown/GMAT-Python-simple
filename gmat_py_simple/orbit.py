@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+from load_gmat import gmat
 from . import GmatObject
+from .spacecraft import Spacecraft
 
 
 class AtmosphereModel(GmatObject):
     def __init__(self):
-        super().__init__('AtmosphereModel', 'AtmosphereModel')
-        raise NotImplementedError
+        # super().__init__('AtmosphereModel', 'AtmosphereModel')
+        # raise NotImplementedError
+        pass
 
 
 class ExponentialAtmosphere(AtmosphereModel):
@@ -46,9 +49,15 @@ class ForceModel(GmatObject):
         super().__init__('ODEModel', name)
 
         self._central_body = central_body
-        self._primary_bodies = primary_bodies
+        self._primary_bodies = primary_bodies if primary_bodies else self._central_body
         self._polyhedral_bodies = polyhedral_bodies
+
+        self._gravity = self.GravityField()
+        self.AddForce(self._gravity.gmat_obj)
+
         self._point_masses = point_masses if point_masses else self.PointMassForce(self)
+        # self.AddForce(self._point_masses.gmat_obj)
+
         self._drag = False if drag is None else ForceModel.DragForce(self)
 
         self._srp = ForceModel.SolarRadiationPressure(self) if srp else False
@@ -76,6 +85,7 @@ class ForceModel(GmatObject):
                     raise AttributeError('Invalid argument specified')
 
         # check_valid_args(primary_bodies=primary_bodies)
+        gmat.Initialize()
 
     def AddForce(self, force: PhysicalModel):
         self.gmat_obj.AddForce(force)
@@ -138,16 +148,35 @@ class ForceModel(GmatObject):
             super().__init__('HarmonicField', 'HarmonicField')
             raise NotImplementedError
 
-    class GravityField(HarmonicField):
+    class GravityField(PhysicalModel):
+        # TODO change parent class back to HarmonicField if appropriate
         def __init__(self, model: str = 'JGM-2', degree: int = 4, order: int = 4, stm_limit: int = 100,
-                     gravity_file: str = 'JGM2.cof', ):
-            super().__init__()
-
+                     gravity_file: str = 'JGM2.cof', tide_file: str = None, tide_model: str = None):
+            super().__init__('GravityField', 'Grav')
             self._model = model
+
             self._degree = degree
+            self.SetField('Degree', self._degree)
+
             self._order = order
+            self.SetField('Order', self._order)
+
             self._stm_limit = stm_limit
+            self.SetField('StmLimit', self._stm_limit)
+
             self._gravity_file = gravity_file
+            self.SetField('PotentialFile', self._gravity_file)
+
+            self._tide_file = tide_file
+            if self._tide_file:
+                self.SetField('TideFile', self._tide_file)
+
+            if tide_model:
+                if tide_model not in [None, 'Solid', 'SolidAndPole']:
+                    raise SyntaxError('Invalid tide_model given - must be None, "Solid" or "SolidAndPole"')
+                else:
+                    self._tide_model = tide_model
+                    self.SetField('TideModel', self._tide_model)
 
     class ODEModel(PhysicalModel):
         def __init__(self, name: str):
@@ -160,7 +189,7 @@ class ForceModel(GmatObject):
             self._force_model = fm
             self._point_masses = point_masses if point_masses else []
 
-            GmatObject.SetField(self._force_model, 'PointMasses', self._point_masses)
+            self._force_model.SetField('PointMasses', self._point_masses)
 
     class SolarRadiationPressure(PhysicalModel):
         def __init__(self, fm: ForceModel, name: str = 'SRP', model: str = 'Spherical'):
@@ -173,19 +202,27 @@ class ForceModel(GmatObject):
 
 
 class PropSetup(GmatObject):  # prop
-    def __init__(self, name: str, fm: ForceModel = None):
-        super().__init__('PropSetup', name)
-        if fm:
-            self.force_model = fm
-        else:
-            self.force_model = ForceModel()
-
     class Propagator(GmatObject):  # gator
         # Labelled in GMAT GUI as "Integrator"
         def __init__(self, integrator: str = 'PrinceDormand78', name: str = 'Prop', **kwargs):
             # TODO confirm whether obj_type is PropSetup or Propagator
             integrator_allowed_types = ['']
-
             super().__init__(integrator, name)
+            self.integrator = integrator
 
-    pass
+    def __init__(self, name: str, fm: ForceModel = None, gator: PropSetup.Propagator = None):
+        super().__init__('PropSetup', name)
+        self.force_model = fm if fm else ForceModel()
+        self.gator = gator if gator else PropSetup.Propagator()
+
+        self.gmat_obj.SetReference(self.gator.gmat_obj)
+        self.gmat_obj.SetReference(self.force_model.gmat_obj)
+
+    def AddPropObject(self, sc: Spacecraft):
+        self.gmat_obj.AddPropObject(sc.gmat_obj)
+
+    def PrepareInternals(self):
+        self.gmat_obj.PrepareInternals()
+
+    def GetPropagator(self):
+        return self.gmat_obj.GetPropagator()

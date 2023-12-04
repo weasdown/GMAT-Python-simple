@@ -478,8 +478,14 @@ class Spacecraft(HardwareItem):
         return self.Hardware
 
     def update_orbit(self, orbit: OrbitState):
-        self.orbit = orbit
+        self._orbit = orbit
         pass
+
+    def GetState(self):
+        return self.gmat_obj.GetState().GetState()
+
+    def GetKeplerianState(self):
+        return self.gmat_obj.GetKeplerianState()
 
     @property
     def Thrusters(self):
