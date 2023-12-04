@@ -3,12 +3,11 @@ from load_gmat import gmat
 import gmat_py_simple as gpy
 
 sat_params = {
-    'Name': 'Servicer',
+    'Name': 'DefaultSat',
     'Orbit': {
         'coord_sys': 'EarthMJ2000Eq',
         'StateType': 'Keplerian',
     },
-    'DryMass': 100,  # kg
     'Hardware': {}
 }
 sat = gpy.Spacecraft.from_dict(sat_params)

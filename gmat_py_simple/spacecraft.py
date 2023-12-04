@@ -384,6 +384,8 @@ class Spacecraft(HardwareItem):
 
     @classmethod
     def from_dict(cls, specs_dict: dict):
+        # TODO bugfix: StateType and DryMass values in dict not being used. Add parsing of CoordSys with correct case.
+
         # Get spacecraft name
         try:
             name = specs_dict['Name']
