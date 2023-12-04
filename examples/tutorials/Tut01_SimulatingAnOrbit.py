@@ -9,11 +9,7 @@ sat_params = {
         'StateType': 'Keplerian',
     },
     'DryMass': 100,  # kg
-    'Hardware': {'Tanks': {'Chemical': [{'Name': 'ChemicalTank1'}],
-                           'Electric': [{'Name': 'ElectricTank1'}]},
-                 'Thrusters': {'Chemical': [{'Name': 'ChemicalThruster1', 'Tanks': 'ChemicalTank1'}],
-                               'Electric': [{'Name': 'ElectricThruster1', 'Tanks': 'ElectricTank1'}]}
-                 }
+    'Hardware': {}
 }
 sat = gpy.Spacecraft.from_dict(sat_params)
 

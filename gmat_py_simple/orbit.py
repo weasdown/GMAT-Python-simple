@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from load_gmat import gmat
-from . import GmatObject
-from .spacecraft import Spacecraft
+
+from gmat_py_simple.basics import GmatObject
+from gmat_py_simple.spacecraft import Spacecraft
 
 
 class AtmosphereModel(GmatObject):

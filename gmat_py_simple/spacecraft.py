@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from load_gmat import gmat
 
-from .basics import *
-from .utils import *
+from gmat_py_simple.basics import *
+from gmat_py_simple.utils import *
 
 from typing import Union
 import logging
@@ -281,7 +281,7 @@ class Spacecraft(HardwareItem):
                 #                      'Electric': sc_hardware.ElectricTanks}
 
             except KeyError as ke:
-                raise KeyError(f'No tanks found in Hardware dict parsing, key error: {ke}')
+                logging.warning(f'No tanks found in Hardware dict parsing')
 
             # parse thrusters
             try:
@@ -311,7 +311,7 @@ class Spacecraft(HardwareItem):
                 #                          'Electric': sc_hardware.ElectricThrusters}
 
             except KeyError as ke:
-                raise KeyError(f'No thrusters found in Hardware dict parsing, key error: {ke}')
+                logging.warning(f'No thrusters found in Hardware dict parsing')
 
             # TODO: parse SolarPowerSystem, NuclearPowerSystem, Imager
 

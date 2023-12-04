@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from load_gmat import gmat
 
-from .spacecraft import Spacecraft
-from .orbit import PropSetup
+from gmat_py_simple.spacecraft import Spacecraft
+from gmat_py_simple.orbit import PropSetup
 
 
 def Propagate(sc: Spacecraft, stop_param: str, stop_condition: str | int,

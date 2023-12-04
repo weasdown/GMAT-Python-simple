@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from .spacecraft import Spacecraft, ElectricThruster
-from .basics import GmatObject
+from gmat_py_simple.spacecraft import Spacecraft, ElectricThruster
+from gmat_py_simple.basics import GmatObject
 
 from load_gmat import gmat
 
@@ -20,10 +20,12 @@ class FiniteBurn(GmatObject):
         self.GmatObj.SetField('Thrusters', self._thrusterName)
 
     def BeginFiniteBurn(self, fin_thrust):  # TODO type: add FiniteThrust type to fin_thrust
-        fin_thrust.EnableThrust()
-        sc: Spacecraft = 'GMAT object that FiniteBurn is applied to'  # TODO complete by pulling ref obj
-        runtime_thruster = sc.gmat_obj.GetRefObject(gmat.THRUSTER, self._thrusterName)
-        runtime_thruster.SetField("IsFiring", True)
+        raise NotImplementedError
+        # TODO complete implementing the below code:
+        # fin_thrust.EnableThrust()
+        # sc: Spacecraft = 'GMAT object that FiniteBurn is applied to'  # TODO complete by pulling ref obj
+        # runtime_thruster = sc.gmat_obj.GetRefObject(gmat.THRUSTER, self._thrusterName)
+        # runtime_thruster.SetField("IsFiring", True)
 
 
 class FiniteThrust(GmatObject):  # TODO tidy: consider making subclass of FiniteBurn
