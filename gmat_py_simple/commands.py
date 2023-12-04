@@ -7,7 +7,7 @@ from gmat_py_simple.orbit import PropSetup
 
 
 def Propagate(propagator: PropSetup, sc: Spacecraft, stop_param: str, stop_value: str | int,
-              stop_tolerance: str = None, direction: str = 'Forwards'):
+              stop_tolerance: str = None, backProp: bool = False):
     stop_param_allowed_values = {
         # TODO complete this properties list based on options available in GUI Propagate command
         'Spacecraft': ['A1ModJulian', 'Acceleration', 'AccelerationX', 'AccelerationY', 'AccelerationZ',
@@ -55,10 +55,8 @@ def Propagate(propagator: PropSetup, sc: Spacecraft, stop_param: str, stop_value
         raise NotImplementedError
 
     # TODO use direction
-    if direction == 'Forwards':
-        direction = 1
-    elif direction == 'Backwards':
-        direction = -1
+    if isinstance(backProp, bool):
+        direction = -1 if backProp else 1  # propagate backwards (direction -1) if backProp is True, otherwise forwards
     else:
         raise SyntaxError('Invalid direction given - accepts only "Forwards" or "Backwards"')
 
@@ -66,13 +64,5 @@ def Propagate(propagator: PropSetup, sc: Spacecraft, stop_param: str, stop_value
     propagator.PrepareInternals()
     propagator.gator = propagator.GetPropagator()
     gator = propagator.gator
-
-    state = gator.GetState()
-    print(f'Starting state: {state}')
-    print(f'Starting Keplerian state:{spacecraft.GetKeplerianState()}')
-
     gator.Step(dt)
     gator.UpdateSpaceObject()
-    state = gator.GetState()
-    print(f'\nNew state: {state}')
-    print(f'New Keplerian state:{spacecraft.GetKeplerianState()}')

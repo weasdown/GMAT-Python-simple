@@ -202,8 +202,8 @@ class ForceModel(GmatObject):
             self._force_model.AddForce(self)
 
 
-class PropSetup(GmatObject):  # prop
-    class Propagator(GmatObject):  # gator
+class PropSetup(GmatObject):  # variable called prop in GMAT Python examples
+    class Propagator(GmatObject):  # variable called gator in GMAT Python examples
         # Labelled in GMAT GUI as "Integrator"
         def __init__(self, integrator: str = 'PrinceDormand78', name: str = 'Prop', **kwargs):
             integrator_allowed_types = ['']
@@ -226,3 +226,6 @@ class PropSetup(GmatObject):  # prop
 
     def GetPropagator(self):
         return self.gmat_obj.GetPropagator()
+
+    def GetState(self):
+        return self.gator.GetState()

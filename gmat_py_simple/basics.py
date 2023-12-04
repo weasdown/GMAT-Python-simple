@@ -88,6 +88,9 @@ class GmatObject:
     def SetReference(self, ref):
         self.gmat_obj.SetReference(ref.gmat_obj)
 
+    def GetState(self):
+        return self.gmat_obj.GetState()
+
 
 class HardwareItem(GmatObject):
     def __init__(self, obj_type: str, name: str):

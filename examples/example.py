@@ -19,8 +19,14 @@ sat_params = {
                                'Electric': [{'Name': 'ElectricThruster1', 'Tanks': 'ElectricTank1'}]}
                  }
 }
-sat = gpy.Spacecraft.from_dict(sat_params)
 
+sat = gpy.Spacecraft.from_dict(sat_params)
 default_prop = gpy.PropSetup('DefaultProp', gator=gpy.PropSetup.Propagator('RungeKutta89'))
+
+sat.Help()
+
+print(f'sat start state: {sat.GetKeplerianState()}')
+
 gpy.Propagate(default_prop, sat, 'ElapsedSecs', 12000)
 
+print(f'sat end state: {sat.GetKeplerianState()}')
