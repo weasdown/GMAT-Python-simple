@@ -6,9 +6,27 @@ from gmat_py_simple.spacecraft import Spacecraft
 from gmat_py_simple.orbit import PropSetup
 
 
-def Propagate(sc: Spacecraft, stop_param: str, stop_condition: str | int,
-              stop_tolerance: str = None, propagator: PropSetup = None, direction: str = 'Forwards'):
+def Propagate(propagator: PropSetup, sc: Spacecraft, stop_param: str, stop_value: str | int,
+              stop_tolerance: str = None, direction: str = 'Forwards'):
     # TODO remove temporary step arg (using instead of in gator)
+
+    stop_param_allowed_values = {
+        # TODO complete this properties list based on options available in GUI Propagate command
+        'Spacecraft': ['A1ModJulian', 'Acceleration', 'AccelerationX', 'AccelerationY', 'AccelerationZ',
+                       'AltEquinoctialP', 'AltEquinoctialQ', 'Altitude', 'AngularVelocityX', 'AngularVelocityY',
+                       'AngularVelocityZ', 'AOP', 'Apoapsis', 'AtmosDensity', 'AtmosDensityScaleFactor',
+                       'AtmosDensityScaleFactorSigma', 'AZI', 'BdotR', 'BdotT', 'BetaAngle', 'BrouwerLongAOP',
+                       'BrouwerLongECC', 'BrouwerLongINC', 'BrouwerLongMA', 'BrouwerLongRAAN', 'BrouwerLongSMA',
+                       'BrouwerShortAOP', 'BrouwerShortECC', 'BrouwerShortINC', 'BrouwerShortMA',
+                       'BrouwerShortRAAN', 'BrouwerShortSMA', 'BVectorAngle', 'BVectorMag', 'C3Energy', 'Cd',
+                       'CdSigma', 'Cr', 'CrSigma', 'DCM11', 'DCM12', 'DCM13', 'DCM21', 'DCM22', 'DCM23', 'DCM31',
+                       'DCM32', 'DCM33', 'DEC', 'DECV', 'DelaunayG', 'Delaunayg', 'DelaunayH', 'Delaunayh',
+                       'DelaunayL', 'Delaunayl', 'DLA', 'DragArea', 'DryCenterOfMassX', 'DryCenterOfMassY',
+                       'DryCenterOfMassZ', 'DryMass', 'DryMassMomentOfInertiaXX', 'DryMassMomentOfInertiaXY',
+                       'DryMassMomentOfInertiaXZ', 'DryMassMomentOfInertiaYY', 'DryMassMomentOfInertiaYZ',
+                       'DryMassMomentOfInertiaZZ', 'EA', 'ECC', 'ElapsedDays', 'ElapsedSecs', 'Energy',
+                       'EquinoctialH', 'EquinoctialHDot', 'EquinoctialK', 'EquinoctialKDot', 'EquinoctialP',
+                       'EquinoctialPDot', 'EquinoctialQ', 'EquinoctialQDot']}
 
     if not isinstance(sc, Spacecraft):
         raise TypeError('sc parameter must be a Spacecraft object')
@@ -17,10 +35,10 @@ def Propagate(sc: Spacecraft, stop_param: str, stop_condition: str | int,
 
     propagator = propagator if propagator else PropSetup('DefaultProp')
 
-    if stop_param == 'ElapsedSecs':
-        dt = stop_condition
+    if stop_param == 'ElapsedSecs':  # assuming stop_value is an ElapsedSecs value
+        dt = stop_value
     elif stop_param == 'ElapsedDays':
-        dt = stop_condition * 86400
+        dt = stop_value * 86400
     else:
         raise NotImplementedError
 
