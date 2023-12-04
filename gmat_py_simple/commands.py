@@ -8,8 +8,6 @@ from gmat_py_simple.orbit import PropSetup
 
 def Propagate(propagator: PropSetup, sc: Spacecraft, stop_param: str, stop_value: str | int,
               stop_tolerance: str = None, direction: str = 'Forwards'):
-    # TODO remove temporary step arg (using instead of in gator)
-
     stop_param_allowed_values = {
         # TODO complete this properties list based on options available in GUI Propagate command
         'Spacecraft': ['A1ModJulian', 'Acceleration', 'AccelerationX', 'AccelerationY', 'AccelerationZ',
