@@ -126,7 +126,7 @@ class OrbitState:
                              }
 
         self._key_param_defaults = {'date_format': 'TAIModJulian', 'epoch': str(21545), 'coord_sys': 'EarthMJ2000Eq',
-                                    'state_type': 'Cartesian', 'display_state_type': 'Cartesian', 'sc': None}
+                                    'state_type': 'Cartesian', 'sc': None}
 
         fields_remaining: list[str] = list(self._key_param_defaults.keys())
 
@@ -134,7 +134,7 @@ class OrbitState:
         if 'state_type' not in kwargs:
             self._state_type = 'Cartesian'
         else:  # state_type is specified but may not be valid
-            if kwargs['state_type'] not in self._allowed_state_elements.keys():  # invalid state_type was given
+            if kwargs['state_type'] not in list(self._allowed_state_elements.keys()):  # invalid state_type was given
                 raise SyntaxError(f'Invalid state_type parameter given: {kwargs["state_type"]}\n'
                                   f'Valid values are: {self._allowed_state_elements.keys()}')
             else:
@@ -148,8 +148,6 @@ class OrbitState:
                 setattr(self, f'_{param}', kwargs[param])
             else:
                 setattr(self, f'_{param}', self._key_param_defaults[param])
-
-        print(f'OS.init state_type: {self._state_type}')
 
     def apply_to_spacecraft(self, sc: Spacecraft):
         """
@@ -193,19 +191,23 @@ class OrbitState:
 
     @classmethod
     def from_dict(cls, orbit_dict: dict, sc: Spacecraft = None) -> OrbitState:
-        if 'StateType' not in orbit_dict.keys():
+        o_s: OrbitState = cls()  # create OrbitState object, with sc set as None by default
+
+        try:
+            o_s._state_type = orbit_dict['StateType']  # extract state_type from dict (required)
+        except KeyError:
             raise KeyError(f"Required parameter 'StateType' was not found in OrbitState.from_dict")
-        else:
-            state_type = orbit_dict['StateType']  # extract state_type from dict (required)
+
         orbit_dict.pop('StateType')  # remove StateType so we don't try setting it again later
 
-        o_s: OrbitState = cls(sc=sc, state_type=state_type)  # create OrbitState object, with sc set as None by default
         o_s._allowed_values['coord_sys'] = CoordSystems()
 
         # TODO parse orbit params in orbit_dict
 
         for attr in orbit_dict:  # initialize other key attrs to None
-            setattr(o_s, f'_{attr}', orbit_dict[attr])
+            if attr[0].islower():
+                raise SyntaxError(f'Invalid attribute found - {attr}. Must be in GMAT string format')
+            setattr(o_s, gmat_str_to_py_str(attr, True), orbit_dict[attr])
 
         return o_s
 
@@ -423,47 +425,13 @@ class Spacecraft(HardwareItem):
             sc.orbit = OrbitState.from_dict(orbit)
         sc.orbit.apply_to_spacecraft(sc)
 
-        print(f'DryMass before setting specs: {sc.GetField("DryMass")}, {sc._dry_mass}')
-        print(f'specs: {specs}')
-
         # Apply remaining specs
         for spec in specs:
             attr_name = gmat_str_to_py_str(spec, True)
             setattr(sc, attr_name, specs[spec])
             sc.SetField(spec, specs[spec])
 
-        print(f'DryMass after setting specs: {sc.GetField("DryMass")}, {sc._dry_mass}')
-
         gmat.Initialize()
-
-        # Find and apply orbit parameters
-        # TODO: move this to an Orbit class - not relevant to Hardware. Orbit will be called from Spacecraft
-        # try:
-        #     orbit = specs_dict['Orbit']
-        # except KeyError:
-        #     print('No orbit parameters specified in Spacecraft dictionary - using defaults')
-        #     orbit = {}
-
-        # print(f'orbit (in s/c.from_dict): {orbit}')
-
-        # now that the basic spacecraft has been created, set other fields from values in specs_dict
-        #  use similar flow to in SpacecraftHardware.from_dict: set, remove field, set...
-        # TODO handle snake case vs CamelCase difference
-        # # Start of fresh part:
-        # for field in specs_dict:
-        #     # print(f'Assessing field: {field}')
-        #     if field not in sc._GmatAllowedFields:
-        #         # print(f'{field} not found in set of GMAT allowed fields')
-        #         if field not in sc._AllowedFields:
-        #             print(f'{field} not found in set of class allowed fields either')
-        #             raise NotImplementedError('Error handling for non-allowed fields not implemented')
-        #         else:  # field not allowed by GMAT but allowed by class (further parsing needed)
-        #             setattr(sc, f'_{field}', specs_dict[field])
-        #     else:  # field is GMAT allowed
-        #         setattr(sc, f'_{field}', specs_dict[field])
-        #         sc.SetField(field, specs_dict[field])
-
-        # sc.construct_orbit_state(orbit)
 
         return sc
 
@@ -503,7 +471,14 @@ class Spacecraft(HardwareItem):
         return self.gmat_obj.GetState().GetState()
 
     def GetKeplerianState(self):
-        return self.gmat_obj.GetKeplerianState()
+        kep_str: str = str(self.gmat_obj.GetKeplerianState())  # get Keplerian state as string instead of Rvector6
+        kep_list: list[float] = list(map(float, kep_str.split(' ')))  # convert to list of floats
+        return kep_list
+
+    def GetCartesianState(self):
+        cart_str: str = str(self.gmat_obj.GetCartesianState())  # get Cartesian state as string instead of Rvector6
+        cart_list: list[float] = list(map(float, cart_str.split(' ')))  # convert to list of floats
+        return cart_list
 
     @property
     def Thrusters(self):
@@ -537,16 +512,6 @@ class Spacecraft(HardwareItem):
     def ElectricTanks(self):
         return self.Hardware.ElectricTanks
 
-    @staticmethod
-    def list_convert_gmat_to_python(list_str: str) -> list:  # TODO: define return type as list[Union[str, Tank]]
-        """
-        Convert a GMAT-format list to a Python-format one.
-        :param list_str:
-        :return:
-        """
-        python_list = list_str[1:-1].split(',')  # remove curly braces
-        return python_list
-
     def add_tanks(self, tanks: list[ChemicalTank | ElectricTank]):
         """
         Add a tank object to a Spacecraft's list of Tanks.
@@ -576,43 +541,6 @@ class Spacecraft(HardwareItem):
         current_thrusters_list.extend(thrusters_to_set)
         value = list_to_gmat_field_string(current_thrusters_list)
         self.SetField('Thrusters', value)
-
-    # TODO: replace with a complete OrbitState object created from dict, similar to SpacecraftHardware
-    def construct_orbit_state(self, orbit_specs):
-        if orbit_specs == {}:  # empty dict was passed
-            return
-
-        kwargs = {'sc': self.gmat_obj}
-
-        def pull_orbit_param(p: str):
-            try:
-                param_value = orbit_specs[p]
-                kwargs[p] = param_value
-                return param_value
-            except KeyError:  # key not found in orbit_specs
-                logging.warning(f'Could not pull parameter {p} from orbit_specs - using default')
-
-        def set_orbit_param(p: str, v: Union[str, int, float, bool]):
-            p = class_string_to_GMAT_string(p)  # convert param name to GMAT format
-            # print(f'Setting field {class_string_to_GMAT_string(param)} to value {v}')
-            self.SetField(p, v)
-            # except gmatpy._py311.gmat_py.APIException:
-            #     raise SyntaxError('Ruh Roh')
-
-        def validate_param(p):
-            pass
-
-        for param in orbit_specs:
-            val = pull_orbit_param(param)
-            validate_param(param)
-            set_orbit_param(param, val)
-
-        sc_orbit = OrbitState(**kwargs)  # TODO syntax: need to include sc arg in kwargs
-        # coord_sys=self._coord_sys)
-
-    # propagation stop conditions
-    # def ElapsedSecs(self) -> orbit.PropSetup.:
-    #     return 'ElapsedSecs'
 
 
 class Tank(HardwareItem):

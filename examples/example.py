@@ -7,7 +7,8 @@ import gmat_py_simple as gpy
 sat_params = {
     'Name': 'DefaultSC',
     'Orbit': {
-        'coord_sys': 'EarthMJ2000Eq',
+        'CoordSys': 'EarthMJ2000Eq',
+        'Epoch': '21545',
         'StateType': 'Keplerian',
     },
     'DryMass': 100,  # kg
@@ -22,10 +23,3 @@ sat = gpy.Spacecraft.from_dict(sat_params)
 default_prop = gpy.PropSetup('DefaultProp', gator=gpy.PropSetup.Propagator('RungeKutta89'))
 gpy.Propagate(default_prop, sat, 'ElapsedSecs', 12000)
 
-sat.Help()
-
-try:
-    assert (sat.GetField('StateType') == 'Keplerian')
-except AssertionError:
-    print('FAILED')
-    sys.exit('000')
