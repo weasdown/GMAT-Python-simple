@@ -52,8 +52,8 @@ class ForceModel(GmatObject):
     def __init__(self, name: str = 'FM', central_body: str = 'Earth', primary_bodies=None,
                  polyhedral_bodies: list = None, gravity_field: GravityField = None,
                  point_masses: str | list[str] | PointMassForce = None, drag=None,
-                 srp: bool = False, relativistic_correction: bool = False, error_control: list = None,
-                 user_defined: list[str] = None):
+                 srp: bool | SolarRadiationPressure = False, relativistic_correction: bool = False,
+                 error_control: list = None, user_defined: list[str] = None):
         super().__init__('ODEModel', name)
 
         self._central_body = central_body
@@ -113,7 +113,12 @@ class ForceModel(GmatObject):
             self._drag = ForceModel.DragForce()  # create and use a default drag model
 
         # if just srp=True, create and use a default srp object
-        self._srp = ForceModel.SolarRadiationPressure(self) if srp else False
+        if not srp:
+            self._srp = None
+        elif isinstance(srp, ForceModel.SolarRadiationPressure):
+            self._srp = srp
+        else:
+            ForceModel.SolarRadiationPressure(self)
 
         # Add other effects
         self._relativistic_correction = relativistic_correction
