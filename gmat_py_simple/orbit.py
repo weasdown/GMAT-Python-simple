@@ -13,6 +13,8 @@ from gmat_py_simple.utils import *
 
 
 class AtmosphereModel(GmatObject):
+    # TODO refer to src/base/solarsys/AtmosphereModel.cpp for definition
+    #  base/forcemodel/DragForce.cpp for use in DragForce
     def __init__(self):
         # super().__init__('DragAtmosphereModel', 'AtmosphereModel')
         # raise NotImplementedError
