@@ -210,7 +210,7 @@ class ForceModel(GmatObject):
 
             # TODO SetField in attr for loop
             self_attrs = list(self.__dict__.keys())
-            print(self_attrs)
+            # print(self_attrs)
 
             if self.force_model:
                 self.force_model.AddForce(self)

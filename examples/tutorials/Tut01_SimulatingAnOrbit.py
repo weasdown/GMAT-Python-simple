@@ -25,21 +25,21 @@ sat_params = {
 
 # sat.Help()
 
-lep_fm = o.ForceModel(name='LowEarthProp_ForceModel',
-                      gravity_field=o.ForceModel.GravityField(
-                          degree=10,
-                          order=10,
-                      ),
-                      point_masses=['Luna', 'Sun'],
-                      drag=o.ForceModel.DragForce(),
-                      srp=True
-                      )
+# lep_fm = o.ForceModel(name='LowEarthProp_ForceModel',
+#                       gravity_field=o.ForceModel.GravityField(
+#                           degree=10,
+#                           order=10,
+#                       ),
+#                       point_masses=['Luna', 'Sun'],
+#                       drag=o.ForceModel.DragForce(),
+#                       srp=True
+#                       )
 # lep_fm.Help()
 # lep_fm.gravity.Help()
 
 # print(lep_fm.gmat_obj.GetGeneratingString())
 
-sc = gpy.Spacecraft('Spacecraft')
+# sc = gpy.Spacecraft('Spacecraft')
 
 # drag = o.ForceModel.DragForce(fm=lep_fm, f107=150, f107a=150, magnetic_index=3)
 # srp = o.ForceModel.SolarRadiationPressure(fm=lep_fm, flux=1367, nominal_sun=149597870.691)
@@ -50,12 +50,20 @@ sc = gpy.Spacecraft('Spacecraft')
 
 # sat.Help()
 
-df = o.ForceModel.DragForce()
-print('\n', gpy.utils.gmat_obj_field_list(df), '\n')
+# df = o.ForceModel.DragForce()
+# print('\n', gpy.utils.gmat_obj_field_list(df), '\n')
 
-am = df.gmat_obj.GetAtmosphereModel()
-print(am)
+# am = df.gmat_obj.GetInternalAtmosphereModel()
+# print(am)
 
+# df = gmat.Construct('DragModel', 'DM')
+
+jr = gmat.Construct('JacchiaRoberts', 'JR')
+jr.Help()
+# am = gmat.Construct('AtmosphereModel', 'AM')
+#df.SetInternalAtmosphereModel(gmat.ATMOSPHERE)
+# print(df.gmat_obj.GetOwnedObjectCount())
 # gmat.ShowClasses()
 
 # print(gmat.ATMOSPHERE)
+
