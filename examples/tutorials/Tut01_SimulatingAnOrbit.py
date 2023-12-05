@@ -1,3 +1,4 @@
+import gmat_py_simple.utils
 from load_gmat import gmat
 
 import gmat_py_simple as gpy
@@ -20,7 +21,7 @@ sat_params = {
         'TA': 180,
     },
 }
-sat = gpy.Spacecraft.from_dict(sat_params)
+# sat = gpy.Spacecraft.from_dict(sat_params)
 
 # sat.Help()
 
@@ -29,14 +30,10 @@ lep_fm = o.ForceModel(name='LowEarthProp_ForceModel',
                           degree=10,
                           order=10,
                       ),
-                      # point_masses=['Luna', 'Sun'],
+                      point_masses=['Luna', 'Sun'],
                       srp=True)
 
 lep_fm.Help()
-# gmat.ShowObjects()
-# fm = gmat.GetObject('FM')
-# srp = gmat.GetObject('SRP')
-# srp.Help()
 
 # drag = o.ForceModel.DragForce(fm=lep_fm, f107=150, f107a=150, magnetic_index=3)
 # srp = o.ForceModel.SolarRadiationPressure(fm=lep_fm, flux=1367, nominal_sun=149597870.691)

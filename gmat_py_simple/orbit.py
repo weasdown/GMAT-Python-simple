@@ -57,7 +57,11 @@ class ForceModel(GmatObject):
         super().__init__('ODEModel', name)
 
         self._central_body = central_body
+
+        # TODO replace below with creation of GravityFields
+        #  PrimaryBodies is alias for GravityFields as per page 162 of GMAT Architectucral Specification
         self._primary_bodies = primary_bodies if primary_bodies else self._central_body
+
         self._polyhedral_bodies = polyhedral_bodies
 
         if gravity_field:
@@ -66,27 +70,30 @@ class ForceModel(GmatObject):
         self._gravity = self.GravityField()
         self.AddForce(self._gravity)
 
-        self._point_mass_forces: ForceModel.PointMassForce | None = None
+        self._point_mass_forces: list[ForceModel.PointMassForce] | None = None
         if not point_masses:
             self.SetField('PointMasses', [])
         else:
             # Note: point mass for a body cannot be set if that body is already in an attached GravityField
             celestial_bodies = utils.CelestialBodies()
 
-            if isinstance(point_masses, str):  # point_masses is a single string
+            # point_masses is a single string
+            if isinstance(point_masses, str):
                 if self._gravity and (self._central_body in point_masses):
                     raise SyntaxError(f'Point mass for {self._central_body} cannot be used because '
                                       f'{self._central_body} is already set as the central body')
 
-                self._point_mass_forces = ForceModel.PointMassForce(point_masses=[point_masses], fm=self)
+                self._point_mass_forces = [ForceModel.PointMassForce(body=point_masses)]
 
-            elif isinstance(point_masses, ForceModel.PointMassForce):  # point_masses is a single PointMassForce
-                if self._gravity and (self._central_body in point_masses.point_masses):
+            # point_masses is a single PointMassForce
+            elif isinstance(point_masses, ForceModel.PointMassForce):
+                if self._gravity and (self._central_body in point_masses.primary_body):
                     raise SyntaxError(f'Point mass for {self._central_body} cannot be used because a GravityField '
                                       f'containing {self._central_body} is already set')
-                self._point_mass_forces = point_masses
+                self._point_mass_forces = [point_masses]
 
-            elif isinstance(point_masses, list):  # point_masses is a list (presumably of celestial body strings)
+            # point_masses is a list (presumably of celestial body strings)
+            elif isinstance(point_masses, list):
                 if not all(isinstance(force, str) for force in point_masses):
                     raise TypeError('If point_masses is a list, its items must be strings of celestial body names')
 
@@ -98,12 +105,16 @@ class ForceModel(GmatObject):
                                       f'{self._central_body} is already set as the central body')
 
                 # point_masses is a valid list of celestial body name strings
-                self._point_mass_forces = ForceModel.PointMassForce(point_masses=point_masses, fm=self)
+                self._point_mass_forces = []
+                for body in point_masses:
+                    new_pmf = ForceModel.PointMassForce(name=f'PMF_{body}', body=body)
+                    self._point_mass_forces.append(new_pmf)
 
             else:  # point_masses is not of a valid type
                 raise SyntaxError('point_masses must be a single string, list of strings, or a single PointMassForce')
 
-            self.AddForce(self._point_mass_forces)
+            for force in self._point_mass_forces:
+                self.AddForce(force)
 
         if not drag:
             self._drag = False
@@ -152,6 +163,7 @@ class ForceModel(GmatObject):
 
     class PrimaryBody:
         # TODO complete arguments
+        # TODO: use fact that PrimaryBody is alias for GravityField - in init call GravityField.__init__
         def __init__(self, fm: ForceModel, body: str = 'Earth',
                      gravity: ForceModel.GravityField = None,
                      drag: ForceModel.DragForce | False = False):
@@ -249,13 +261,17 @@ class ForceModel(GmatObject):
             raise NotImplementedError
 
     class PointMassForce(PhysicalModel):
-        def __init__(self, name: str = 'PMF', point_masses: list[str] = None, fm: ForceModel = None):
-            super().__init__('PointMassForce', name)
-            self.force_model = fm
-            self.point_masses = point_masses if point_masses else []
+        # An object representing the point mass force for a single celestial body
 
-            if self.force_model:
-                self.force_model.SetField('PointMasses', self.point_masses)
+        # fields: ['Covariance', 'Epoch', 'ElapsedSeconds', 'BodyName', 'DerivativeID', 'GravConst', 'Radius',
+        # 'EstimateMethod', 'PrimaryBody']
+        def __init__(self, name: str = 'PMF', body: str = None):
+            super().__init__('PointMassForce', name)
+            if body:
+                self.primary_body = body
+            else:
+                self.primary_body = 'Earth'
+            self.SetField('BodyName', body)
 
     class SolarRadiationPressure(PhysicalModel):
         # TODO flux and nominal Sun needed as arguments?

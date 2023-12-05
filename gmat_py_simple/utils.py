@@ -295,3 +295,21 @@ def rvector6_to_list(rv6) -> list[float | int]:
         eles_list[index] = num
 
     return eles_list
+
+
+def gmat_obj_field_list(gmat_obj):
+    fields = []
+    for i in range(1000):
+        try:
+            field_str: str = gmat_obj.GetParameterText(i)
+            field = field_str.replace('\n', '')
+            fields.append(field)
+            i += 1
+
+        except Exception as e:
+            if type(e).__name__ == 'APIException':
+                break
+            else:
+                raise
+
+    return fields

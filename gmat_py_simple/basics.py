@@ -42,6 +42,8 @@ class GmatObject:
         self.gmat_obj.SetName(name)
 
     def Help(self):
+        # TODO: upgrade to get list of fields with utils.gmat_obj_field_list then print all fields/values
+
         if not self.gmat_obj:
             raise AttributeError(f'No GMAT object found for object {self.__name__} of type {type(self.__name__)}')
         self.gmat_obj.Help()
