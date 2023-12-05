@@ -56,6 +56,50 @@ class ForceModel(GmatObject):
                  error_control: list = None, user_defined: list[str] = None):
         super().__init__('ODEModel', name)
 
+        def validate_point_masses(pm) -> list[ForceModel.PointMassForce]:
+            celestial_bodies = utils.CelestialBodies()
+
+            # point_masses is a single string
+            if isinstance(point_masses, str):
+                # point mass for a body cannot be set if that body is already in an attached GravityField
+                if self._gravity and (self._central_body in point_masses):
+                    raise SyntaxError(f'Point mass for {self._central_body} cannot be used because '
+                                      f'{self._central_body} is already set as the central body')
+
+                return [ForceModel.PointMassForce(body=point_masses)]
+
+            # point_masses is a single PointMassForce
+            elif isinstance(point_masses, ForceModel.PointMassForce):
+                if self._gravity and (self._central_body in point_masses.primary_body):
+                    raise SyntaxError(f'Point mass for {self._central_body} cannot be used because a GravityField '
+                                      f'containing {self._central_body} is already set')
+                return [point_masses]
+
+            # point_masses is a list (presumably of celestial body strings)
+            elif isinstance(point_masses, list):
+                if not all(isinstance(force, str) for force in point_masses):
+                    raise TypeError('If point_masses is a list, its items must be strings of celestial body names')
+
+                if not all([force in celestial_bodies for force in point_masses]):
+                    raise SyntaxError(f'Not all strings in point_masses are valid celestial body names')
+
+                if self._gravity and (any(force in self._central_body for force in point_masses)):
+                    raise SyntaxError(f'Point mass for {self._central_body} cannot be used because '
+                                      f'{self._central_body} is already set as the central body')
+
+                # point_masses is a valid list of celestial body name strings
+                pmf_list = []
+                for body in point_masses:
+                    pmf_list.append(ForceModel.PointMassForce(name=f'PMF_{body}', body=body))
+                return pmf_list
+
+            else:  # point_masses is not of a valid type
+                raise SyntaxError('point_masses must be a single string, list of strings, or a single PointMassForce')
+
+        # TODO define allowed values (different to defaults)
+        self._allowed_values = {'arg': 'value'}
+        defaults = {'error_control': ['RSSStep'], 'point_masses': ['Earth'], 'primary_bodies': []}
+
         self._central_body = central_body
 
         # TODO replace below with creation of GravityFields
@@ -74,45 +118,7 @@ class ForceModel(GmatObject):
         if not point_masses:
             self.SetField('PointMasses', [])
         else:
-            # Note: point mass for a body cannot be set if that body is already in an attached GravityField
-            celestial_bodies = utils.CelestialBodies()
-
-            # point_masses is a single string
-            if isinstance(point_masses, str):
-                if self._gravity and (self._central_body in point_masses):
-                    raise SyntaxError(f'Point mass for {self._central_body} cannot be used because '
-                                      f'{self._central_body} is already set as the central body')
-
-                self._point_mass_forces = [ForceModel.PointMassForce(body=point_masses)]
-
-            # point_masses is a single PointMassForce
-            elif isinstance(point_masses, ForceModel.PointMassForce):
-                if self._gravity and (self._central_body in point_masses.primary_body):
-                    raise SyntaxError(f'Point mass for {self._central_body} cannot be used because a GravityField '
-                                      f'containing {self._central_body} is already set')
-                self._point_mass_forces = [point_masses]
-
-            # point_masses is a list (presumably of celestial body strings)
-            elif isinstance(point_masses, list):
-                if not all(isinstance(force, str) for force in point_masses):
-                    raise TypeError('If point_masses is a list, its items must be strings of celestial body names')
-
-                if not all([force in celestial_bodies for force in point_masses]):
-                    raise SyntaxError(f'Not all strings in point_masses are valid celestial body names')
-
-                if self._gravity and (any(force in self._central_body for force in point_masses)):
-                    raise SyntaxError(f'Point mass for {self._central_body} cannot be used because '
-                                      f'{self._central_body} is already set as the central body')
-
-                # point_masses is a valid list of celestial body name strings
-                self._point_mass_forces = []
-                for body in point_masses:
-                    new_pmf = ForceModel.PointMassForce(name=f'PMF_{body}', body=body)
-                    self._point_mass_forces.append(new_pmf)
-
-            else:  # point_masses is not of a valid type
-                raise SyntaxError('point_masses must be a single string, list of strings, or a single PointMassForce')
-
+            self._point_mass_forces = validate_point_masses(point_masses)  # raises exception if point_masses invalid
             for force in self._point_mass_forces:
                 self.AddForce(force)
 
@@ -136,24 +142,14 @@ class ForceModel(GmatObject):
         self._error_control = error_control
         self._user_defined = user_defined
 
-        # TODO define allowed values (different to defaults)
-        self._allowed_values = {'arg': 'value'}
-        defaults = {'error_control': ['RSSStep'], 'point_masses': ['Earth'], 'primary_bodies': []}
-
-        for attr in self._allowed_values:  # TODO check supplied args are allowed
-            # use supplied value. If not given (None), use default
-            setattr(self, f'_{attr}', defaults[attr]) if attr is None else attr
-
-        # TODO option 1: refer to OrbitState for how to tidily define defaults - implement here
-        # TODO option 2: implement below method of default setting in other classes
-        for attr in defaults:
-            setattr(self, f'_{attr}', defaults[attr]) if attr is None else attr
-
-        # TODO: perform this error check
-        def check_valid_args(**kwargs):
-            for kwarg in kwargs:
-                if kwargs[kwarg] not in self._allowed_values:
-                    raise AttributeError('Invalid argument specified')
+        # for attr in self._allowed_values:  # TODO check supplied args are allowed
+        #     # use supplied value. If not given (None), use default
+        #     setattr(self, f'_{attr}', defaults[attr]) if attr is None else attr
+        #
+        # # TODO option 1: refer to OrbitState for how to tidily define defaults - implement here
+        # # TODO option 2: implement below method of default setting in other classes
+        # for attr in defaults:
+        #     setattr(self, f'_{attr}', defaults[attr]) if attr is None else attr
 
         # check_valid_args(primary_bodies=primary_bodies)
         gmat.Initialize()
