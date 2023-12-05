@@ -35,9 +35,9 @@ lep_fm = o.ForceModel(name='LowEarthProp_ForceModel',
                       srp=True
                       )
 # lep_fm.Help()
-lep_fm.gravity.Help()
+# lep_fm.gravity.Help()
 
-print(lep_fm.gmat_obj.GetGeneratingString())
+# print(lep_fm.gmat_obj.GetGeneratingString())
 
 sc = gpy.Spacecraft('Spacecraft')
 
@@ -50,6 +50,12 @@ sc = gpy.Spacecraft('Spacecraft')
 
 # sat.Help()
 
-print(gpy.utils.gmat_obj_field_list(lep_fm), '\n')
+df = o.ForceModel.DragForce()
+print('\n', gpy.utils.gmat_obj_field_list(df), '\n')
+
+am = df.gmat_obj.GetAtmosphereModel()
+print(am)
 
 # gmat.ShowClasses()
+
+# print(gmat.ATMOSPHERE)
