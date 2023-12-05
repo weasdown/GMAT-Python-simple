@@ -31,9 +31,13 @@ lep_fm = o.ForceModel(name='LowEarthProp_ForceModel',
                           order=10,
                       ),
                       point_masses=['Luna', 'Sun'],
-                      srp=True)
+                      drag=o.ForceModel.DragForce(),
+                      srp=True
+                      )
+# lep_fm.Help()
+lep_fm.gravity.Help()
 
-lep_fm.Help()
+print(lep_fm.gmat_obj.GetGeneratingString())
 
 sc = gpy.Spacecraft('Spacecraft')
 
@@ -47,3 +51,5 @@ sc = gpy.Spacecraft('Spacecraft')
 # sat.Help()
 
 print(gpy.utils.gmat_obj_field_list(lep_fm), '\n')
+
+# gmat.ShowClasses()

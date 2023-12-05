@@ -14,8 +14,9 @@ from gmat_py_simple.utils import *
 
 class AtmosphereModel(GmatObject):
     def __init__(self):
-        # super().__init__('AtmosphereModel', 'AtmosphereModel')
+        # super().__init__('DragAtmosphereModel', 'AtmosphereModel')
         # raise NotImplementedError
+        # self.Help()
         pass
 
 
@@ -62,7 +63,7 @@ class ForceModel(GmatObject):
             # point_masses is a single string
             if isinstance(point_masses, str):
                 # point mass for a body cannot be set if that body is already in an attached GravityField
-                if self._gravity and (self._central_body in point_masses):
+                if self.gravity and (self._central_body in point_masses):
                     raise SyntaxError(f'Point mass for {self._central_body} cannot be used because '
                                       f'{self._central_body} is already set as the central body')
 
@@ -70,20 +71,20 @@ class ForceModel(GmatObject):
 
             # point_masses is a single PointMassForce
             elif isinstance(point_masses, ForceModel.PointMassForce):
-                if self._gravity and (self._central_body in point_masses.primary_body):
+                if self.gravity and (self._central_body in point_masses.primary_body):
                     raise SyntaxError(f'Point mass for {self._central_body} cannot be used because a GravityField '
                                       f'containing {self._central_body} is already set')
                 return [point_masses]
 
             # point_masses is a list (presumably of celestial body strings)
             elif isinstance(point_masses, list):
-                if not all(isinstance(force, str) for force in point_masses):
+                if not all(isinstance(f, str) for f in point_masses):
                     raise TypeError('If point_masses is a list, its items must be strings of celestial body names')
 
-                if not all([force in celestial_bodies for force in point_masses]):
+                if not all([f in celestial_bodies for f in point_masses]):
                     raise SyntaxError(f'Not all strings in point_masses are valid celestial body names')
 
-                if self._gravity and (any(force in self._central_body for force in point_masses)):
+                if self.gravity and (any(force in self._central_body for force in point_masses)):
                     raise SyntaxError(f'Point mass for {self._central_body} cannot be used because '
                                       f'{self._central_body} is already set as the central body')
 
@@ -109,38 +110,42 @@ class ForceModel(GmatObject):
         self._polyhedral_bodies = polyhedral_bodies
 
         if gravity_field:
-            self._gravity: ForceModel.GravityField = gravity_field
+            self.gravity: ForceModel.GravityField = gravity_field
 
-        self._gravity = self.GravityField()
-        self.AddForce(self._gravity)
+        if not gravity_field:
+            self.gravity = self.GravityField()  # setup default field
+        else:
+            self.gravity = gravity_field
+            self.AddForce(self.gravity)
 
-        self._point_mass_forces: list[ForceModel.PointMassForce] | None = None
+        self.point_mass_forces: list[ForceModel.PointMassForce] | None = None
         if not point_masses:
             self.SetField('PointMasses', [])
         else:
-            self._point_mass_forces = validate_point_masses(point_masses)  # raises exception if point_masses invalid
-            for force in self._point_mass_forces:
+            self.point_mass_forces = validate_point_masses(point_masses)  # raises exception if point_masses invalid
+            for force in self.point_mass_forces:
                 self.AddForce(force)
 
         if not drag:
-            self._drag = False
+            self.drag = False
         elif isinstance(drag, ForceModel.DragForce):
-            self._drag = drag
+            self.drag = drag
+            self.AddForce(self.drag)
         else:
-            self._drag = ForceModel.DragForce()  # create and use a default drag model
+            self.drag = ForceModel.DragForce()  # create and use a default drag model
 
         # if just srp=True, create and use a default srp object
         if not srp:
-            self._srp = None
+            self.srp = None
         elif isinstance(srp, ForceModel.SolarRadiationPressure):
-            self._srp = srp
+            self.srp = srp
         else:
             ForceModel.SolarRadiationPressure(self)
 
         # Add other effects
-        self._relativistic_correction = relativistic_correction
-        self._error_control = error_control
-        self._user_defined = user_defined
+        self.relativistic_correction = relativistic_correction
+        self.error_control = error_control
+        self.user_defined = user_defined
 
         # for attr in self._allowed_values:  # TODO check supplied args are allowed
         #     # use supplied value. If not given (None), use default
@@ -185,6 +190,8 @@ class ForceModel(GmatObject):
             self.force_model = fm
 
             self.atmosphere_model = atmosphere_model
+            # self.SetReference(self.atmosphere_model)
+
             self.historical_weather_source = historical_weather_source
             self.predicted_weather_source = predicted_weather_source
             self.cssi_space_weather_file = cssi_space_weather_file
