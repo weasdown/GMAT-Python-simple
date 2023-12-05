@@ -298,6 +298,9 @@ def rvector6_to_list(rv6) -> list[float | int]:
 
 
 def gmat_obj_field_list(gmat_obj):
+    if 'gmat_py_simple' in str(type(gmat_obj)):
+        gmat_obj = gmat_obj.gmat_obj
+
     fields = []
     for i in range(1000):
         try:

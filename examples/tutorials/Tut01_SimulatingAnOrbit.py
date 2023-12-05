@@ -43,3 +43,5 @@ lep_fm.Help()
 # gpy.Propagate(le_prop, sat, 'Earth.Periapsis')
 
 # sat.Help()
+
+print(gpy.utils.gmat_obj_field_list(lep_fm))
