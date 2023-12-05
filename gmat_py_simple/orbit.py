@@ -154,6 +154,9 @@ class ForceModel(GmatObject):
         # check_valid_args(primary_bodies=primary_bodies)
         gmat.Initialize()
 
+    def __repr__(self):
+        return f'ForceModel with name {self.name}'
+
     def AddForce(self, force: PhysicalModel):
         self.gmat_obj.AddForce(force.gmat_obj)
 

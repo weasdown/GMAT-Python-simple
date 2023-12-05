@@ -316,3 +316,22 @@ def gmat_obj_field_list(gmat_obj):
                 raise
 
     return fields
+
+
+def generate_script() -> str:
+    """
+    Return the full GMAT script equivalent of the current file
+    :return:
+    """
+    script = f'globals from gpy: {[item for item in globals().copy().values() if "gmat_py_simple" in str(type(item))]}'
+    #TODO complete function
+    return script
+
+
+def GetGeneratingString(obj) -> str:
+    """
+    Return the GMAT script equivalent of an object
+    :param obj:
+    :return:
+    """
+    pass

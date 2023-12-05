@@ -35,6 +35,8 @@ lep_fm = o.ForceModel(name='LowEarthProp_ForceModel',
 
 lep_fm.Help()
 
+sc = gpy.Spacecraft('Spacecraft')
+
 # drag = o.ForceModel.DragForce(fm=lep_fm, f107=150, f107a=150, magnetic_index=3)
 # srp = o.ForceModel.SolarRadiationPressure(fm=lep_fm, flux=1367, nominal_sun=149597870.691)
 # lep_fm.AddForce(drag)
@@ -44,4 +46,4 @@ lep_fm.Help()
 
 # sat.Help()
 
-print(gpy.utils.gmat_obj_field_list(lep_fm))
+print(gpy.utils.gmat_obj_field_list(lep_fm), '\n')
