@@ -41,15 +41,20 @@ def Propagate(propagator: PropSetup, sc: Spacecraft, stop_param: str, stop_value
                        'TLONG', 'TLONGDot', 'TotalMass', 'TTModJulian', 'UTCModJulian', 'VelApoapsis', 'VelPeriapsis',
                        'VMAG', 'VX', 'VY', 'VZ', 'X', 'Y', 'Z']}
 
+    # Copied from GMAT src/base/command/Propagate.cpp/PARAMETER_TEXT
+    params = ["AvailablePropModes", "PropagateMode", "InterruptFrequency", "StopTolerance", "Spacecraft", "Propagator",
+              "StopCondition", "PropForward", "AllSTMs", "AllAMatrices", "AllCovariances"]
+
     class StopCondition(GmatObject):
-        def __init__(self, obj_type: str, name: str):
+        def __init__(self, name: str, base_epoch=None, epoch=None, epoch_var=None, stop_var=None,
+                     goal=None, repeat=None):
             super().__init__('StopCondition', name)
-            self.base_epoch = None
-            self.epoch = None
-            self.epoch_var = None
-            self.stop_var = None
-            self.goal = None
-            self.repeat = None
+            self.base_epoch = base_epoch
+            self.epoch = epoch
+            self.epoch_var = epoch_var
+            self.stop_var = stop_var
+            self.goal = goal
+            self.repeat = repeat
 
     if not isinstance(sc, Spacecraft):
         raise TypeError('sc parameter must be a Spacecraft object')
