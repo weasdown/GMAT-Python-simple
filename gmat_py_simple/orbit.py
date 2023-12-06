@@ -13,38 +13,49 @@ from gmat_py_simple.utils import *
 
 
 class AtmosphereModel(GmatObject):
-    # TODO refer to src/base/solarsys/AtmosphereModel.cpp for definition
-    #  base/forcemodel/DragForce.cpp for use in DragForce
-    def __init__(self, name: str = 'AtmoModel', f107: int = 150, f107a: int = 150, magnetic_index=None,
-                 cssi_space_weather_file=None, schatten_file=None):
-        # super().__init__('AtmosphereModel', 'AtmoModel')
-        # raise NotImplementedError
-        # self.Help()
-        pass
+    def __init__(self, name: str = 'AtmoModel', model: str = 'JacchiaRoberts', f107: int = 150, f107a: int = 150,
+                 magnetic_index=3, cssi_space_weather_file='SpaceWeather-All-v1.2.txt',
+                 schatten_file='SchattenPredict.txt'):
+
+        self.model = model
+        self.allowed_models = ['JacchiaRoberts', 'MSISE86', 'MSISE90', 'NRLMSISE00', 'MarsGRAM2005']
+        if self.model not in self.allowed_models:
+            raise AttributeError(f'model parameter must be one of the following: {self.allowed_models}')
+
+        super().__init__(model, name)
+
+        self.f107 = f107
+        self.SetField('F107', self.f107)
+
+        self.f107a = f107a
+        self.SetField('F107A', self.f107a)
+
+        self.magnetic_index = magnetic_index
+        self.SetField('MagneticIndex', self.magnetic_index)
+
+        if cssi_space_weather_file:
+            self.cssi_space_weather_file = cssi_space_weather_file
+            self.SetField('CSSISpaceWeatherFile', self.cssi_space_weather_file)
+        else:
+            self.cssi_space_weather_file = None
+
+        if schatten_file:
+            self.schatten_file = schatten_file
+            self.SetField('SchattenFile', self.schatten_file)
+        else:
+            self.schatten_file = None
 
 
-class ExponentialAtmosphere(AtmosphereModel):
-    def __init__(self):
-        super().__init__()
-        raise NotImplementedError
-
-
-class JacchiaRobertsAtmosphere(AtmosphereModel):
-    def __init__(self):
-        super().__init__()
-        raise NotImplementedError
-
-
-class MSISE90Atmosphere(AtmosphereModel):
-    def __init__(self):
-        super().__init__()
-        raise NotImplementedError
-
-
-class SimpleExponentialAtmosphere(AtmosphereModel):
-    def __init__(self):
-        super().__init__()
-        raise NotImplementedError
+# class ExponentialAtmosphere(AtmosphereModel):
+#     def __init__(self):
+#         super().__init__()
+#         raise NotImplementedError
+#
+#
+# class SimpleExponentialAtmosphere(AtmosphereModel):
+#     def __init__(self):
+#         super().__init__()
+#         raise NotImplementedError
 
 
 class PhysicalModel(GmatObject):
@@ -135,7 +146,8 @@ class ForceModel(GmatObject):
             self.drag = drag
             self.AddForce(self.drag)
         else:
-            self.drag = ForceModel.DragForce()  # create and use a default drag model
+            self.drag = ForceModel.DragForce(fm=self)  # create and use a default drag model
+            self.AddForce(self.drag)
 
         # if just srp=True, create and use a default srp object
         if not srp:
@@ -143,7 +155,7 @@ class ForceModel(GmatObject):
         elif isinstance(srp, ForceModel.SolarRadiationPressure):
             self.srp = srp
         else:
-            ForceModel.SolarRadiationPressure(self)
+            ForceModel.SolarRadiationPressure(fm=self)
 
         # Add other effects
         self.relativistic_correction = relativistic_correction
@@ -180,39 +192,63 @@ class ForceModel(GmatObject):
             self._drag = drag if drag else ForceModel.DragForce(self._force_model)
 
     class DragForce(PhysicalModel):
-        def __init__(self, fm: ForceModel = None, name: str = 'DragForce',
-                     atmosphere_model: AtmosphereModel = AtmosphereModel(),
-                     historical_weather_source: str = 'ConstantFluxAndGeoMag',
+        def __init__(self, fm: ForceModel = None, name: str = 'DF',
+                     atmosphere_model: str = 'JacchiaRoberts',
+                     drag_model: str = 'Spherical', f107: int = 150, f107a: int = 150, magnetic_index: int = 3,
+                     historic_weather_source: str = 'ConstantFluxAndGeoMag',
                      predicted_weather_source: str = 'ConstantFluxAndGeoMag',
                      cssi_space_weather_file: str = 'SpaceWeather-All-v1.2.txt',
-                     schatten_file: str = 'SchattenPredict.txt', f107: int = 150, f107a: int = 150,
-                     magnetic_index: int = 3, schatten_error_model: str = 'Nominal',
-                     schatten_timing_model: str = 'NominalCycle', drag_model: str = 'Spherical', density_model=None,
+                     schatten_file: str = 'SchattenPredict.txt',
+                     schatten_error_model: str = 'Nominal',
+                     schatten_timing_model: str = 'NominalCycle', density_model=None,
                      input_file=None):
+
             super().__init__('DragForce', name)
-            self.force_model = fm
 
-            self.atmosphere_model = atmosphere_model
-            # self.SetReference(self.atmosphere_model)
+            self.allowed_models = ['JacchiaRoberts', 'MSISE86', 'MSISE90', 'NRLMSISE00', 'MarsGRAM2005']
+            if atmosphere_model not in self.allowed_models:
+                raise AttributeError(f'model parameter must be one of the following: {self.allowed_models}')
+            else:
+                self.atmosphere_model = AtmosphereModel(model=atmosphere_model)
+                self.SetReference(self.atmosphere_model)
 
-            self.historical_weather_source = historical_weather_source
-            self.predicted_weather_source = predicted_weather_source
-            self.cssi_space_weather_file = cssi_space_weather_file
-            self.schatten_file = schatten_file
+            self.drag_model = drag_model
             self.f107 = f107
             self.f107a = f107a
             self.magnetic_index = magnetic_index
+
+            self.historic_weather_source = historic_weather_source
+            self.SetField('HistoricWeatherSource', self.historic_weather_source)
+
+            self.predicted_weather_source = predicted_weather_source
+            self.SetField('PredictedWeatherSource', self.predicted_weather_source)
+
+            self.cssi_space_weather_file = cssi_space_weather_file
+            self.SetField('CSSISpaceWeatherFile', self.cssi_space_weather_file)
+
+            self.schatten_file = schatten_file
+            self.SetField('SchattenFile', self.schatten_file)
+
             self.schatten_error_model = schatten_error_model
+            self.SetField('SchattenErrorModel', self.schatten_error_model)
+
             self.schatten_timing_model = schatten_timing_model
-            self.drag_model = drag_model
-            self.density_model = density_model
-            self.input_file = input_file
+            self.SetField('SchattenTimingModel', self.schatten_timing_model)
 
-            # TODO SetField in attr for loop
-            self_attrs = list(self.__dict__.keys())
-            # print(self_attrs)
+            if self.atmosphere_model == 'MarsGRAM2005':
+                self.density_model = density_model
+                self.SetField('DensityModel', self.density_model)
 
-            if self.force_model:
+                self.input_file = input_file
+                self.SetField('InputFile', self.input_file)
+            else:
+                self.density_model = None
+                self.input_file = None
+
+            if not fm:
+                self.force_model = None
+            else:
+                self.force_model = fm
                 self.force_model.AddForce(self)
 
     class FiniteThrust(PhysicalModel):

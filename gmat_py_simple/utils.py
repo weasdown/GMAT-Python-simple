@@ -327,11 +327,3 @@ def generate_script() -> str:
     #TODO complete function
     return script
 
-
-def GetGeneratingString(obj) -> str:
-    """
-    Return the GMAT script equivalent of an object
-    :param obj:
-    :return:
-    """
-    pass

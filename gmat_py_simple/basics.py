@@ -93,6 +93,13 @@ class GmatObject:
     def GetState(self):
         return self.gmat_obj.GetState()
 
+    def GetGeneratingString(self) -> str:
+        """
+        Return the GMAT script equivalent of an object
+        :return:
+        """
+        return self.gmat_obj.GetGeneratingString()
+
 
 class HardwareItem(GmatObject):
     def __init__(self, obj_type: str, name: str):
