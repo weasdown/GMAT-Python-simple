@@ -4,7 +4,6 @@ import logging
 
 from load_gmat import gmat
 
-from gmat_py_simple import basics, utils
 # CelestialBodies, SpacecraftObjs, LibrationPoints, Barycenter, GroundStations, GmatObject, \
 #     Spacecraft, CoordSystems, py_str_to_gmat_str, gmat_str_to_py_str
 from gmat_py_simple.basics import GmatObject
@@ -72,7 +71,7 @@ class ForceModel(GmatObject):
         super().__init__('ODEModel', name)
 
         def validate_point_masses(pm) -> list[ForceModel.PointMassForce]:
-            celestial_bodies = utils.CelestialBodies()
+            celestial_bodies = CelestialBodies()
 
             # point_masses is a single string
             if isinstance(point_masses, str):

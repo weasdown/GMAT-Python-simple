@@ -88,7 +88,10 @@ class GmatObject:
             raise SyntaxError(f'Invalid argument OnOff - {OnOff} - must be "On" or "Off"')
 
     def SetReference(self, ref):
-        self.gmat_obj.SetReference(ref.gmat_obj)
+        if 'gmat_py.' not in str(type(ref)):  # wrapper object
+            self.gmat_obj.SetReference(ref.gmat_obj)
+        else:  # native GMAT object
+            self.gmat_obj.SetReference(ref)
 
     def GetState(self):
         return self.gmat_obj.GetState()
@@ -110,3 +113,31 @@ class HardwareItem(GmatObject):
 
     def IsInitialized(self):
         self.gmat_obj.IsInitialized()
+
+
+class Parameter(GmatObject):
+    # TODO: see src/base/parameter/Parameter.cpp
+    #  key should be type ParameterKey, from GmatParam
+    def __init__(self, name: str = 'Param', type_str: str = None, key: str = None, owner: str = None, desc: str = None,
+                 unit: str = None, dep_obj: str = None, owner_type: int = None, is_time_param: bool = False,
+                 is_settable: bool = False, is_plottable: bool = False, is_reportable: bool = False,
+                 owned_obj_type: int = None):
+        super().__init__('Parameter', name)
+
+
+class GmatCommand:
+    def __init__(self, obj_type: str):
+        self.obj_type = obj_type
+        self.gmat_obj = gmat.Construct(self.obj_type)
+
+    def GetGeneratingString(self) -> str:
+        return self.gmat_obj.GetGeneratingString()
+
+    def GetField(self, field: str):
+        self.gmat_obj.GetField(field)
+
+    def SetField(self, field: str, val: str | list | int | float):
+        self.gmat_obj.SetField(field, val)
+
+    # def Help(self):
+    #     self.gmat_obj.Help()
