@@ -375,6 +375,9 @@ class PropSetup(GmatObject):  # variable called prop in GMAT Python examples
     def GetPropStateManager(self):
         return self.gmat_obj.GetPropStateManager()
 
+    def SetObject(self, sc):
+        self.psm.SetObject(sc.gmat_obj)
+
 
 class OrbitState:
     class CoordinateSystem:

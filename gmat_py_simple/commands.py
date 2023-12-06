@@ -61,7 +61,11 @@ def Propagate(propagator: PropSetup, sc: Spacecraft, stop_param: str, stop_value
     if stop_param == 'ElapsedSecs':  # assuming stop_value is an ElapsedSecs value
         dt = stop_value
     elif stop_param == 'ElapsedDays':
-        dt = stop_value * 86400
+        # TODO bugfix: work for multiple ElapsedDays. ED = 1 works.
+        #  If beyond ~1.3, result Epoch capped to 23 Jul 2014 17:29:17.477. Currently using ED * 86400 then Step.
+        #  Also happens if using ElapsedSecs with e.g. 365*86400 to attempt one year.
+        raise NotImplementedError
+        # dt = stop_value * 86400
     else:
         raise NotImplementedError
 
@@ -73,8 +77,8 @@ def Propagate(propagator: PropSetup, sc: Spacecraft, stop_param: str, stop_value
 
     print(f'FM in Propagate: {propagator.force_model}')
 
-    # TODO clarify: both of these commands needed?
-    propagator.psm.SetObject(sc)  # from pg 61 of API Users Guide
+    # TODO clarify: are both of these commands needed?
+    # propagator.SetObject(sc)  # from pg 61 of API Users Guide
     propagator.AddPropObject(sc)  # add the spacecraft to the PropSetup (and hence Propagator)
 
     propagator.PrepareInternals()

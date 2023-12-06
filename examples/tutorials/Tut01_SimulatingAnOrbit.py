@@ -42,12 +42,12 @@ start_state = sat.GetKeplerianState()
 # print(start_state)
 
 prop = gpy.orbit.PropSetup('Propagator', fm=lep_fm)
-gpy.commands.Propagate(prop, sat, 'ElapsedDays', 365)
+gpy.commands.Propagate(prop, sat, 'ElapsedSecs', 60)
 
 end_state = sat.GetKeplerianState()
 # print(end_state)
 
-# sat.Help()
+sat.Help()
 # gator = prop.GetPropagator()
 # print(f'gator: {gator}')
 # print('gator Help:')
