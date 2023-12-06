@@ -64,25 +64,23 @@ sat_params = {
 sc = gmat.Construct('Spacecraft', 'DefaultSC')
 
 fm = gmat.Construct('ODEModel', 'GF&Sun')
-fm.SetSolarSystem(gmat.GetSolarSystem())
-grav = gmat.Construct('GravityField')
-grav.SetField('BodyName', 'Earth')
-grav.SetField('PotentialFile', 'JGM2.cof')
-
 pm_sun = gmat.Construct('PointMassForce')
-pm_sun.SetField('BodyName', 'Sun')
-fm.AddForce(grav)
 fm.AddForce(pm_sun)
-fm.Help()
 
-prop = gmat.Construct('PropSetup', 'prop')
-prop.AddPropObject(sc)
+prop = gmat.Construct('Propagator', 'Prop')
+gator = gmat.Construct("PrinceDormand78", "Gator")
+prop.SetReference(gator)
 prop.SetReference(fm)
-prop.Help()
 
-prop.PrepareInternals()
-gator = prop.GetPropagator()
+propagate = gmat.Construct('Propagate')
+
 gmat.Initialize()
+prop.AddPropObject(sc)
+prop.PrepareInternals()
+
+gator = prop.GetPropagator()
+
+# gmat.Initialize()
 
 # gator = prop.GetPropagator()
 # psm = prop.GetPropStateManager()
@@ -101,21 +99,22 @@ gmat.Initialize()
 # prop.Initialize()
 # gator.Initialize()
 
-propagate = gmat.Construct('Propagate')
 propagate.SetField('Propagator', gator.GetName())
 # propagate.SetField('Spacecraft', sc.GetName())
 
-propagate.SetObject(gator.GetName(), gmat.PROPAGATOR)
-propagate.SetObject(sc.GetName(), gmat.SPACECRAFT)
-propagate.SetObject(prop.GetName(), gmat.PROP_SETUP)
+# propagate.SetObject(gator.GetName(), gmat.PROPAGATOR)
+# propagate.SetObject(sc.GetName(), gmat.SPACECRAFT)
+# propagate.SetObject(prop.GetName(), gmat.PROP_SETUP)
 
 gmat.Initialize()
 
 propagate.Help()
 
-print(f'Prop status: {propagate.GetPropStatus()}')
-print(propagate.RunComplete())
+# print(f'Prop status: {propagate.GetPropStatus()}')
+# print(propagate.RunComplete())
 
 # propagate.Initialize()
 # propagate.Execute()
 # propagate.Help()
+
+print(gpy.utils.gmat_obj_field_list(propagate))
