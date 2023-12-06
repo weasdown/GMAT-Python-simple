@@ -123,13 +123,10 @@ class ForceModel(GmatObject):
 
         self._polyhedral_bodies = polyhedral_bodies
 
-        if gravity_field:
-            self.gravity: ForceModel.GravityField = gravity_field
-
         if not gravity_field:
             self.gravity = self.GravityField()  # setup default field
         else:
-            self.gravity = gravity_field
+            self.gravity: ForceModel.GravityField = gravity_field
             self.AddForce(self.gravity)
 
         self.point_mass_forces: list[ForceModel.PointMassForce] | None = None
@@ -340,10 +337,23 @@ class PropSetup(GmatObject):  # variable called prop in GMAT Python examples
             super().__init__(integrator, name)
             self.integrator = integrator
 
-    def __init__(self, name: str, fm: ForceModel = None, gator: PropSetup.Propagator = None):
+    def __init__(self, name: str, fm: ForceModel = None, gator: PropSetup.Propagator = None,
+                 initial_step_size: int = 60, accuracy: int = 1e-12, min_step: int = 0):
         super().__init__('PropSetup', name)
         self.force_model = fm if fm else ForceModel()
         self.gator = gator if gator else PropSetup.Propagator()
+
+        if initial_step_size:
+            self.initial_step_size = initial_step_size
+            self.SetField('InitialStepSize', self.initial_step_size)
+
+        if accuracy:
+            self.accuracy = accuracy
+            self.SetField('Accuracy', self.accuracy)
+
+        if min_step:
+            self.min_step = min_step
+            self.SetField('MinStep', self.min_step)
 
         self.SetReference(self.gator)
         self.SetReference(self.force_model)

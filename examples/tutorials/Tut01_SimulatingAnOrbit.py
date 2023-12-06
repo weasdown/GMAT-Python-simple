@@ -24,6 +24,8 @@ sat_params = {
 
 sat = gpy.Spacecraft.from_dict(sat_params)
 
+sat.Help()
+
 lep_fm = o.ForceModel(name='LowEarthProp_ForceModel',
                       gravity_field=o.ForceModel.GravityField(
                           degree=10,
@@ -40,7 +42,9 @@ start_state = sat.GetKeplerianState()
 print(start_state)
 
 prop = gpy.orbit.PropSetup('Propagator', fm=lep_fm)
-gpy.commands.Propagate(prop, sat, 'ElapsedSecs', 12000)
+gpy.commands.Propagate(prop, sat, 'ElapsedDays', 365)
 
 end_state = sat.GetKeplerianState()
 print(end_state)
+
+# sat.Help()
