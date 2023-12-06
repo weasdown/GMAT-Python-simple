@@ -24,7 +24,7 @@ sat_params = {
 
 sat = gpy.Spacecraft.from_dict(sat_params)
 
-sat.Help()
+# sat.Help()
 
 lep_fm = o.ForceModel(name='LowEarthProp_ForceModel',
                       gravity_field=o.ForceModel.GravityField(
@@ -36,15 +36,19 @@ lep_fm = o.ForceModel(name='LowEarthProp_ForceModel',
                       srp=True
                       )
 
-lep_fm.Help()
+# lep_fm.Help()
 
 start_state = sat.GetKeplerianState()
-print(start_state)
+# print(start_state)
 
 prop = gpy.orbit.PropSetup('Propagator', fm=lep_fm)
 gpy.commands.Propagate(prop, sat, 'ElapsedDays', 365)
 
 end_state = sat.GetKeplerianState()
-print(end_state)
+# print(end_state)
 
 # sat.Help()
+# gator = prop.GetPropagator()
+# print(f'gator: {gator}')
+# print('gator Help:')
+# gator.Help()

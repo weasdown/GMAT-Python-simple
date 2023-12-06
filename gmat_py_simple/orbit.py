@@ -334,6 +334,7 @@ class PropSetup(GmatObject):  # variable called prop in GMAT Python examples
         # Labelled in GMAT GUI as "Integrator"
         def __init__(self, integrator: str = 'PrinceDormand78', name: str = 'Prop', **kwargs):
             integrator_allowed_types = ['']
+            name = f'{name}_{integrator}'
             super().__init__(integrator, name)
             self.integrator = integrator
 
@@ -342,6 +343,7 @@ class PropSetup(GmatObject):  # variable called prop in GMAT Python examples
         super().__init__('PropSetup', name)
         self.force_model = fm if fm else ForceModel()
         self.gator = gator if gator else PropSetup.Propagator()
+        self.SetReference(self.gator)
 
         if initial_step_size:
             self.initial_step_size = initial_step_size
@@ -355,8 +357,8 @@ class PropSetup(GmatObject):  # variable called prop in GMAT Python examples
             self.min_step = min_step
             self.SetField('MinStep', self.min_step)
 
-        self.SetReference(self.gator)
         self.SetReference(self.force_model)
+        self.psm = self.GetPropStateManager()
 
     def AddPropObject(self, sc: spc.Spacecraft):
         self.gmat_obj.AddPropObject(sc.gmat_obj)
@@ -369,6 +371,9 @@ class PropSetup(GmatObject):  # variable called prop in GMAT Python examples
 
     def GetState(self):
         return self.gator.GetState()
+
+    def GetPropStateManager(self):
+        return self.gmat_obj.GetPropStateManager()
 
 
 class OrbitState:

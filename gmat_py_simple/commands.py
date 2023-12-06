@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from load_gmat import gmat
 
+from gmat_py_simple import GmatObject
 from gmat_py_simple.spacecraft import Spacecraft
 from gmat_py_simple.orbit import PropSetup
 
@@ -40,6 +41,16 @@ def Propagate(propagator: PropSetup, sc: Spacecraft, stop_param: str, stop_value
                        'TLONG', 'TLONGDot', 'TotalMass', 'TTModJulian', 'UTCModJulian', 'VelApoapsis', 'VelPeriapsis',
                        'VMAG', 'VX', 'VY', 'VZ', 'X', 'Y', 'Z']}
 
+    class StopCondition(GmatObject):
+        def __init__(self, obj_type: str, name: str):
+            super().__init__('StopCondition', name)
+            self.base_epoch = None
+            self.epoch = None
+            self.epoch_var = None
+            self.stop_var = None
+            self.goal = None
+            self.repeat = None
+
     if not isinstance(sc, Spacecraft):
         raise TypeError('sc parameter must be a Spacecraft object')
     else:
@@ -60,9 +71,16 @@ def Propagate(propagator: PropSetup, sc: Spacecraft, stop_param: str, stop_value
     else:
         raise SyntaxError('Invalid direction given - accepts only "Forwards" or "Backwards"')
 
+    print(f'FM in Propagate: {propagator.force_model}')
+
+    # TODO clarify: both of these commands needed?
+    propagator.psm.SetObject(sc)  # from pg 61 of API Users Guide
     propagator.AddPropObject(sc)  # add the spacecraft to the PropSetup (and hence Propagator)
+
     propagator.PrepareInternals()
+
     propagator.gator = propagator.GetPropagator()
     gator = propagator.gator
+
     gator.Step(dt)
     gator.UpdateSpaceObject()
