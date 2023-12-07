@@ -1,0 +1,23 @@
+Written by weasdown, 7/12/2023.
+
+These instructions will help you setup GMAT's Python API.
+
+1) Go into the GMAT root folder (containing folders called api, bin etc). We'll call this [GMAT]. Go to [GMAT]/bin. If there is already a file in there named api_startup_file.txt, delete it.
+
+2) Go to [GMAT]/api, then double click BuildApiStartupFile.py to run it. A black window will briefly flash up on the screen. A new api_startup_file.txt will have been created in [GMAT]/bin. 
+
+3) Go to [GMAT]/api, and open load_gmat.py in a text editor (don't run it). You can do this by right clicking, then Open with, Choose another app, select Notepad and select Just once.
+
+4) Change the GmatInstall variable from <TopLevelGMATFolder> to the path for [GMAT], making sure you keep the quotes around it. You can get the [GMAT] path by going back to its File Explorer window, right clicking the address and the top and clicking Copy Address as Text. Then paste this between the quotes on the GmatInstall line of load_gmat.py.
+
+5) Python doesn't like the single backslashes that Windows puts in file addresses, so put an extra backslash in front of each existing one. The line should now read something like:
+
+GmatInstall = "C:\\Users\\{username}\\Downloads\\gmat-win-R2022a\\GMAT"
+
+6) Copy the file load_gmat.py to the same folder as wherever your Python code will live.
+
+7) At the start of any Python file where you want to use the GMAT API, add the following line:
+
+from load_gmat import gmat
+
+8) You can then call the API with commands like gmat.Help()
