@@ -117,4 +117,25 @@ propagate.Help()
 # propagate.Execute()
 # propagate.Help()
 
-print(gpy.utils.gmat_obj_field_list(propagate))
+# print(gpy.utils.gmat_obj_field_list(propagate))
+
+# print(propagate.GetParameterCount())  # 16
+# print(propagate.GetTypeAndValue(3))
+
+
+def CustomHelp(obj):
+    if 'gmat_py_simple' in str(type(obj)):
+        param_count = obj.gmat_obj.GetParameterCount()
+    else:
+        param_count = obj.GetParameterCount()
+
+    for i in range(param_count):
+        try:
+            print(f'Parameter: {obj.GetParameterText(i)}\n'
+                  f'Type and value: {obj.GetTypeAndValue(i)}\n')
+        except Exception as ex:
+            print(ex, '\n')
+
+
+CustomHelp(propagate)
+
