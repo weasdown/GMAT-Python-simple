@@ -70,7 +70,7 @@ class Propagate(GmatCommand):
         # self.gmat_obj.SetObject(self.propagator.gmat_obj.GetName(), gmat.PROPAGATOR)
 
         if mode:
-            if mode != 'Synchronized':
+            if mode != 'Synchronized':  # TODO: BackProp a valid option here, or handled separately?
                 raise SyntaxError('Invalid mode was specified. If given, must be "Synchronized"')
             self.mode = mode
             self.SetField('PropagateMode', self.mode)  # believe complete - TODO test with multiple sats

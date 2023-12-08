@@ -380,9 +380,15 @@ class PropSetup(GmatObject):  # variable called prop in GMAT Python examples
 
 class OrbitState:
     class CoordinateSystem:
-        # TODO consider setting __init__ params mostly as kwargs
+        # TODO convert __init__ params to args with default values
+
+        # TODO complete - will be able to create each type of Axes, for use in CoordinateSystem
+        class Axes:
+            pass
+
         def __init__(self, name: str, **kwargs):
             # TODO complete allowed values - see User Guide pages 335-339 (PDF pg 344-348)
+            #  and src/base/coordsystem/CoordinateSystem.cpp/CreateLocalCoordinateSystem
             self._allowed_values = {'Axes': ['MJ2000Eq', 'MJ2000Ec', 'ICRF',
                                              'MODEq', 'MODEc', 'TODEq', 'TODEc', 'MOEEq', 'MOEEc', 'TOEEq', 'TOEEc',
                                              'ObjectReferenced', 'Equator', 'BodyFixed', 'BodyInertial',
@@ -412,6 +418,8 @@ class OrbitState:
                     setattr(self, f'_{attr}', defaults[attr])  # set attribute's default value
 
             if 'no_gmat_object' not in kwargs:
+                print(f"Running gmat.Construct('CoordinateSystem', '{self._name}', '{self._central_body}', "
+                      f"'{self._axes}')")
                 gmat_obj = gmat.Construct('CoordinateSystem', self._name, self._central_body, self._axes)
                 self.gmat_obj = GmatObject.from_gmat_obj(gmat_obj)
 
@@ -444,6 +452,9 @@ class OrbitState:
             self._name = name
             self.gmat_obj.SetName(name)
             print(f'New name in GMAT: {self.gmat_obj.GetName()}')
+
+        def Help(self):
+            return GmatObject.Help(self.gmat_obj)
 
     def __init__(self, **kwargs):
         self._allowed_state_elements = {
