@@ -66,7 +66,7 @@ class Propagate(GmatCommand):
 
         self.propagator = propagator if propagator else PropSetup('DefaultProp')
         # self.gmat_obj.SetRefObject(self.propagator.gmat_obj, gmat.PROPAGATOR, self.propagator.name, 0)
-        self.SetField('Propagator', self.propagator.name)
+        # self.SetField('Propagator', self.propagator.name)
         # self.gmat_obj.SetObject(self.propagator.gmat_obj.GetName(), gmat.PROPAGATOR)
 
         if mode:
@@ -88,6 +88,7 @@ class Propagate(GmatCommand):
         stop_cond_string = f'{self.stop_param} = {self.goal}'
 
         self.g_stop_cond = gmat.Construct('StopCondition', 'StopCond')
+        self.g_stop_cond.Help()
         print(f'Stop condition fields: {gmat_obj_field_list(self.g_stop_cond)}')
         self.g_stop_cond.SetField('StopVar', self.stop_param)
         self.g_stop_cond.SetField('Goal', str(self.goal))
@@ -171,7 +172,6 @@ class Propagate(GmatCommand):
         # self.gator.Step(self.dt)
         # self.gator.UpdateSpaceObject()
 
-        self.gmat_obj.Help()
         # self.propagator.Help()
 
         print(f'Propagate Generating String: {self.GetGeneratingString()}')

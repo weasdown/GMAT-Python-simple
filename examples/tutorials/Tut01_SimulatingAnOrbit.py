@@ -61,86 +61,115 @@ sat_params = {
 # propagate = gmat.Construct('Propagate')
 # print(f'Propagate Generating String: {propagate.GetGeneratingString()}')
 
-# sc = gmat.Construct('Spacecraft', 'DefaultSC')
-#
-# fm = gmat.Construct('ODEModel', 'GF&Sun')
-# pm_sun = gmat.Construct('PointMassForce')
-# fm.AddForce(pm_sun)
-#
-# prop = gmat.Construct('Propagator', 'Prop')
-# gator = gmat.Construct("PrinceDormand78", "Gator")
-# prop.SetReference(gator)
-# prop.SetReference(fm)
-#
-# propagate = gmat.Construct('Propagate')
-#
+sc = gmat.Construct('Spacecraft', 'DefaultSC')
+
+fm = gmat.Construct('ODEModel', 'GF&Sun')
+pm_sun = gmat.Construct('PointMassForce')
+fm.AddForce(pm_sun)
+
+prop = gmat.Construct('Propagator', 'Prop')
+gator = gmat.Construct("PrinceDormand78", "Gator")
+prop.SetReference(gator)
+prop.SetReference(fm)
+
+gmat.Initialize()
+prop.AddPropObject(sc)
+prop.PrepareInternals()
+
+gator = prop.GetPropagator()
+
 # gmat.Initialize()
-# prop.AddPropObject(sc)
-# prop.PrepareInternals()
-#
+
 # gator = prop.GetPropagator()
-#
-# # gmat.Initialize()
-#
-# # gator = prop.GetPropagator()
-# # psm = prop.GetPropStateManager()
-# # psm.SetObject(sc)
-#
-# # gmat.Initialize()
-# #
-# # fm = prop.GetODEModel()
-# # gator = prop.GetPropagator()
-# # psm.BuildState()
-# # fm.SetPropStateManager(psm)
-# # fm.SetState(psm.GetState())
-# # fm.Initialize()
-# # fm.BuildModelFromMap()
-# # fm.UpdateInitialData()
-# # prop.Initialize()
-# # gator.Initialize()
-#
-# propagate.SetField('Propagator', gator.GetName())
-# # propagate.SetField('Spacecraft', sc.GetName())
-#
-# # propagate.SetObject(gator.GetName(), gmat.PROPAGATOR)
-# # propagate.SetObject(sc.GetName(), gmat.SPACECRAFT)
-# # propagate.SetObject(prop.GetName(), gmat.PROP_SETUP)
-#
+# psm = prop.GetPropStateManager()
+# psm.SetObject(sc)
+
 # gmat.Initialize()
 #
+# fm = prop.GetODEModel()
+# gator = prop.GetPropagator()
+# psm.BuildState()
+# fm.SetPropStateManager(psm)
+# fm.SetState(psm.GetState())
+# fm.Initialize()
+# fm.BuildModelFromMap()
+# fm.UpdateInitialData()
+# prop.Initialize()
+# gator.Initialize()
+
+gmat.Initialize()
+
+bms = gmat.BeginMissionSequence()
+print(f'BeginMissionSequence return: {bms.Execute()}')
+
+
+def CustomHelp(obj):
+    if 'gmat_py_simple' in str(type(obj)):
+        param_count = obj.gmat_obj.GetParameterCount()
+    else:
+        param_count = obj.GetParameterCount()
+
+    for i in range(param_count):
+        try:
+            print(f'Parameter: {obj.GetParameterText(i)}\n'
+                  f'param type str: {obj.GetParameterTypeString(i)}\n')
+                  # f'Type and value: {obj.GetTypeAndValue(i)}\n')
+        except Exception as ex:
+            print(ex, '\n')
+
+
+propagate = gmat.Construct('Propagate')
+
+print(propagate.GetRefObjectTypeArray())  # (134, 101, 122)
+print(propagate.GetRefObjectNameArray(122))  # (), (), ()
+print(propagate.GetRefObjectArray(101))  # <gmat_py.ObjectArray; proxy of <Swig Object of type 'std::vector...
+
+propagate.SetObject(prop.GetName(), gmat.PROP_SETUP)  # src/base/Propagate.cpp/Propagate.SetObject()
+# print(propagate.GetField('Propagator'))  # API Exception caught: Cannot get string parameter with ID 9: "Propagator"
+# on Propagate named ""
+
+propagate.SetStringParameter(9, prop.GetName())
+# print(propagate.GetStringParameter(9))
+propagate.SetField('Spacecraft', sc.GetName())
+
+CustomHelp(propagate)
+
+# print(propagate.AcceptsObjectType(gmat.STOP_CONDITION))
+print(propagate.GetFirstSpaceObjectName())
+print(propagate.Initialize())
+
+# propagate.SetField('Propagator', gator.GetName())
+
+
+# propagate.SetField('StopCondition', 'DefaultSC.ElapsedSecs = 8640.0')
+# propagate.SetField('Spacecraft', sc.GetName())
+
+# propagate.SetObject(gator.GetName(), gmat.PROPAGATOR)
+# propagate.SetObject(sc.GetName(), gmat.SPACECRAFT)
+# propagate.SetObject(prop.GetName(), gmat.PROP_SETUP)
+
 # propagate.Help()
-#
-# # print(f'Prop status: {propagate.GetPropStatus()}')
-# # print(propagate.RunComplete())
-#
-# # propagate.Initialize()
-# # propagate.Execute()
-# # propagate.Help()
-#
-# # print(gpy.utils.gmat_obj_field_list(propagate))
-#
-# # print(propagate.GetParameterCount())  # 16
-# # print(propagate.GetTypeAndValue(3))
-#
-#
-# def CustomHelp(obj):
-#     if 'gmat_py_simple' in str(type(obj)):
-#         param_count = obj.gmat_obj.GetParameterCount()
-#     else:
-#         param_count = obj.GetParameterCount()
-#
-#     for i in range(param_count):
-#         try:
-#             print(f'Parameter: {obj.GetParameterText(i)}\n'
-#                   f'Type and value: {obj.GetTypeAndValue(i)}\n')
-#         except Exception as ex:
-#             print(ex, '\n')
-#
-#
+
+# print(f'Prop status: {propagate.GetPropStatus()}')
+# print(propagate.RunComplete())
+
+# propagate.Initialize()
+# propagate.Execute()
+# propagate.Help()
+
+# print(gpy.utils.gmat_obj_field_list(propagate))
+
+# print(propagate.GetParameterCount())  # 16
+# print(propagate.GetTypeAndValue(3))
+
+
 # CustomHelp(propagate)
 
 # bob = gpy.orbit.OrbitState.CoordinateSystem('Bob')
 # bob.Help()
 
-cs = gmat.Construct('CoordinateSystem', 'CS', 'Earth')
-cs.Help()
+# cs = gmat.Construct('CoordinateSystem', 'CS', 'Earth')
+# cs.Help()
+
+# propagate = gmat.Construct('Propagate', 'Pgate', 'DefaultSC.ElapsedSecs = 8640.0')
+# propagate.Help()

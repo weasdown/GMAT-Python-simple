@@ -431,6 +431,7 @@ class OrbitState:
 
         @staticmethod
         def Construct(name: str, central_body: str, axes: str):
+            print('In static Construct')
             return gmat.Construct('CoordinateSystem', name, central_body, axes)
 
         @classmethod
