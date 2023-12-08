@@ -99,8 +99,8 @@ gator = prop.GetPropagator()
 
 gmat.Initialize()
 
-bms = gmat.BeginMissionSequence()
-print(f'BeginMissionSequence return: {bms.Execute()}')
+# bms = gmat.BeginMissionSequence()
+# print(f'BeginMissionSequence return: {bms.Execute()}')
 
 
 def CustomHelp(obj):
@@ -118,25 +118,55 @@ def CustomHelp(obj):
             print(ex, '\n')
 
 
-propagate = gmat.Construct('Propagate')
+sat = gmat.Construct('Spacecraft', 'Sat')
 
-print(propagate.GetRefObjectTypeArray())  # (134, 101, 122)
-print(propagate.GetRefObjectNameArray(122))  # (), (), ()
-print(propagate.GetRefObjectArray(101))  # <gmat_py.ObjectArray; proxy of <Swig Object of type 'std::vector...
+fm = gpy.orbit.ForceModel()
+fm.Help()
 
-propagate.SetObject(prop.GetName(), gmat.PROP_SETUP)  # src/base/Propagate.cpp/Propagate.SetObject()
-# print(propagate.GetField('Propagator'))  # API Exception caught: Cannot get string parameter with ID 9: "Propagator"
-# on Propagate named ""
+prop = gmat.Construct('Propagator', 'DefaultProp')
+# fm = prop.GetODEModel()
+# fm.Help()
+# prop.Help()
 
-propagate.SetStringParameter(9, prop.GetName())
-# print(propagate.GetStringParameter(9))
-propagate.SetField('Spacecraft', sc.GetName())
+stop_cond = gmat.Construct('StopCondition', 'StopCond')  # , 'Sat.ElapsedSecs=8640')  # , 8640.0)
 
-CustomHelp(propagate)
+# stop_cond.SetGoalParameter(8640.0)
 
-# print(propagate.AcceptsObjectType(gmat.STOP_CONDITION))
-print(propagate.GetFirstSpaceObjectName())
-print(propagate.Initialize())
+# stop_cond.SetDescription('Propagate until Sat.ElapsedSecs = 8640')
+# stop_cond.SetLhsString('Sat.ElapsedSecs =')
+#
+# propagate = gmat.Construct('Propagate')
+# propagate.SetObject('StopCondition', gmat.STOP_CONDITION)
+#
+# # stop_cond.Validate()
+# # stop_cond.SetRhsString('8640.0')
+# # stop_cond.SetSpacecrafts(sat, [sat])
+# stop_cond.Help()
+
+# propagate.SetField('StopCondition', 'StopCond')
+# propagate.SetReference(stop_cond)
+
+# print(propagate.GetRefObjectTypeArray())  # (134, 101, 122)
+# print(propagate.GetRefObjectName(134))  # (134, 101, 122)
+
+# propagate.Help()
+
+# print(propagate.GetRefObjectNameArray(122))  # (), (), ()
+# print(propagate.GetRefObjectArray(101))  # <gmat_py.ObjectArray; proxy of <Swig Object of type 'std::vector...
+#
+# propagate.SetObject(prop.GetName(), gmat.PROP_SETUP)  # src/base/Propagate.cpp/Propagate.SetObject()
+# # print(propagate.GetField('Propagator'))  # API Exception caught: Cannot get string parameter with ID 9: "Propagator"
+# # on Propagate named ""
+#
+# propagate.SetStringParameter(9, prop.GetName())
+# # print(propagate.GetStringParameter(9))
+# propagate.SetField('Spacecraft', sc.GetName())
+#
+# CustomHelp(propagate)
+#
+# # print(propagate.AcceptsObjectType(gmat.STOP_CONDITION))
+# print(propagate.GetFirstSpaceObjectName())
+# print(propagate.Initialize())
 
 # propagate.SetField('Propagator', gator.GetName())
 

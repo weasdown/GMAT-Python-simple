@@ -115,18 +115,20 @@ class ForceModel(GmatObject):
         defaults = {'error_control': ['RSSStep'], 'point_masses': ['Earth'], 'primary_bodies': []}
 
         self._central_body = central_body
-
-        # TODO replace below with creation of GravityFields
-        #  PrimaryBodies is alias for GravityFields as per page 162 of GMAT Architectucral Specification
-        self._primary_bodies = primary_bodies if primary_bodies else self._central_body
-
-        self._polyhedral_bodies = polyhedral_bodies
+        self.SetField('CentralBody', self._central_body)
 
         if not gravity_field:
             self.gravity = self.GravityField()  # setup default field
         else:
             self.gravity: ForceModel.GravityField = gravity_field
             self.AddForce(self.gravity)
+
+        # TODO replace below with creation of GravityFields
+        #  PrimaryBodies is alias for GravityFields as per page 162 of GMAT Architectucral Specification
+        self._primary_bodies = primary_bodies if primary_bodies else self._central_body
+        # self.SetField('PrimaryBodies', self._primary_bodies)
+
+        self._polyhedral_bodies = polyhedral_bodies
 
         self.point_mass_forces: list[ForceModel.PointMassForce] | None = None
         if not point_masses:
@@ -150,8 +152,10 @@ class ForceModel(GmatObject):
             self.srp = None
         elif isinstance(srp, ForceModel.SolarRadiationPressure):
             self.srp = srp
+            self.AddForce(self.srp)
         else:
-            ForceModel.SolarRadiationPressure(fm=self)
+            self.srp = ForceModel.SolarRadiationPressure(fm=self)
+            self.AddForce(self.srp)
 
         # Add other effects
         self.relativistic_correction = relativistic_correction
@@ -386,7 +390,8 @@ class OrbitState:
         class Axes:
             pass
 
-        def __init__(self, name: str, **kwargs):
+        def __init__(self, name: str, origin: str = 'Earth', central_body: str = 'Earth', axes: str = 'MJ2000Eq',
+                     **kwargs):
             # TODO complete allowed values - see User Guide pages 335-339 (PDF pg 344-348)
             #  and src/base/coordsystem/CoordinateSystem.cpp/CreateLocalCoordinateSystem
             self._allowed_values = {'Axes': ['MJ2000Eq', 'MJ2000Ec', 'ICRF',
@@ -400,9 +405,9 @@ class OrbitState:
             self._allowed_values['Primary'] = self._allowed_values['Origin']
 
             self._name = name
-            self._origin = None
-            self._axes = None
-            self._central_body = None
+            self._origin = origin
+            self._axes = axes
+            self._central_body = central_body
 
             defaults = {'axes': 'MJ2000Eq', 'central_body': 'Earth', 'origin': 'Earth'}
             for attr in list(defaults.keys()):
