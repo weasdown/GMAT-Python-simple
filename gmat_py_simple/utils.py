@@ -302,7 +302,7 @@ def gmat_obj_field_list(gmat_obj):
         gmat_obj = gmat_obj.gmat_obj
 
     fields = []
-    for i in range(1000):
+    for i in range(gmat_obj.GetParameterCount()):
         try:
             field_str: str = gmat_obj.GetParameterText(i)
             field = field_str.replace('\n', '')

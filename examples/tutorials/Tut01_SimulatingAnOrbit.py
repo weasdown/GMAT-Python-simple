@@ -61,43 +61,30 @@ sat_params = {
 # propagate = gmat.Construct('Propagate')
 # print(f'Propagate Generating String: {propagate.GetGeneratingString()}')
 
-sc = gmat.Construct('Spacecraft', 'DefaultSC')
+sat = gmat.Construct('Spacecraft', 'Sat')
+sat.SetField('Epoch', '21545')
+sat_name = sat.GetName()
 
-fm = gmat.Construct('ODEModel', 'GF&Sun')
-pm_sun = gmat.Construct('PointMassForce')
-fm.AddForce(pm_sun)
+fm = gmat.Construct("ForceModel", "FM")
+epm = gmat.Construct("PointMassForce", "EPM")
+fm.AddForce(epm)
 
-prop = gmat.Construct('Propagator', 'Prop')
+prop = gmat.Construct("Propagator", "Prop")
 gator = gmat.Construct("PrinceDormand78", "Gator")
 prop.SetReference(gator)
 prop.SetReference(fm)
 
 gmat.Initialize()
-prop.AddPropObject(sc)
+prop.AddPropObject(sat)
 prop.PrepareInternals()
 
 gator = prop.GetPropagator()
 
-# gmat.Initialize()
+state = gator.GetState()
 
-# gator = prop.GetPropagator()
-# psm = prop.GetPropStateManager()
-# psm.SetObject(sc)
 
-# gmat.Initialize()
-#
-# fm = prop.GetODEModel()
-# gator = prop.GetPropagator()
-# psm.BuildState()
-# fm.SetPropStateManager(psm)
-# fm.SetState(psm.GetState())
-# fm.Initialize()
-# fm.BuildModelFromMap()
-# fm.UpdateInitialData()
-# prop.Initialize()
-# gator.Initialize()
+# print(f'Starting state: {state}')
 
-gmat.Initialize()
 
 # bms = gmat.BeginMissionSequence()
 # print(f'BeginMissionSequence return: {bms.Execute()}')
@@ -113,22 +100,103 @@ def CustomHelp(obj):
         try:
             print(f'Parameter: {obj.GetParameterText(i)}\n'
                   f'param type str: {obj.GetParameterTypeString(i)}\n')
-                  # f'Type and value: {obj.GetTypeAndValue(i)}\n')
+            # f'Type and value: {obj.GetTypeAndValue(i)}\n')
         except Exception as ex:
             print(ex, '\n')
 
 
-sat = gmat.Construct('Spacecraft', 'Sat')
-
-fm = gpy.orbit.ForceModel()
-fm.Help()
-
-prop = gmat.Construct('Propagator', 'DefaultProp')
-# fm = prop.GetODEModel()
-# fm.Help()
-# prop.Help()
-
+# stop_cond fields: ['Covariance', 'BaseEpoch', 'Epoch', 'EpochVar', 'StopVar', 'Goal', 'Repeat']
 stop_cond = gmat.Construct('StopCondition', 'StopCond')  # , 'Sat.ElapsedSecs=8640')  # , 8640.0)
+print(f'Set LHS: {stop_cond.SetLhsString(f"{sat_name}.ElapsedSecs")}')
+print(f'Set RHS: {stop_cond.SetRhsString("8640.0")}')
+print(f'Get LHS: {stop_cond.GetLhsString()}')
+print(f'Get RHS: {stop_cond.GetRhsString()}')
+print(f'\nSetField StopVar: {stop_cond.SetField("StopVar", stop_cond.GetLhsString())}')
+print(f'SetField Goal: {stop_cond.SetField("Goal", stop_cond.GetRhsString())}')
+print(f'GetField StopVar: {stop_cond.GetField("StopVar")}')
+print(f'GetField Goal: {stop_cond.GetField("Goal")}\n')
+
+print(f'Generating string:\n{stop_cond.GetGeneratingString()}')
+
+# gmat.Initialize()
+
+# epoch_param = gmat.Construct('Parameter', 'EpochUser', 'UserParam')
+
+# sat_epoch = sat.GetState().GetEpoch()
+# print(f'sat current epoch: {sat_epoch}')
+# print(f'SetStopEpoch: {stop_cond.SetEpochParameter(sat_epoch+8640)}')
+# print(f'GetStopEpoch: {stop_cond.GetStopEpoch()}')
+
+print(f'GetStopValue: {stop_cond.GetStopValue()}, type: {type(stop_cond.GetStopValue())}')
+print(f'GetStopParameter: {stop_cond.GetStopParameter()}')
+
+ela = gmat.Construct('ElapsedSecs', stop_cond.GetLhsString())
+# ela's fields: ['Covariance', 'Object', 'InitialValue', 'Expression', 'Description', 'Unit', 'DepObject', 'Color',
+#                'InitialEpoch']
+ela.SetField('Object', sat.GetName())
+print(f'ela Set InitialValue: {ela.GetRealParameter(8)}')
+print(f'ela InitialEpoch: {ela.GetRealParameter(8)}')
+
+
+print(f'ela Set InitialEpoch: {ela.SetRealParameter(8, 0)}')
+print(f'ela InitialEpoch: {ela.GetRealParameter(8)}')
+
+print(f'Setting Stop Parameter: {stop_cond.SetStopParameter(ela)}')
+# print(f'GetStopParameter again: {stop_cond.GetStopParameter()}')
+
+# print(f'Update Buffer: {stop_cond.UpdateBuffer()}')
+# print('Buffer update complete')
+
+print(stop_cond.SetSpacecrafts([sat], [sat]))
+stop_cond.Help()
+# print(f'Initializing: {stop_cond.Initialize()}')
+
+# gmatpy._py39.gmat_py.APIException: Currently GMAT expects a Parameter of propagating Spacecraft to be on the LHS of
+# stopping condition (stop Parameter is NULL)
+print(f'StopCondition Validate: {stop_cond.Validate()}')
+
+print(gmat.ConfigManager.Instance().GetListOfAllItems())
+
+obj_map = gmat.ConfigManager.Instance().GetObjectMap()
+print(obj_map)
+# print(f'Global object map: {gmat.Sandbox.GetGlobalObjectMap(gmat.Sandbox())}')
+
+pgate = gmat.Construct('Propagate')
+
+print(f'Setting StopCond with SetObject: {pgate.SetObject("StopCond", gmat.STOP_CONDITION)}')
+# print(f'Setting StopCond: with SetField{pgate.SetField("StopCondition", stop_cond.GetName())}')
+print(f'Setting Propagator: {pgate.SetField("Propagator", "Prop")}')
+print(f'Setting Sat: {pgate.SetObject("Sat", gmat.SPACECRAFT)}')
+
+# bf = gmat.FiniteThrust("Thrust")
+# bf.SetRefObjectName(gmat.SPACECRAFT, s.GetName())
+# bf.SetReference(b)
+# gmat.ConfigManager.Instance().AddPhysicalModel(bf)
+
+print(f'Setting objects:\n'
+      f'Propagator: {pgate.SetRefObjectName(gmat.PROP_SETUP, prop.GetName())},\n'
+      # f'Stop Condition: {pgate.SetRefObjectName(gmat.STOP_CONDITION, stop_cond.GetName())}\n'
+      f'Stop Condition as Reference to Propagate: {stop_cond.SetReference(pgate)}'
+      f'Sat: {pgate.SetRefObjectName(gmat.SPACECRAFT, sat.GetName())}')
+
+# bf.SetReference(b)
+# gmat.ConfigManager.Instance().AddPhysicalModel(bf)
+
+print(f'Validating: {pgate.Validate()}')
+
+print(pgate.GetRefObjectTypeArray())  # (134 - PROP_SETUP, 101 - Spacecraft, 122 - Parameter)
+# STOP_CONDITION: 126, PROPAGATOR: 110
+
+# gmatpy._py39.gmat_py.APIException: Command Exception: Object map has not been initialized for Propagate
+print(f'Initializing pgate: {pgate.Initialize()}')
+
+# pgate.Help()
+
+# pgate.Initialize()
+
+# gmat.ConfigManager.Instance().AddStopCondition(stop_cond)
+
+# gmat.ShowObjects()
 
 # stop_cond.SetGoalParameter(8640.0)
 
