@@ -82,6 +82,8 @@ gator = prop.GetPropagator()
 
 state = gator.GetState()
 
+# gmat.ShowObjects()
+# prop.Help()
 
 # print(f'Starting state: {state}')
 
@@ -156,38 +158,104 @@ def CustomHelp(obj):
 # stop_cond.Help()
 #
 
+gmat.BeginMissionSequence()
+
+pgate = gmat.Construct('Propagate')
+pgate.SetSolarSystem(gmat.GetSolarSystem())
+pgate.SetGlobalObjectMap(gmat.Sandbox.GetGlobalObjectMap(gmat.Sandbox()))
+pgate.SetObjectMap(gmat.Sandbox.GetObjectMap(gmat.Sandbox()))
+# pgate_valid = pgate.CheckStopConditions()
+
 stop_cond = gmat.Construct('StopCondition', 'StopForSatDays')
-stop_cond_fields = gpy.gmat_obj_field_list(stop_cond)
+print(stop_cond)
+stop_param_str = f'{sat.GetName()}.ElapsedSecs'
+stop_cond.SetLhsString(stop_param_str)
+goal_param_str = '8640.0'
+stop_cond.SetRhsString(goal_param_str)
+stop_cond.SetSpacecrafts([sat], [sat])
+
+# craft_param = gmat.Construct('Variable', 'SatParam')
+# craft_param.SetField('InitialValue', stop_param_str)
+# ela = gmat.Construct('ElapsedSecs', 'Sat.ElapsedSecs')
+# ela.SetField('Object', sat_name)
+# ela.SetRefObject(sat, gmat.SPACECRAFT, sat.GetName())
+# ela.Initialize()
+# ela_param = gmat.ConfigManager.Instance().GetParameter(ela.GetName())
+
+# stop_param_default = stop_cond.GetStopParameter()
+# stop_cond.SetStopParameter(ela_param)
+# craft_param = gmat.ConfigManager.Instance().GetParameter(ela.GetName())
+
+# mod = gmat.Moderator.Instance()
+# craft_param = mod.CreateParameter('String', stop_param_str)
+
+# stop_param = sat.GetGmatTimeParameter(f'{sat.GetName()}.ElapsedSecs')
+stop_param = gmat.Construct('ElapsedSecs', f'{sat.GetName()}.ElapsedSecs')
+# gmat.Initialize()
+print(f'\nstop_param fields: {gpy.gmat_obj_field_list(stop_param)}')
+stop_param.SetField('Object', sat.GetName())
+stop_param.SetRefObject(sat, gmat.SPACECRAFT, sat.GetName())
+stop_param.SetField('InitialValue', stop_param_str)
+stop_param.SetField('Expression', stop_param_str)
+stop_param.SetField('Description', stop_param_str)
+stop_param.SetField('InitialEpoch', sat.GetState().GetEpoch())
+# print(gmat.GetTypeName(116))
+# gmat.Initialize()
+# stop_param.SetReference(sat)
+stop_param.Initialize()
+# stop_param = gmat.Moderator.Instance().GetInternalObject('Sat.ElapsedSecs')
+stop_param = gmat.ConfigManager.Instance().GetParameter('Sat.ElapsedSecs')
+stop_cond.SetStopParameter(stop_param)
+stop_cond.GetStopParameter()
+stop_cond.Validate()
+stop_cond.Initialize()
+
+pgate.SetObject(stop_cond, gmat.STOP_CONDITION)
+
+# pgate.Initialize()
+# stop_cond_fields = gpy.gmat_obj_field_list(stop_cond)
 # stop_cond.AddToBuffer(True)
 # stop_cond.Help()
 # stop_cond.SetRefObject(gmat.SPACECRAFT, sat.GetName())
 # stop_cond.Validate()
 
-ela = gmat.Construct('ElapsedSecs', f'{sat.GetName()}.ElapsedSecs', f'{sat.GetName()}')
-ela.SetField('Object', sat_name)
-ela.SetField('InitialValue', '0')
-ela.SetField('Expression', 'ElapsedSecs')
-ela.SetField('DepObject', sat.GetName())
-ela.SetField('InitialEpoch', [0])
-ela_param = gmat.ConfigManager.Instance().GetParameter(ela.GetName())
+# ela = gmat.Construct('ElapsedSecs', f'{sat.GetName()}.ElapsedSecs', f'{sat.GetName()}')
+# # ela.SetField('Object', sat_name)
+# ela.SetField('InitialValue', stop_param_str)
+# ela.SetField('Expression', stop_param_str)
+# # ela.SetField('DepObject', sat.GetName())
+# # ela.SetField('InitialEpoch', [0])
+# ela_param = gmat.ConfigManager.Instance().GetParameter(ela.GetName())
+# stop_cond.SetStopParameter(ela_param)
+# stop_cond.Initialize()
+# stop_param = ela.GetName()
 
-print(f'Sat as reference to ela: {ela.SetRefObject(sat, gmat.SPACECRAFT, sat.GetName())}')
+# stop_cond.SetField('StopParameter', str(stop_param))
+# ela.SetRefObject(sat, gmat.SPACECRAFT, sat.GetName())
 
-print(ela.Validate())
-stop_cond.SetStopParameter(ela_param)
+# CustomHelp(ela)
+# ela.Validate()
 
 goal_val = 8640.0
-stop_cond.SetField('Goal', str(goal_val))
-goal = gmat.Construct('Variable', 'Goal')
-print(gpy.gmat_obj_field_list(goal))
-goal.SetField('InitialValue', str(goal_val))
-goal.SetField('Unit', 's')
 
-goal_val = stop_cond.GetField("Goal")
-print(f'Goal field: {goal_val}')
-goal_param = gmat.ConfigManager.Instance().GetParameter(goal.GetName())
-print(f'Setting stop_cond Goal param: {stop_cond.SetGoalParameter(goal_param)}')
-print(f'stop_cond Goal param: {stop_cond.GetGoalParameter()}')
+# stop_cond_fields = gmat_py_simple.gmat_obj_field_list(stop_cond)
+# ela_fields = gmat_py_simple.gmat_obj_field_list(ela)
+# pgate_fields = gmat_py_simple.gmat_obj_field_list(pgate)
+
+# stop_cond.SetField('Goal', str(goal_val))
+# goal = gmat.Construct('Variable', 'Goal')
+# gpy.gmat_obj_field_list(goal)
+# goal.SetField('InitialValue', str(goal_val))
+# goal.SetField('Unit', 's')
+
+# goal_param = gmat.ConfigManager.Instance().GetParameter(goal.GetName())
+# print(f'Setting stop_cond Goal param: {stop_cond.SetGoalParameter(goal_param)}')
+# print(f'stop_cond Goal param: {stop_cond.GetGoalParameter()}')
+
+# stop_cond.SetLhsString(ela.GetName())
+# stop_cond.SetRhsString('8640.0')
+# stop_cond.SetSpacecrafts([sat], [sat])
+# stop_con_valid = stop_cond.Validate()
 
 # goal_param = stop_cond.GetGoalParameter()
 # print(f'goal_param value: {goal_param}, type: {type(goal_param)}')
@@ -226,16 +294,38 @@ print(f'stop_cond Goal param: {stop_cond.GetGoalParameter()}')
 # # stopping condition (stop Parameter is NULL)
 # print(f'StopCondition Validate: {stop_cond.Validate()}')
 
-pgate = gmat.Construct('Propagate')
+# pgate.SetRefObject(stop_cond, gmat.STOP_CONDITION, stop_cond.GetName(), 5)
 
-# pgate.SetRefObject(stop_cond, gmat.STOP_CONDITION, stop_cond.GetName())
-stop_cond.SetSpacecrafts([sat], [sat])
-stop_cond.SetLhsString(ela.GetField('Expression'))
-stop_cond.SetRhsString('8640.0')
-# stop_cond.UpdateBuffer()
-stop_con_valid = stop_cond.Validate()
+# print(pgate.GetParameterTypeString(10))
+# pgate.SetRefObject(stop_cond, gmat.STOP_CONDITION, stop_cond.GetName(), 10)
+pgate.SetObject(prop.GetName(), gmat.PROP_SETUP)
+pgate.SetObject(sat.GetName(), gmat.SPACECRAFT)
+pgate.SetField('StopCondition', [stop_cond.GetName()])
+pgate.SetObject(stop_cond.GetName(), gmat.STOP_CONDITION)
 
-print(f'stop_cond fields: {gpy.gmat_obj_field_list(stop_cond)}\n')
+print(pgate.GetObjectList())
+
+# bms = gmat.BeginMissionSequence()
+# print(bms)
+
+print(f'pgate Validate: {pgate.Validate()}')
+# pgate.Initialize()
+# CustomHelp(pgate)
+print('\n', pgate.GetGeneratingString())
+
+# print(pgate.TakeAction('CheckStopConditions'))
+# print(pgate.TakeAction('PrepareToPropagate'))
+print(f'\npgate fields: {gpy.gmat_obj_field_list(pgate)}')
+print(f'\nstop_cond fields: {gpy.gmat_obj_field_list(stop_cond)}')
+
+# pgate.Help()
+
+CustomHelp(pgate)
+# print(pgate.Initialize())
+
+# pgate.Help()
+
+# print(f'pgate Initialize: {pgate.Initialize()}')
 
 # gmat.Update(stop_cond.GetName())
 
@@ -243,8 +333,6 @@ print(f'stop_cond fields: {gpy.gmat_obj_field_list(stop_cond)}\n')
 # stop_cond.SetLhsWrapper(stop_cond.GetLhsString())
 # stop_cond.SetRhsWrapper(stop_cond.GetRhsString())
 # print(stop_cond.GetWrapperObjectNameArray())
-
-print(f'stop_cond Initialize: {stop_cond.Initialize()}')
 
 # obj_map = gmat.ConfigManager.Instance().GetObjectMap()
 # print(obj_map)
@@ -266,13 +354,13 @@ print(f'stop_cond Initialize: {stop_cond.Initialize()}')
 # print(pgate.SetElementWrapper(ela, 'name'))
 # gmat.ConfigManager.Instance().GetElementWrapper(ela.GetName())
 
-gmat.Initialize()
+# gmat.Initialize()
 
-print(pgate.GetRefObjectTypeArray())  # (134 - PROP_SETUP, 101 - Spacecraft, 122 - Parameter)
-print(f'Setting objects:\n'
-      f'- Propagator: {pgate.SetObject(prop.GetName(), gmat.PROP_SETUP)},\n'
-      f'- Stop Condition: {pgate.SetObject(stop_cond.GetName(), gmat.STOP_CONDITION)}\n'
-      f'- Sat: {pgate.SetObject(sat.GetName(), gmat.SPACECRAFT)}\n')
+# print(pgate.GetRefObjectTypeArray())  # (134 - PROP_SETUP, 101 - Spacecraft, 122 - Parameter)
+# print(f'Setting objects:\n'
+#       f'- Propagator: {pgate.SetObject(prop.GetName(), gmat.PROP_SETUP)},\n'
+#       f'- Stop Condition: {pgate.SetObject(stop_cond.GetName(), gmat.STOP_CONDITION)}\n'
+#       f'- Sat: {pgate.SetObject(sat.GetName(), gmat.SPACECRAFT)}\n')
 
 # bf.SetReference(b)
 # gmat.ConfigManager.Instance().AddPhysicalModel(bf)
@@ -369,10 +457,10 @@ print(f'Setting objects:\n'
 # propagate = gmat.Construct('Propagate', 'Pgate', 'DefaultSC.ElapsedSecs = 8640.0')
 # propagate.Help()
 
-print(stop_cond.GetStopParameter())
-print(stop_cond.GetGoalParameter())
+# print(stop_cond.GetStopParameter())
+# print(stop_cond.GetGoalParameter())
 
-print(f'pgate Propagator: {pgate.GetField("Propagator")}')
+# print(f'pgate Propagator: {pgate.GetField("Propagator")}')
 
 # goal_param = gmat.Moderator.Instance().CreateParameter('UserParam', 'Goal', stop_cond.GetName())
 # gmat.ConfigManager.Instance().AddParameter(goal_param)
@@ -381,20 +469,19 @@ print(f'pgate Propagator: {pgate.GetField("Propagator")}')
 # om = gmat.ConfigManager.Instance().GetObjectMap()
 # print(pgate.SetGlobalObjectMap(om))
 
-print(f'pgate Validate: {pgate.Validate()}')
-
-gmat.Initialize()
-
 # CustomHelp(pgate)
 
 # pgate.Initialize()
 # print(pgate.Execute())
 
-print('\n', pgate.GetGeneratingString())
-print(f'\npgate fields: {gpy.gmat_obj_field_list(pgate)}')
-print(f'ela fields: {gpy.gmat_obj_field_list(ela)}\n')
+# print(f'ela fields: {gpy.gmat_obj_field_list(ela)}\n')
 
-# pgate.TakeAction('PrepareToPropagate')
+# pgate.Help()
+
+# psm = prop.GetPropStateManager()
+# psm.BuildState()
+# sat_ele = psm.ElementMapForSat()
+# print(sat_ele)
 
 # sb = gmat.Sandbox()
 # bms = gmat.BeginMissionSequence()
@@ -405,3 +492,12 @@ print(f'ela fields: {gpy.gmat_obj_field_list(ela)}\n')
 # cs = gmat.ConfigManager.Instance().GetCoordinateSystem(sat.GetField('CoordinateSystem'))
 # sb.SetInternalCoordSystem(cs)
 # sb.Initialize()
+
+# pgate.TakeAction('PrepareToPropagate')
+
+# print(f'\npgate fields: {gpy.gmat_obj_field_list(pgate)}')
+
+# pgate.Initialize()
+# print(pgate.GetObjectList())
+
+# print(pgate.GetParameterTypeString('StopTolerance'))

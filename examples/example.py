@@ -2,7 +2,23 @@
 #
 from load_gmat import gmat
 
+import traceback
+
 import gmat_py_simple as gpy
+
+import sys
+sys.path.append("C:\\Users\\weasd\\Desktop\\GMAT\\gmat - win - R2022a\\GMAT\\bin\\gmatpy\\_py39")
+# import gmat_py
+# from gmat_py import Propagate
+
+# Import the low-level C/C++ module
+if __package__ or "." in __name__:
+    from . import _gmat_py
+else:
+    import _gmat_py
+    # import sys
+    # sys.path.append("C:\\Users\\weasd\\Desktop\\GMAT\\gmat - win - R2022a\\GMAT\\bin\\gmatpy\\_py312")
+    # import _gmat_py
 
 # sat_params = {
 #     'Name': 'DefaultSC',
@@ -105,6 +121,20 @@ stop_cond = gmat.Construct('StopCondition', 'StopCond')
 stop_cond.SetLhsString('Sat.ElapsedSecs')
 stop_cond.SetRhsString('8640.0')
 
+
+def PrepareToPropagate(p):
+    return _gmat_py.Propagate_PrepareToPropagate(p)
+    # return gmat_py.Propagate.PrepareToPropagate(propagate)
+
+
+def PrepareStoppingConditions(p):
+    return _gmat_py.Propagate_PrepareStoppingConditions(p)
+
+
+def CheckStoppingConditions(p):
+    return _gmat_py.Propagate_CheckStoppingConditions(p)
+
+
 propagate = gmat.Construct('Propagate')
 propagate.SetField('Propagator', 'Prop')
 # propagate.SetField('Spacecraft', 'Sat')
@@ -117,7 +147,26 @@ print(propagate.SetObject('StopCond', gmat.STOP_CONDITION))
 
 propagate.Validate()
 
-propagate.Initialize()
+print(propagate.GetFirstSpaceObjectName())
+
+try:
+    propagate.Initialize()
+
+except Exception as ex:
+    print('\n! Exception thrown while running Initialize')
+    print(ex.GetFullMessage())
+    print(ex.GetDetails())
+    print(ex.IsFatal())
+    print(ex.GetMessageType())
+
+    exc_type, exc_value, exc_tb = sys.exc_info()
+    tb = traceback.TracebackException(exc_type, exc_value, exc_tb)
+    print(''.join(tb.format_exception_only()))
+    raise
+
+print(propagate.GetRefObjectTypeArray())  # (134, 101, 122)
+print(propagate.GetGmatObject(122))
+# print(propagate.SetPropagationProperties(psm))
 
 # print(propagate.GetObjectMap())
 # print(propagate.GetObjectList())
@@ -129,6 +178,6 @@ propagate.Initialize()
 
 # propagate.Initialize()
 
-propagate.Help()
+# propagate.Help()
 
 # propagate.Execute()
