@@ -119,7 +119,7 @@ pgate.SetSolarSystem(gmat.GetSolarSystem())
 pgate.SetGlobalObjectMap(gmat.Sandbox.GetGlobalObjectMap(gmat.Sandbox()))
 pgate.SetObjectMap(gmat.Sandbox.GetObjectMap(gmat.Sandbox()))
 
-stop_cond = gmat.Construct('StopCondition', 'StopForSatDays')
+stop_cond = gmat.Construct('StopCondition', 'StopForSatSecs')
 stop_param_str = f'{sat.GetName()}.ElapsedSecs'
 stop_cond.SetLhsString(stop_param_str)
 goal_param_str = '8640.0'
