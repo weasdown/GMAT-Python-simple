@@ -120,7 +120,6 @@ pgate.SetGlobalObjectMap(gmat.Sandbox.GetGlobalObjectMap(gmat.Sandbox()))
 pgate.SetObjectMap(gmat.Sandbox.GetObjectMap(gmat.Sandbox()))
 
 stop_cond = gmat.Construct('StopCondition', 'StopForSatDays')
-print(stop_cond)
 stop_param_str = f'{sat.GetName()}.ElapsedSecs'
 stop_cond.SetLhsString(stop_param_str)
 goal_param_str = '8640.0'
@@ -155,6 +154,8 @@ stop_param.SetField('InitialEpoch', sat.GetState().GetEpoch())
 stop_param.Initialize()
 # stop_param = gmat.Moderator.Instance().GetInternalObject('Sat.ElapsedSecs')
 stop_param = gmat.ConfigManager.Instance().GetParameter('Sat.ElapsedSecs')
+# stop_param = gmat.GetObject(stop_param_str)
+print(f'stop_param:\n{stop_param}, type: {type(stop_param)}')
 stop_cond.SetStopParameter(stop_param)
 stop_cond.GetStopParameter()
 stop_cond.Validate()
@@ -169,19 +170,24 @@ pgate.SetObject(sat.GetName(), gmat.SPACECRAFT)
 pgate.SetField('StopCondition', [stop_cond.GetName()])
 pgate.SetObject(stop_cond.GetName(), gmat.STOP_CONDITION)
 
-print(pgate.GetObjectList())
+print(f'pgate object list: {pgate.GetObjectList()}')
 
 print(f'pgate Validate: {pgate.Validate()}')
 # pgate.Initialize()
 # CustomHelp(pgate)
 
+print(f'Check stop conditions: {pgate.TakeAction("CheckStopConditions")}')
+# print(pgate.TakeAction('PrepareToPropagate'))
+# print(f'\npgate fields: {gpy.gmat_obj_field_list(pgate)}')
+# print(f'\nstop_cond fields: {gpy.gmat_obj_field_list(stop_cond)}')
+# print(f'\nstop_param fields: {gpy.gmat_obj_field_list(stop_param)}')
+
+print(f'\npgate:\n{pgate}, type: {type(pgate)}\n\n'
+      f'stop_cond:\n{stop_cond}, type: {type(stop_cond)}\n\n'
+      f'stop_param:\n{stop_param}, type: {type(stop_param)}')
+
 bms = gmat.BeginMissionSequence()
 
 print('\n', pgate.GetGeneratingString())
-
-# print(pgate.TakeAction('CheckStopConditions'))
-# print(pgate.TakeAction('PrepareToPropagate'))
-print(f'\npgate fields: {gpy.gmat_obj_field_list(pgate)}')
-print(f'\nstop_cond fields: {gpy.gmat_obj_field_list(stop_cond)}')
 
 # CustomHelp(pgate)
