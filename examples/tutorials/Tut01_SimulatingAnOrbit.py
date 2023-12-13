@@ -61,35 +61,38 @@ sat_params = {
 # gator.Help()
 
 # gmat.ShowClasses()
-gmat.Clear()
+
 log_path = os.path.normpath(f'{os.getcwd()}/GMAT-Log.txt')
 gmat.UseLogFile(log_path)
 
-sat = gmat.Construct('Spacecraft', 'Sat')
-sat.SetField('Epoch', '21545')
-sat_name = sat.GetName()
+blank_path = ''
+script_path = os.path.normpath(f'{os.getcwd()}/Tut01.script')  # {os.getcwd()}/Tut01.script
+# gmat.LoadScript(blank_path)
+# gmat.Clear()
 
-gmat.ShowObjects()
 
-fm = gmat.Construct("ForceModel", "FM")
-epm = gmat.Construct("PointMassForce", "EPM")
-fm.AddForce(epm)
+# sat = gmat.Construct('Spacecraft', 'Sat')
+# sat.SetField('Epoch', '21545')
+# sat_name = sat.GetName()
 
-prop = gmat.Construct("Propagator", "Prop")
-gator = gmat.Construct("PrinceDormand78", "Gator")
-prop.SetReference(gator)
-prop.SetReference(fm)
+# fm = gmat.Construct("ForceModel", "FM")
+# epm = gmat.Construct("PointMassForce", "EPM")
+# fm.AddForce(epm)
 
-gmat.Initialize()
-prop.AddPropObject(sat)
-prop.PrepareInternals()
+# prop = gmat.Construct("Propagator", "Prop")
+# gator = gmat.Construct("PrinceDormand78", "Gator")
+# prop.SetReference(gator)
+# prop.SetReference(fm)
+#
+# gmat.Initialize()
+# prop.AddPropObject(sat)
+# prop.PrepareInternals()
+#
+# gator = prop.GetPropagator()
+#
+# state = gator.GetState()
 
-gator = prop.GetPropagator()
-
-state = gator.GetState()
-
-gmat.Initialize()
-
+# gmat.Initialize()
 
 def CustomHelp(obj):
     print(f'\nCustomHelp for {obj.GetName()}:')
@@ -98,7 +101,7 @@ def CustomHelp(obj):
     else:
         param_count = obj.GetParameterCount()
 
-    for i in range(param_count-1):
+    for i in range(param_count - 1):
         try:
             param_name = obj.GetParameterText(i)
             param_type = obj.GetParameterTypeString(i)
@@ -208,15 +211,147 @@ def CustomHelp(obj):
 
 # We can use CreateDefaultCommand to make a default version of a Propagate command, that we'll then modify
 
-def_pgate = gmat.Moderator.Instance().CreateDefaultCommand('Propagate', 'Pgate')
-gmat.ShowObjects()
-def_pgate.SetName('DefPgate')
-print(def_pgate)
-def_pgate.Help()
-# CustomHelp(def_pgate)
+sb = gmat.Moderator.Instance().GetSandbox()
+cm = gmat.ConfigManager.Instance()
+ss = gmat.GetSolarSystem()
 
-def_stop_cond = gmat.GetObject('Sat.A1ModJulian')
-print(def_stop_cond.GetTypeNames())
+# sb.AddSolarSystem(gmat.GetSolarSystem())
 
-print(f'\nGenerating string for default Propagate command:\n{def_pgate.GetGeneratingString()}')
-print(f'\nGenerating string for default stop condition:\n{def_stop_cond.GetGeneratingString()}')
+bms = gmat.Moderator.Instance().CreateDefaultCommand('BeginMissionSequence')
+sb.AddCommand(bms)
+bms.SetObjectMap(sb.GetObjectMap())
+bms.SetGlobalObjectMap(sb.GetGlobalObjectMap())
+bms.SetSolarSystem(gmat.GetSolarSystem())
+bms.Initialize()
+print(f'bmsIsI: {bms.IsInitialized()}')
+gmat.Initialize()
+
+pgate = gmat.Moderator.Instance().CreateDefaultCommand('Propagate', 'Elapsed')
+sb.AddObject(pgate)
+pgate.SetSolarSystem(gmat.GetSolarSystem())
+
+# NOT YET IN SANDBOX
+sat = gmat.GetObject(pgate.GetRefObjectName(gmat.SPACECRAFT))
+sb.AddObject(sat)
+pgate.SetObject(sat.GetName(), gmat.SPACECRAFT)
+
+prop = gmat.GetObject(pgate.GetRefObjectName(gmat.PROP_SETUP))
+sb.AddObject(prop)
+pgate.SetObject(prop.GetName(), gmat.PROP_SETUP)
+
+# # fm = prop.GetRefObjectName(gmat.ODE_MODEL)
+# # fm = gmat.GetObject()
+# prop.Help()
+# fm = gmat.GetObject(prop.GetField('FM'))
+# fm.SetSolarSystem(ss)
+# prop.SetReference(fm)
+#
+# gator = prop.GetPropagator()
+# prop.SetReference(fm)
+
+prop.AddPropObject(sat)
+gmat.Initialize()
+# prop.SetReference(gmat.GetObject(prop.GetField('FM')).SetSolarSystem(ss))
+# prop.PrepareInternals()
+
+# gmat.Initialize()
+
+# prop.Initialize()
+
+pgate.SetObjectMap(gmat.ConfigManager.Instance().GetObjectMap())
+pgate.SetGlobalObjectMap(sb.GetGlobalObjectMap())
+pgate.Initialize()
+
+# gmat.Initialize()
+# gmat.ShowObjects()
+# pgate = gmat.Moderator.Instance().AppendCommand('Propagate', 'NameNotUsed', True, 1)
+# CreateDefaultCommand('Propagate', 'Pgate') has also created a default ForceModel and default Propagator, so get those
+
+# gmat.Moderator.Instance().Initialize()
+# gmat.Moderator.Instance().UpdateDataFiles()
+# prop.Help()
+# pgate.SetName('Pgate')
+# pgate.SetGlobalObjectMap(gmat.Sandbox().GetGlobalObjectMap())
+# pgate.SetObjectMap(gmat.ConfigManager.Instance().GetObjectMap())
+# pgate.SetSolarSystem(gmat.GetSolarSystem())
+# print(f'pgI:')
+# # CustomHelp(pgate)
+# print(pgate.Initialize())
+
+# sat = gmat.GetObject('DefaultSC')
+# mj = gmat.GetObject('DefaultSC.A1ModJulian')
+# el = gmat.GetObject('DefaultSC.ElapsedSecs')
+#
+# mj.Help()
+# el.Help()
+
+# fm = gmat.GetObject('DefaultProp_ForceModel')
+# prop = gmat.GetObject('DefaultProp')
+# prop_name = prop.GetName()
+# gmat.Initialize()
+
+# pgate.SetObject(stop_cond.GetName(), gmat.STOP_CONDITION)  # adds stop_cond name to output of pgate.GetObjectList()
+# pgate.SetObject(stop_cond, gmat.STOP_CONDITION)  # adds stop_cond to output of pgate.GetGeneratingString()
+# pgate.SetField('Propagator', prop_name)
+# pgate.SetObject(prop_name, gmat.PROP_SETUP)
+# pgate.SetObject(sat.GetName(), gmat.SPACECRAFT)
+
+# pgate.Help()
+# gmat.Update()
+
+# pgate.Initialize()  # 'Command Exception: Propagate command cannot find Propagator Setup "Prop"'
+
+# def_stop_cond = gmat.GetObject('Sat.A1ModJulian')
+
+# print(f'state: {sat.GetState().GetState()}')
+
+print(f'Generating string for default Propagate command:\n{pgate.GetGeneratingString()}\n')
+# print(f'\nGenerating string for default stop condition:\n{def_stop_cond.GetGeneratingString()}')
+
+# pgate.Execute()
+
+sat_name_from_pgate_field = pgate.GetField('Spacecraft')[1:-1]
+coord_sys_name = gmat.GetObject(sat.GetName()).GetField('CoordinateSystem')
+coord_sys = gmat.GetObject(coord_sys_name)
+sb.SetInternalCoordSystem(coord_sys)
+
+# print(f'pgate valid: {pgate.Validate()}')
+# print(f'pgate Init: {pgate.Initialize()}')
+# print(pgate.TakeAction('PrepareToPropagate'))
+
+sb.AddCommand(bms)
+sb.AddCommand(pgate)
+sb.Initialize()
+
+# print(sb.GetObjectMap())
+# print(sb.GetGlobalObjectMap())
+
+# pgate.SetGlobalObjectMap(sb.GetGlobalObjectMap())
+# pgate.SetObjectMap(sb.GetObjectMap())
+
+# **** ERROR **** Sandbox Exception: Errors were found in the mission control sequence; please correct the errors
+# listed in the message window
+
+print(f'CM item list: {gmat.ConfigManager.Instance().GetListOfAllItems()}')
+
+mod = gmat.Moderator.Instance()
+
+
+
+# print(mod.GetScript())
+
+# print(mod.ShowObjectMap())
+# mod.RunMission()
+
+# sb.Initialize()
+# bms = gmat.BeginMissionSequence()
+# bms.Execute()
+
+# print(pgate.TakeAction('PrepareToPropagate'))
+# print(pgate.GetPropStatus())
+
+# sb.Execute()
+
+# print(f'state: {sat.GetState().GetState()}')
+
+# gmat.SaveScript(script_path)
