@@ -1,10 +1,12 @@
-import gmat_py_simple.utils
 from load_gmat import gmat
 
 import gmat_py_simple as gpy
-from gmat_py_simple import orbit as o
-from gmat_py_simple.orbit import PropSetup
-from gmat_py_simple.commands import Propagate
+# import gmat_py_simple.utils
+# from gmat_py_simple import orbit as o
+# from gmat_py_simple.orbit import PropSetup
+# from gmat_py_simple.commands import Propagate
+
+import os
 
 # TODO complete modelling the tutorial mission rather than the default one
 
@@ -58,9 +60,17 @@ sat_params = {
 # print('gator Help:')
 # gator.Help()
 
+# gmat.ShowClasses()
+log_path = f'{os.getcwd()}/GMAT-Log.txt'
+gmat.UseLogFile(log_path)
+# gmat.UseLogFile('GMAT-Log.txt')
+print(f'Commands at start of file: {gmat.GetCommands()}')
+
 sat = gmat.Construct('Spacecraft', 'Sat')
 sat.SetField('Epoch', '21545')
 sat_name = sat.GetName()
+
+gmat.ShowObjects()
 
 fm = gmat.Construct("ForceModel", "FM")
 epm = gmat.Construct("PointMassForce", "EPM")
@@ -78,6 +88,8 @@ prop.PrepareInternals()
 gator = prop.GetPropagator()
 
 state = gator.GetState()
+
+gmat.Initialize()
 
 
 def CustomHelp(obj):
@@ -115,6 +127,10 @@ def CustomHelp(obj):
 
 
 pgate = gmat.Construct('Propagate')
+# gmat.ShowObjects()
+
+print(gmat.GetCommands())
+
 pgate.SetSolarSystem(gmat.GetSolarSystem())
 pgate.SetGlobalObjectMap(gmat.Sandbox.GetGlobalObjectMap(gmat.Sandbox()))
 pgate.SetObjectMap(gmat.Sandbox.GetObjectMap(gmat.Sandbox()))
@@ -146,12 +162,11 @@ stop_cond.SetSpacecrafts([sat], [sat])
 stop_param = gmat.Construct('ElapsedSecs', stop_param_str_no_eq)
 stop_param.SetField('Object', sat.GetName())
 stop_param.SetRefObject(sat, gmat.SPACECRAFT, sat.GetName())
-# stop_param.SetField('InitialValue', stop_param_str)
-# stop_param.SetField('Expression', stop_param_str)
-# stop_param.SetField('Description', stop_param_str)
-# stop_param.SetField('InitialEpoch', sat.GetState().GetEpoch())
-# gmat.Initialize()
-# stop_param.SetReference(sat)
+stop_param.SetField('InitialValue', stop_param_str)
+stop_param.SetField('Expression', stop_param_str)
+stop_param.SetField('Description', stop_param_str)
+stop_param.SetField('InitialEpoch', sat.GetState().GetEpoch())
+stop_param.SetReference(sat)
 stop_param.Initialize()
 # stop_param = gmat.Moderator.Instance().GetInternalObject('Sat.ElapsedSecs')
 stop_param = gmat.ConfigManager.Instance().GetParameter(stop_param.GetName())
@@ -162,11 +177,14 @@ stop_cond.SetStopParameter(stop_param)
 stop_cond.Validate()
 stop_cond.Initialize()
 
-pgate.SetField('StopCondition', [stop_cond.GetName()])
+# pgate.SetField('StopCondition', [stop_cond.GetName()])
 pgate.SetObject(stop_cond.GetName(), gmat.STOP_CONDITION)  # adds stop_cond name to output of pgate.GetObjectList()
 pgate.SetObject(stop_cond, gmat.STOP_CONDITION)  # adds stop_cond to output of pgate.GetGeneratingString()
 pgate.SetObject(prop.GetName(), gmat.PROP_SETUP)
 pgate.SetObject(sat.GetName(), gmat.SPACECRAFT)
+
+print(gmat.Update('Propagate'))
+print(gmat.Exists('Propagate'))
 
 print(f'pgate Validate: {pgate.Validate()}')
 # pgate.Initialize()
@@ -184,8 +202,10 @@ print(f'Check stop conditions: {pgate.TakeAction("CheckStopConditions")}')
 
 print(f'pgate object list: {pgate.GetObjectList()}')
 
-bms = gmat.BeginMissionSequence()
+# bms = gmat.BeginMissionSequence()
 
 print('\n', pgate.GetGeneratingString())
 
 # CustomHelp(pgate)
+
+print(gmat.GetCommands('Propagate'))

@@ -12,4 +12,6 @@ Installation steps:
 
 4) You should now have folders or files with names ending py36 to py312 in GMAT/bin/gmatpy and GMAT/plugins.
 
-5) To setup the Python API for the first time, follow the instructions in API_setup.txt. If you've already done that, you're good to go!
+5) To get GMAT to use a version of Python later than 3.9 by default, you need to modify two files.
+
+6) To setup the Python API for the first time, follow the instructions in API_setup.txt. If you've already done that, you're good to go!
