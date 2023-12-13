@@ -4,7 +4,7 @@ These instructions will help you setup GMAT's Python API, using its default conf
 
 1) Go into the GMAT root folder (containing folders called api, bin etc). We'll call this [GMAT]. Go to [GMAT]/bin. If there is already a file in there named api_startup_file.txt, delete it.
 
-2) If you will be using Python 3.6 to 3.9, go to 3). If you want to use a Python version later than 3.9, go to [GMAT]/bin and open gmat_startup_file.txt. In the Plugins section, find the line "PLUGIN = ../plugins/libPythonInterface_py39" and change 39 to match the Python version you want to use (e.g. 312 for Python 3.12). Note that once you've finished following the instructions in this file, you must also do the steps in README.txt to set up non-default Python versions.
+2) If you will be using Python 3.6 to 3.9, go to 3). If you want to use a Python version later than 3.9, go to [GMAT]/bin and open gmat_startup_file.txt. In the Plugins section, find the line "PLUGIN = ../plugins/libPythonInterface_py39" and change 39 to match the Python version you want to use (e.g. 312 for Python 3.12). If you might use the alpha plugin for external force models, make the same modification to the line ending with "../plugins/libExternalForceModel_py39". Note that once you've finished following the instructions in this file, you must also do the steps in README.txt to set up non-default Python versions.
 
 3) Go to [GMAT]/api, then double click BuildApiStartupFile.py to run it. A black window will briefly flash up on the screen. A new api_startup_file.txt will have been created in [GMAT]/bin.
 
