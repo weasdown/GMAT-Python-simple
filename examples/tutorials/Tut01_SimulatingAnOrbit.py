@@ -61,10 +61,9 @@ sat_params = {
 # gator.Help()
 
 # gmat.ShowClasses()
-log_path = f'{os.getcwd()}/GMAT-Log.txt'
+gmat.Clear()
+log_path = os.path.normpath(f'{os.getcwd()}/GMAT-Log.txt')
 gmat.UseLogFile(log_path)
-# gmat.UseLogFile('GMAT-Log.txt')
-print(f'Commands at start of file: {gmat.GetCommands()}')
 
 sat = gmat.Construct('Spacecraft', 'Sat')
 sat.SetField('Epoch', '21545')
@@ -93,13 +92,13 @@ gmat.Initialize()
 
 
 def CustomHelp(obj):
-    print(f'CustomHelp for {obj.GetName()}:')
+    print(f'\nCustomHelp for {obj.GetName()}:')
     if 'gmat_py_simple' in str(type(obj)):
         param_count = obj.gmat_obj.GetParameterCount()
     else:
         param_count = obj.GetParameterCount()
 
-    for i in range(param_count):
+    for i in range(param_count-1):
         try:
             param_name = obj.GetParameterText(i)
             param_type = obj.GetParameterTypeString(i)
@@ -126,86 +125,98 @@ def CustomHelp(obj):
             # raise
 
 
-pgate = gmat.Construct('Propagate')
-# gmat.ShowObjects()
+# pgate = gmat.Construct('Propagate')
+# # gmat.ShowObjects()
+#
+# print(gmat.GetCommands())
+#
+# pgate.SetSolarSystem(gmat.GetSolarSystem())
+# pgate.SetGlobalObjectMap(gmat.Sandbox.GetGlobalObjectMap(gmat.Sandbox()))
+# pgate.SetObjectMap(gmat.Sandbox.GetObjectMap(gmat.Sandbox()))
+#
+# stop_cond = gmat.Construct('StopCondition', 'StopForSatSecs')
+# stop_param_str = f'{sat.GetName()}.ElapsedSecs ='
+# stop_param_str_no_eq = stop_param_str[:-2]
+# stop_cond.SetLhsString(stop_param_str_no_eq)
+# goal_param_str = '8640.0'
+# stop_cond.SetRhsString(goal_param_str)
+# stop_cond.SetSpacecrafts([sat], [sat])
+#
+# # craft_param = gmat.Construct('Variable', 'SatParam')
+# # craft_param.SetField('InitialValue', stop_param_str)
+# # ela = gmat.Construct('ElapsedSecs', 'Sat.ElapsedSecs')
+# # ela.SetField('Object', sat_name)
+# # ela.SetRefObject(sat, gmat.SPACECRAFT, sat.GetName())
+# # ela.Initialize()
+# # ela_param = gmat.ConfigManager.Instance().GetParameter(ela.GetName())
+#
+# # stop_param_default = stop_cond.GetStopParameter()
+# # stop_cond.SetStopParameter(ela_param)
+# # craft_param = gmat.ConfigManager.Instance().GetParameter(ela.GetName())
+#
+# # mod = gmat.Moderator.Instance()
+# # craft_param = mod.CreateParameter('String', stop_param_str)
+#
+# # stop_param = sat.GetGmatTimeParameter(f'{sat.GetName()}.ElapsedSecs')
+# stop_param = gmat.Construct('ElapsedSecs', stop_param_str_no_eq)
+# stop_param.SetField('Object', sat.GetName())
+# stop_param.SetRefObject(sat, gmat.SPACECRAFT, sat.GetName())
+# stop_param.SetField('InitialValue', stop_param_str)
+# stop_param.SetField('Expression', str(0))
+# stop_param.SetField('Description', 'Elapsed Secs')
+# stop_param.SetField('Unit', 's')
+# stop_param.SetField('InitialEpoch', sat.GetState().GetEpoch())
+# stop_param.SetReference(sat)
+# stop_param.Initialize()
+# # stop_param = gmat.Moderator.Instance().GetInternalObject('Sat.ElapsedSecs')
+# stop_param = gmat.ConfigManager.Instance().GetParameter(stop_param.GetName())
+# # stop_param = gmat.GetObject(stop_param_str)
+# # print(f'stop_param:\n{stop_param}, type: {type(stop_param)}')
+# stop_cond.SetStopParameter(stop_param)
+# # print(f'stop param: {stop_cond.GetStopParameter()}')
+# stop_cond.Validate()
+# stop_cond.Initialize()
+#
+# # pgate.SetField('StopCondition', [stop_cond.GetName()])
+# pgate.SetObject(stop_cond.GetName(), gmat.STOP_CONDITION)  # adds stop_cond name to output of pgate.GetObjectList()
+# pgate.SetObject(stop_cond, gmat.STOP_CONDITION)  # adds stop_cond to output of pgate.GetGeneratingString()
+# pgate.SetObject(prop.GetName(), gmat.PROP_SETUP)
+# pgate.SetObject(sat.GetName(), gmat.SPACECRAFT)
+#
+# print(gmat.Update('Propagate'))
+# print(gmat.Exists('Propagate'))
+#
+# print(f'pgate Validate: {pgate.Validate()}')
+# # pgate.Initialize()
+# # CustomHelp(pgate)
+#
+# print(f'Check stop conditions: {pgate.TakeAction("CheckStopConditions")}')
+# # print(pgate.TakeAction('PrepareToPropagate'))
+# # print(f'\npgate fields: {gpy.gmat_obj_field_list(pgate)}')
+# # print(f'\nstop_cond fields: {gpy.gmat_obj_field_list(stop_cond)}')
+# # print(f'\nstop_param fields: {gpy.gmat_obj_field_list(stop_param)}')
+#
+# # print(f'\npgate:\n{pgate}, type: {type(pgate)}\n\n'
+# #       f'stop_cond:\n{stop_cond}, type: {type(stop_cond)}\n\n'
+# #       f'stop_param:\n{stop_param}, type: {type(stop_param)}')
+#
+# print(f'pgate object list: {pgate.GetObjectList()}')
+#
+# # bms = gmat.BeginMissionSequence()
+#
+# print('\n', pgate.GetGeneratingString())
 
-print(gmat.GetCommands())
+# We can use CreateDefaultCommand to make a default version of a Propagate command, that we'll then modify
 
-pgate.SetSolarSystem(gmat.GetSolarSystem())
-pgate.SetGlobalObjectMap(gmat.Sandbox.GetGlobalObjectMap(gmat.Sandbox()))
-pgate.SetObjectMap(gmat.Sandbox.GetObjectMap(gmat.Sandbox()))
+def_pgate = gmat.Moderator.Instance().CreateDefaultCommand('Propagate', 'Pgate')
+gmat.ShowObjects()
+def_pgate.SetName('DefPgate')
+print(def_pgate)
+def_pgate.Help()
+# CustomHelp(def_pgate)
 
-stop_cond = gmat.Construct('StopCondition', 'StopForSatSecs')
-stop_param_str = f'{sat.GetName()}.ElapsedSecs ='
-stop_param_str_no_eq = stop_param_str[:-2]
-stop_cond.SetLhsString(stop_param_str_no_eq)
-goal_param_str = '8640.0'
-stop_cond.SetRhsString(goal_param_str)
-stop_cond.SetSpacecrafts([sat], [sat])
+def_stop_cond = gmat.GetObject('Sat.A1ModJulian')
+print(def_stop_cond.GetTypeNames())
 
-# craft_param = gmat.Construct('Variable', 'SatParam')
-# craft_param.SetField('InitialValue', stop_param_str)
-# ela = gmat.Construct('ElapsedSecs', 'Sat.ElapsedSecs')
-# ela.SetField('Object', sat_name)
-# ela.SetRefObject(sat, gmat.SPACECRAFT, sat.GetName())
-# ela.Initialize()
-# ela_param = gmat.ConfigManager.Instance().GetParameter(ela.GetName())
-
-# stop_param_default = stop_cond.GetStopParameter()
-# stop_cond.SetStopParameter(ela_param)
-# craft_param = gmat.ConfigManager.Instance().GetParameter(ela.GetName())
-
-# mod = gmat.Moderator.Instance()
-# craft_param = mod.CreateParameter('String', stop_param_str)
-
-# stop_param = sat.GetGmatTimeParameter(f'{sat.GetName()}.ElapsedSecs')
-stop_param = gmat.Construct('ElapsedSecs', stop_param_str_no_eq)
-stop_param.SetField('Object', sat.GetName())
-stop_param.SetRefObject(sat, gmat.SPACECRAFT, sat.GetName())
-stop_param.SetField('InitialValue', stop_param_str)
-stop_param.SetField('Expression', stop_param_str)
-stop_param.SetField('Description', stop_param_str)
-stop_param.SetField('InitialEpoch', sat.GetState().GetEpoch())
-stop_param.SetReference(sat)
-stop_param.Initialize()
-# stop_param = gmat.Moderator.Instance().GetInternalObject('Sat.ElapsedSecs')
-stop_param = gmat.ConfigManager.Instance().GetParameter(stop_param.GetName())
-# stop_param = gmat.GetObject(stop_param_str)
-# print(f'stop_param:\n{stop_param}, type: {type(stop_param)}')
-stop_cond.SetStopParameter(stop_param)
-# print(f'stop param: {stop_cond.GetStopParameter()}')
-stop_cond.Validate()
-stop_cond.Initialize()
-
-# pgate.SetField('StopCondition', [stop_cond.GetName()])
-pgate.SetObject(stop_cond.GetName(), gmat.STOP_CONDITION)  # adds stop_cond name to output of pgate.GetObjectList()
-pgate.SetObject(stop_cond, gmat.STOP_CONDITION)  # adds stop_cond to output of pgate.GetGeneratingString()
-pgate.SetObject(prop.GetName(), gmat.PROP_SETUP)
-pgate.SetObject(sat.GetName(), gmat.SPACECRAFT)
-
-print(gmat.Update('Propagate'))
-print(gmat.Exists('Propagate'))
-
-print(f'pgate Validate: {pgate.Validate()}')
-# pgate.Initialize()
-# CustomHelp(pgate)
-
-print(f'Check stop conditions: {pgate.TakeAction("CheckStopConditions")}')
-# print(pgate.TakeAction('PrepareToPropagate'))
-# print(f'\npgate fields: {gpy.gmat_obj_field_list(pgate)}')
-# print(f'\nstop_cond fields: {gpy.gmat_obj_field_list(stop_cond)}')
-# print(f'\nstop_param fields: {gpy.gmat_obj_field_list(stop_param)}')
-
-# print(f'\npgate:\n{pgate}, type: {type(pgate)}\n\n'
-#       f'stop_cond:\n{stop_cond}, type: {type(stop_cond)}\n\n'
-#       f'stop_param:\n{stop_param}, type: {type(stop_param)}')
-
-print(f'pgate object list: {pgate.GetObjectList()}')
-
-# bms = gmat.BeginMissionSequence()
-
-print('\n', pgate.GetGeneratingString())
-
-# CustomHelp(pgate)
-
-print(gmat.GetCommands('Propagate'))
+print(f'\nGenerating string for default Propagate command:\n{def_pgate.GetGeneratingString()}')
+print(f'\nGenerating string for default stop condition:\n{def_stop_cond.GetGeneratingString()}')

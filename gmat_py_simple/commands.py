@@ -20,6 +20,36 @@ class Propagate(GmatCommand):
             self.goal = goal
             self.repeat = repeat
 
+    """
+    Propagate section of pgate = gmat.Moderator.Instance().CreateDefaultCommand('Propagate', 'Pgate') below.
+    Note: name (2nd arg) not used - have to set afterwards with pgate.SetName('Pgate')
+    Full source code in src/base/executive/Moderator.cpp/CreateDefaultCommand()
+    
+    else if (type == "Propagate")
+      {
+         cmd->SetObject(GetDefaultPropSetup()->GetName(), Gmat::PROP_SETUP);
+         
+         StringArray formList = GetListOfObjects(Gmat::FORMATION);
+         
+         if (formList.size() == 0)
+         {
+            cmd->SetObject(GetDefaultSpacecraft()->GetName(), Gmat::SPACECRAFT);
+         }
+         else
+         {
+            // Get first spacecraft name not in formation
+            std::string scName = GetSpacecraftNotInFormation();
+            if (scName != "")
+               cmd->SetObject(scName, Gmat::SPACECRAFT);
+            else
+               cmd->SetObject(formList[0], Gmat::SPACECRAFT);
+         }
+         
+         cmd->SetRefObject(CreateDefaultStopCondition(), Gmat::STOP_CONDITION, "", 0);
+         cmd->SetSolarSystem(theSolarSystemInUse);
+      }    
+    """
+
     def __init__(self, propagator: PropSetup, sc: Spacecraft, stop: tuple = ('DefaultSC.ElapsedSecs', 8640),
                  stop_tolerance: str = 1e-7, mode: str = None, prop_forward: bool = True):
         self.stop_param_allowed_values = {
