@@ -65,6 +65,8 @@ sat_params = {
 log_path = os.path.normpath(f'{os.getcwd()}/GMAT-Log.txt')
 gmat.UseLogFile(log_path)
 
+gmat.Clear()
+
 blank_path = ''
 script_path = os.path.normpath(f'{os.getcwd()}/Tut01.script')  # {os.getcwd()}/Tut01.script
 # gmat.LoadScript(blank_path)
@@ -225,7 +227,11 @@ bms.SetSolarSystem(gmat.GetSolarSystem())
 bms.Initialize()
 gmat.Initialize()
 
-pgate = gmat.Moderator.Instance().CreateDefaultCommand('Propagate', 'Elapsed')
+val = gmat.Validator.Instance()
+val.SetSolarSystem(ss)
+val.SetObjectMap(gmat.Moderator.Instance().GetConfiguredObjectMap())
+
+pgate = gmat.Moderator.Instance().CreateDefaultCommand('Propagate', 'Pgate')
 sb.SetInternalCoordSystem(gmat.GetObject('EarthMJ2000Eq'))  # TODO: remove when hardcoding no longer needed
 # sat_name_from_sat = sat.GetName()
 sat_name_from_pgate_field = pgate.GetField('Spacecraft')[1:-1]
@@ -233,9 +239,48 @@ coord_sys_name = gmat.GetObject(sat_name_from_pgate_field).GetField('CoordinateS
 coord_sys = gmat.GetObject(coord_sys_name)
 sb.SetInternalCoordSystem(coord_sys)
 
+prop = gmat.GetObject('DefaultProp')
+sat = gmat.GetObject('DefaultSC')
+gmat.Initialize()
+sb.AddObject(prop)
+sb.AddObject(sat)
+
+# sb.AddCommand(pgate)
+
+# print(f'prop Add Sat: {prop.AddPropObject(sat)}')
+# prop.PrepareInternals()
+# gmat.Initialize()
+
+# sb.AddObject(prop)
+# print(sb.GetInternalObject('DefaultProp', gmat.PROP_SETUP))
+# sb.AddObject(sat)
+# print(sb.GetInternalObject('DefaultSC', gmat.SPACECRAFT))
+
 pgate.SetSolarSystem(gmat.GetSolarSystem())
-pgate.SetObjectMap(gmat.ConfigManager.Instance().GetObjectMap())
+pgate.SetObjectMap(gmat.Moderator.Instance().GetConfiguredObjectMap())
 pgate.SetGlobalObjectMap(sb.GetGlobalObjectMap())
+
+# print(prop.GetRefObjectNameArray(gmat.SPACECRAFT))
+# prop.PrepareInternals()
+# prop.Help()
+# print(prop.GetRefObject(gmat.SPACECRAFT, 'DefaultSC'))
+# pgate.SetObject('DefaultSC', gmat.SPACECRAFT)
+
+print(pgate.GetGeneratingString())
+
+# TODO: duplicated SC caused by lines below
+# pgate.SetObject(prop.GetName(), gmat.PROP_SETUP)
+# pgate.SetObject(sat.GetName(), gmat.SPACECRAFT, prop.GetName(), gmat.PROP_SETUP)
+
+# pgate.SetObject(sat.GetName(), gmat.SPACECRAFT)
+# pgate.SetObject(prop.GetName(), gmat.PROP_SETUP, sat.GetName(), gmat.SPACECRAFT)
+print(pgate.GetGeneratingString())
+
+print(f'pgate Get: {pgate.GetRefObjectName(gmat.PROP_SETUP)}')
+# prop = pgate.GetGmatObject(gmat.PROP_SETUP, prop.GetName())
+# prop.Help()
+
+print(f'CM item list: {gmat.ConfigManager.Instance().GetListOfAllItems()}')
 print(pgate.Initialize())
 print(f'pgateIsI: {pgate.IsInitialized()}')
 
@@ -249,9 +294,16 @@ print(f'pgate valid: {pgate.Validate()}')
 print(f'pgate Init: {pgate.Initialize()}')
 pgate.TakeAction('PrepareToPropagate')
 
+print(f'sb Init: {sb.Initialize()}')
+gmat.Initialize()
+
+pgate.SetObjectMap(gmat.ConfigManager.Instance().GetObjectMap())
+pgate.SetGlobalObjectMap(sb.GetGlobalObjectMap())
+
 sb.AddCommand(bms)
 sb.AddCommand(pgate)
-# sb.Initialize()
+gmat.Initialize()
+print(f'sb Init after adding commands: {sb.Initialize()}')
 
 print(f'CM item list: {gmat.ConfigManager.Instance().GetListOfAllItems()}')
 
@@ -261,24 +313,19 @@ print(f'CM item list: {gmat.ConfigManager.Instance().GetListOfAllItems()}')
 # ela = gmat.GetObject('DefaultSC.ElapsedSecs')
 # ela.Help()
 
-mod = gmat.Moderator.Instance()
 # print(mod.GetScript())
 
 # print(mod.SetObjectMap(gmat.ConfigManager.Instance().GetObjectMap()))
 
-sat = gmat.GetObject('DefaultSC')
-prop = gmat.GetObject('DefaultProp')
-prop.AddPropObject(sat)
-prop.PrepareInternals()
-gator = prop.GetPropagator()
-gator.UpdateSpaceObject()
-state = gator.GetState()
+# gator = prop.GetPropagator()
+# gator.UpdateSpaceObject()
+# state = gator.GetState()
 # gator = pgate.GetRefObject(gmat.PROP_SETUP, prop.GetName())
 print(f'Sat state before running: {sat.GetState().GetState()}')
-print(f'RunMission return code: {mod.RunMission()}')  # -2: exception thrown during sandbox initialisation
-gmat.Update(sat)
-gator.UpdateSpaceObject()
-new_state = gator.GetState()
+print(f'RunMission return code: {gmat.Moderator.Instance().RunMission()}')  # -2: exception thrown during sandbox initialization
+# gmat.Update(sat)
+# gator.UpdateSpaceObject()
+# new_state = gator.GetState()
 print(f'Sat state after running: {sat.GetState().GetState()}')
 
 # sb.Initialize()
