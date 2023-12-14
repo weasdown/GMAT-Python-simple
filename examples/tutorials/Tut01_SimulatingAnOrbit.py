@@ -231,6 +231,8 @@ val = gmat.Validator.Instance()
 val.SetSolarSystem(ss)
 val.SetObjectMap(gmat.Moderator.Instance().GetConfiguredObjectMap())
 
+# TODO: may be able to replace a lot of the following (for pgate setup) with:
+#  gmat.Moderator.Instance().AppendCommand('Propagate', 'Pgate', True, 1)  # currently overloaded exception
 pgate = gmat.Moderator.Instance().CreateDefaultCommand('Propagate', 'Pgate')
 sb.SetInternalCoordSystem(gmat.GetObject('EarthMJ2000Eq'))  # TODO: remove when hardcoding no longer needed
 # sat_name_from_sat = sat.GetName()
@@ -300,8 +302,14 @@ gmat.Initialize()
 pgate.SetObjectMap(gmat.ConfigManager.Instance().GetObjectMap())
 pgate.SetGlobalObjectMap(sb.GetGlobalObjectMap())
 
-sb.AddCommand(bms)
-sb.AddCommand(pgate)
+print('\n\n', sat.GetState().GetState(), '\n\n')
+
+# sb.AddCommand(bms)
+# sb.AddCommand(pgate)
+print(f'bms valid: {gmat.Moderator.Instance().ValidateCommand(bms)}')
+print(f'pgate valid: {gmat.Moderator.Instance().ValidateCommand(pgate)}')
+print(f'Added bms to command sequence: {gmat.Moderator.Instance().AppendCommand(bms)}')
+print(f'Added pgate to command sequence: {gmat.Moderator.Instance().AppendCommand(pgate)}')
 gmat.Initialize()
 print(f'sb Init after adding commands: {sb.Initialize()}')
 
@@ -322,11 +330,17 @@ print(f'CM item list: {gmat.ConfigManager.Instance().GetListOfAllItems()}')
 # state = gator.GetState()
 # gator = pgate.GetRefObject(gmat.PROP_SETUP, prop.GetName())
 print(f'Sat state before running: {sat.GetState().GetState()}')
-print(f'RunMission return code: {gmat.Moderator.Instance().RunMission()}')  # -2: exception thrown during sandbox initialization
+
+# -2: exception thrown during sandbox initialization
+run_mission_return_code = gmat.Moderator.Instance().RunMission()
+if run_mission_return_code == 1:
+    print(f'RunMission succeeded!')
+else:
+    raise Exception(f'RunMission did not complete successfully - returned code {run_mission_return_code}')
 # gmat.Update(sat)
 # gator.UpdateSpaceObject()
 # new_state = gator.GetState()
-print(f'Sat state after running: {sat.GetState().GetState()}')
+print(f'Sat state after running: {sat.GetState().GetState()}\n')
 
 # sb.Initialize()
 # bms = gmat.BeginMissionSequence()
@@ -339,4 +353,18 @@ print(f'Sat state after running: {sat.GetState().GetState()}')
 
 # print(f'state: {sat.GetState().GetState()}')
 
-# gmat.SaveScript(script_path)
+gmat.SaveScript(script_path)
+
+# gmat.ShowObjects()
+# print(gmat.Update(sat.GetName()))
+# sat = gmat.Moderator.Instance().GetInternalObject(sat.GetName())
+# print(sat.GetState().GetState())
+sat = gmat.GetRuntimeObject(sat.GetName())
+# sat = gmat.Moderator.Instance().GetSpacecraft(sat.GetName())
+# gmat.Update(sat)
+print(sat)
+sat.Help()
+# print(sat.GetState().GetState())
+# print(sat.GetCartesianState())
+# print(sat.GetEpochGT())
+# print('\n\n', sat.GetState().GetState(), '\n\n')
