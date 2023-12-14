@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from load_gmat import gmat
 
 import gmat_py_simple as gpy
@@ -8,17 +10,32 @@ import gmat_py_simple as gpy
 
 import os
 
-# TODO complete modelling the tutorial mission rather than the default one
+log_path = os.path.normpath(f'{os.getcwd()}/GMAT-Log.txt')
+gmat.UseLogFile(log_path)
+
+gmat.Clear()
+
+script_path = os.path.normpath(f'{os.getcwd()}/Tut01.script')
+
+
+# TODO complete modelling the tutorial mission (inc. add drag, prop to Periapsis)
+
+def GetState(sc):
+    state: list[None | float] = [None] * 6
+    for i in range(13, 19):
+        state[i - 13] = float(sat.GetField(i))
+    return state
+
 
 sat_params = {
-    'Name': 'DefaultSat',
+    'Name': 'Sat',
     'Orbit': {
         'Epoch': '22 Jul 2014 11:29:10.811',
         'DateFormat': 'UTCGregorian',
         'CoordSys': 'EarthMJ2000Eq',
         'StateType': 'Keplerian',
-        'SMA': 83474.31800000001,
-        'ECC': 0.89652,
+        'SMA': 83474.31800000004,
+        'ECC': 0.8965199999999998,
         'INC': 12.4606,
         'RAAN': 292.8362,
         'AOP': 218.9805,
@@ -26,9 +43,7 @@ sat_params = {
     },
 }
 
-# sat = gpy.Spacecraft.from_dict(sat_params)
-
-# sat.Help()
+sat = gpy.Spacecraft.from_dict(sat_params)
 
 # lep_fm = o.ForceModel(name='LowEarthProp_ForceModel',
 #                       gravity_field=o.ForceModel.GravityField(
@@ -59,75 +74,6 @@ sat_params = {
 # print(f'gator: {gator}')
 # print('gator Help:')
 # gator.Help()
-
-# gmat.ShowClasses()
-
-log_path = os.path.normpath(f'{os.getcwd()}/GMAT-Log.txt')
-gmat.UseLogFile(log_path)
-
-gmat.Clear()
-
-blank_path = ''
-script_path = os.path.normpath(f'{os.getcwd()}/Tut01.script')  # {os.getcwd()}/Tut01.script
-# gmat.LoadScript(blank_path)
-# gmat.Clear()
-
-
-# sat = gmat.Construct('Spacecraft', 'Sat')
-# sat.SetField('Epoch', '21545')
-# sat_name = sat.GetName()
-
-# fm = gmat.Construct("ForceModel", "FM")
-# epm = gmat.Construct("PointMassForce", "EPM")
-# fm.AddForce(epm)
-
-# prop = gmat.Construct("Propagator", "Prop")
-# gator = gmat.Construct("PrinceDormand78", "Gator")
-# prop.SetReference(gator)
-# prop.SetReference(fm)
-#
-# gmat.Initialize()
-# prop.AddPropObject(sat)
-# prop.PrepareInternals()
-#
-# gator = prop.GetPropagator()
-#
-# state = gator.GetState()
-
-# gmat.Initialize()
-
-def CustomHelp(obj):
-    print(f'\nCustomHelp for {obj.GetName()}:')
-    if 'gmat_py_simple' in str(type(obj)):
-        param_count = obj.gmat_obj.GetParameterCount()
-    else:
-        param_count = obj.GetParameterCount()
-
-    for i in range(param_count - 1):
-        try:
-            param_name = obj.GetParameterText(i)
-            param_type = obj.GetParameterTypeString(i)
-            print(f'Parameter: {param_name}')
-            print(f'- Type: {param_type}')
-            if param_type == 'String':
-                val = obj.GetStringParameter(i)
-            elif param_type == 'Object':
-                val = obj.GetName()
-            elif (param_type == 'Real') or (param_type == 'UnsignedInt') or (param_name == 'InitialEpoch'):
-                val = obj.GetRealParameter(i)
-            elif param_type == 'Rmatrix':
-                val = obj.GetRmatrixParameter(i)
-            else:
-                try:
-                    val = obj.GetField(param_name)
-                except Exception:
-                    raise TypeError(f'Getting value of {param_type} failed')
-
-            print(f'- Value: {val}\n')
-
-        except Exception as exc:
-            print(exc, '\n')
-            # raise
 
 
 # pgate = gmat.Construct('Propagate')
@@ -211,160 +157,70 @@ def CustomHelp(obj):
 #
 # print('\n', pgate.GetGeneratingString())
 
-# We can use CreateDefaultCommand to make a default version of a Propagate command, that we'll then modify
-
 sb = gmat.Moderator.Instance().GetSandbox()
 cm = gmat.ConfigManager.Instance()
 ss = gmat.GetSolarSystem()
-
 sb.AddSolarSystem(ss)
 
+gmat.Initialize()
+
+vdator = gmat.Validator.Instance()
+vdator.SetSolarSystem(ss)
+vdator.SetObjectMap(gmat.Moderator.Instance().GetConfiguredObjectMap())
+
+# Create a BeginMissionSequence command
 bms = gmat.Moderator.Instance().CreateDefaultCommand('BeginMissionSequence')
 sb.AddCommand(bms)
 bms.SetObjectMap(sb.GetObjectMap())
 bms.SetGlobalObjectMap(sb.GetGlobalObjectMap())
 bms.SetSolarSystem(gmat.GetSolarSystem())
 bms.Initialize()
-gmat.Initialize()
 
-val = gmat.Validator.Instance()
-val.SetSolarSystem(ss)
-val.SetObjectMap(gmat.Moderator.Instance().GetConfiguredObjectMap())
-
-# TODO: may be able to replace a lot of the following (for pgate setup) with:
-#  gmat.Moderator.Instance().AppendCommand('Propagate', 'Pgate', True, 1)  # currently overloaded exception
+# Create a Propagate command
 pgate = gmat.Moderator.Instance().CreateDefaultCommand('Propagate', 'Pgate')
-sb.SetInternalCoordSystem(gmat.GetObject('EarthMJ2000Eq'))  # TODO: remove when hardcoding no longer needed
-# sat_name_from_sat = sat.GetName()
 sat_name_from_pgate_field = pgate.GetField('Spacecraft')[1:-1]
 coord_sys_name = gmat.GetObject(sat_name_from_pgate_field).GetField('CoordinateSystem')
 coord_sys = gmat.GetObject(coord_sys_name)
 sb.SetInternalCoordSystem(coord_sys)
 
+# We now need to get the Propagate command linked into the rest of the system
 prop = gmat.GetObject('DefaultProp')
-sat = gmat.GetObject('DefaultSC')
-gmat.Initialize()
+sat = gmat.GetObject(sat.GetName())
+
+# Add the PropSetup and Spacecraft to the Sandbox
 sb.AddObject(prop)
 sb.AddObject(sat)
 
-# sb.AddCommand(pgate)
-
-# print(f'prop Add Sat: {prop.AddPropObject(sat)}')
-# prop.PrepareInternals()
-# gmat.Initialize()
-
-# sb.AddObject(prop)
-# print(sb.GetInternalObject('DefaultProp', gmat.PROP_SETUP))
-# sb.AddObject(sat)
-# print(sb.GetInternalObject('DefaultSC', gmat.SPACECRAFT))
-
+# Link the Propagate command to all the other objects
 pgate.SetSolarSystem(gmat.GetSolarSystem())
 pgate.SetObjectMap(gmat.Moderator.Instance().GetConfiguredObjectMap())
 pgate.SetGlobalObjectMap(sb.GetGlobalObjectMap())
 
-# print(prop.GetRefObjectNameArray(gmat.SPACECRAFT))
-# prop.PrepareInternals()
-# prop.Help()
-# print(prop.GetRefObject(gmat.SPACECRAFT, 'DefaultSC'))
-# pgate.SetObject('DefaultSC', gmat.SPACECRAFT)
+pgate.Initialize()
 
-print(pgate.GetGeneratingString())
+pgate.Initialize()
 
-# TODO: duplicated SC caused by lines below
-# pgate.SetObject(prop.GetName(), gmat.PROP_SETUP)
-# pgate.SetObject(sat.GetName(), gmat.SPACECRAFT, prop.GetName(), gmat.PROP_SETUP)
-
-# pgate.SetObject(sat.GetName(), gmat.SPACECRAFT)
-# pgate.SetObject(prop.GetName(), gmat.PROP_SETUP, sat.GetName(), gmat.SPACECRAFT)
-print(pgate.GetGeneratingString())
-
-print(f'pgate Get: {pgate.GetRefObjectName(gmat.PROP_SETUP)}')
-# prop = pgate.GetGmatObject(gmat.PROP_SETUP, prop.GetName())
-# prop.Help()
-
-print(f'CM item list: {gmat.ConfigManager.Instance().GetListOfAllItems()}')
-print(pgate.Initialize())
-print(f'pgateIsI: {pgate.IsInitialized()}')
-
-print(f'Generating string for default Propagate command:\n{pgate.GetGeneratingString()}\n')
-
-gmat.Initialize()
-
-# pgate.Execute()
-
-print(f'pgate valid: {pgate.Validate()}')
-print(f'pgate Init: {pgate.Initialize()}')
-pgate.TakeAction('PrepareToPropagate')
-
-print(f'sb Init: {sb.Initialize()}')
-gmat.Initialize()
+sb.Initialize()
 
 pgate.SetObjectMap(gmat.ConfigManager.Instance().GetObjectMap())
 pgate.SetGlobalObjectMap(sb.GetGlobalObjectMap())
 
-print('\n\n', sat.GetState().GetState(), '\n\n')
+# Add commands to the Mission Command Sequence
+gmat.Moderator.Instance().AppendCommand(bms)
+gmat.Moderator.Instance().AppendCommand(pgate)
 
-# sb.AddCommand(bms)
-# sb.AddCommand(pgate)
-print(f'bms valid: {gmat.Moderator.Instance().ValidateCommand(bms)}')
-print(f'pgate valid: {gmat.Moderator.Instance().ValidateCommand(pgate)}')
-print(f'Added bms to command sequence: {gmat.Moderator.Instance().AppendCommand(bms)}')
-print(f'Added pgate to command sequence: {gmat.Moderator.Instance().AppendCommand(pgate)}')
-gmat.Initialize()
-print(f'sb Init after adding commands: {sb.Initialize()}')
-
-print(f'CM item list: {gmat.ConfigManager.Instance().GetListOfAllItems()}')
-
-# mj = gmat.GetObject('DefaultSC.A1ModJulian')
-# mj.Help()
-#
-# ela = gmat.GetObject('DefaultSC.ElapsedSecs')
-# ela.Help()
-
-# print(mod.GetScript())
-
-# print(mod.SetObjectMap(gmat.ConfigManager.Instance().GetObjectMap()))
-
-# gator = prop.GetPropagator()
-# gator.UpdateSpaceObject()
-# state = gator.GetState()
-# gator = pgate.GetRefObject(gmat.PROP_SETUP, prop.GetName())
 print(f'Sat state before running: {sat.GetState().GetState()}')
+print(f"Epoch before running: {sat.GetField('Epoch')}")
 
-# -2: exception thrown during sandbox initialization
-run_mission_return_code = gmat.Moderator.Instance().RunMission()
+# Run the mission
+run_mission_return_code = int(gmat.Moderator.Instance().RunMission())
 if run_mission_return_code == 1:
-    print(f'RunMission succeeded!')
+    print(f'\nRunMission succeeded!\n')
 else:
     raise Exception(f'RunMission did not complete successfully - returned code {run_mission_return_code}')
-# gmat.Update(sat)
-# gator.UpdateSpaceObject()
-# new_state = gator.GetState()
-print(f'Sat state after running: {sat.GetState().GetState()}\n')
 
-# sb.Initialize()
-# bms = gmat.BeginMissionSequence()
-# bms.Execute()
-
-# print(pgate.TakeAction('PrepareToPropagate'))
-# print(pgate.GetPropStatus())
-
-# sb.Execute()
-
-# print(f'state: {sat.GetState().GetState()}')
+sat = gmat.GetRuntimeObject(sat.GetName())  # TODO: convert into a wrapper Spacecraft for easier handling
+print(f'Sat state after running: {GetState(sat)}')
+print(f'Sat epoch after running: {sat.GetField("Epoch")}')
 
 gmat.SaveScript(script_path)
-
-# gmat.ShowObjects()
-# print(gmat.Update(sat.GetName()))
-# sat = gmat.Moderator.Instance().GetInternalObject(sat.GetName())
-# print(sat.GetState().GetState())
-sat = gmat.GetRuntimeObject(sat.GetName())
-# sat = gmat.Moderator.Instance().GetSpacecraft(sat.GetName())
-# gmat.Update(sat)
-print(sat)
-sat.Help()
-# print(sat.GetState().GetState())
-# print(sat.GetCartesianState())
-# print(sat.GetEpochGT())
-# print('\n\n', sat.GetState().GetState(), '\n\n')
