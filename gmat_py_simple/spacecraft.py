@@ -234,6 +234,11 @@ class Spacecraft(HardwareItem):
 
         return sc
 
+    def update_from_runtime_object(self):
+        sat = gmat.GetRuntimeObject(self.name)
+        raise NotImplementedError
+        pass
+
     def update_hardware(self, hardware: SpacecraftHardware):
         self.Hardware = hardware
 
