@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from load_gmat import gmat
+import load_gmat
 
 import gmat_py_simple as gpy
 # import gmat_py_simple.utils
@@ -10,13 +11,28 @@ import gmat_py_simple as gpy
 
 import os
 
+# gmat_startup_file_path = os.path.normpath(f'{load_gmat.GmatBinPath}/gmat_startup_file.txt')
+# print('\n\n', gmat.FileManager.Instance().ReadStartupFile(gmat_startup_file_path))
+# os.chdir(load_gmat.GmatBinPath)
+# # gmat.Setup('C:\\Users\\weasd\\Desktop\\GMAT\\gmat-win-R2022a\\GMAT\\bin')
+# print('\n', gmat.FileManager.Instance().GetFullStartupFilePath())
+
 log_path = os.path.normpath(f'{os.getcwd()}/GMAT-Log.txt')
 gmat.UseLogFile(log_path)
 
-gmat.Clear()
+# print(gmat.FileManager.Instance().GetGmatWorkingDirectory())
+# print(gmat.FileManager.Instance().GetCurrentWorkingDirectory())
+# print(os.getcwd(), '\n')
+print(gmat.FileManager.Instance().GetRootPath())
+# print(gmat.FileManager.Instance().SetGmatWorkingDirectory(f'{os.getcwd()}'))
+# print(gmat.FileManager.Instance().SetCurrentWorkingDirectory(f'{os.getcwd()}'))
 
-# TODO: remove warning in log: "Unexpected state transition in the Sandbox"
-gmat.Publisher.Instance().SetRunState(gmat.IDLE)
+# gmat.Setup(gmat.FileManager.Instance().GetCurrentWorkingDirectory())
+
+# gmat.Clear()
+
+# # TODO: remove warning in log: "Unexpected state transition in the Sandbox"
+# gmat.Publisher.Instance().SetRunState(gmat.IDLE)
 
 script_path = os.path.normpath(f'{os.getcwd()}/Tut01.script')
 
@@ -186,9 +202,9 @@ sb.SetInternalCoordSystem(coord_sys)
 # We now need to link the Propagate command into the rest of the system
 prop = gmat.GetObject('DefaultProp')
 
-# Add the PropSetup and Spacecraft to the Sandbox
-sb.AddObject(prop)
-sb.AddObject(sat.gmat_obj)
+# TODO Add the PropSetup and Spacecraft to the Sandbox
+# sb.AddObject(prop)
+# sb.AddObject(sat.gmat_obj)
 
 # Link the Propagate command to all the other objects
 pgate.SetSolarSystem(gmat.GetSolarSystem())
@@ -203,13 +219,16 @@ sb.Initialize()
 pgate.SetObjectMap(gmat.ConfigManager.Instance().GetObjectMap())
 pgate.SetGlobalObjectMap(sb.GetGlobalObjectMap())
 
-print(f'Detailed run state: {gpy.basics.Moderator.GetDetailedRunState()}')
+# print(f'Detailed run state: {gpy.basics.Moderator.GetDetailedRunState()}')
 # Add commands to the Mission Command Sequence
-gmat.Moderator.Instance().AppendCommand(bms)
-gmat.Moderator.Instance().AppendCommand(pgate)
+noop = mod.GetFirstCommand()
+mod.InsertCommand(bms, noop)
+mod.AppendCommand(pgate)
+mod.Initialize()
 
 print(f'Sat state before running: {sat.GetState()}')
 print(f"Epoch before running: {sat.GetField('Epoch')}")
+
 
 run_mission_return_code = int(mod.RunMission())  # Run the mission
 if run_mission_return_code != 1:
@@ -222,4 +241,4 @@ print(f'Sat state after running: {sat.GetState()}')
 print(f'Epoch after running: {sat.GetField("Epoch")}')
 
 gmat.SaveScript(script_path)
-print(f'Detailed run state: {gpy.basics.Moderator.GetDetailedRunState()}')
+# print(f'Detailed run state: {gpy.basics.Moderator.GetDetailedRunState()}')
