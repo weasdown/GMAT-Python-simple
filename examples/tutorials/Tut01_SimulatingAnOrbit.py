@@ -40,7 +40,8 @@ sat_params = {
 
 # sat = gpy.Spacecraft.from_dict(sat_params)
 sat = gpy.Spacecraft('One')
-sat.SetField('DateFormat', 'UTCGregorian')
+
+# sat.SetField('DateFormat', 'UTCGregorian')
 
 # lep_fm = o.ForceModel(name='LowEarthProp_ForceModel',
 #                       gravity_field=o.ForceModel.GravityField(
@@ -172,9 +173,11 @@ bms.SetObjectMap(sb.GetObjectMap())
 bms.SetGlobalObjectMap(sb.GetGlobalObjectMap())
 bms.SetSolarSystem(gmat.GetSolarSystem())
 bms.Initialize()
+bms.SetRunState(gmat.IDLE)
 
 # Create a Propagate command
 pgate = mod.CreateDefaultCommand('Propagate', 'Pgate')
+
 sat_name_from_pgate_field = pgate.GetField('Spacecraft')[1:-1]
 coord_sys_name = gmat.GetObject(sat_name_from_pgate_field).GetField('CoordinateSystem')
 coord_sys = gmat.GetObject(coord_sys_name)
@@ -193,8 +196,7 @@ pgate.SetObjectMap(mod.GetConfiguredObjectMap())
 pgate.SetGlobalObjectMap(sb.GetGlobalObjectMap())
 
 pgate.Initialize()
-
-pgate.Initialize()
+pgate.SetRunState(gmat.IDLE)
 
 sb.Initialize()
 
