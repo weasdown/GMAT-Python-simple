@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import gmat_py_simple
 from load_gmat import gmat
 
 import sys
 from io import StringIO
+import logging
 
 
 def class_string_to_GMAT_string(string):
@@ -85,13 +87,13 @@ def get_gmat_objects_of_type(obj_type: str) -> list[str]:
     # create a StringIO object, assign it to objs_stringio and set as the target for stdout
     sys.stdout = objs_stringio = StringIO()
     gmat.ShowObjects(obj_type)
-    objs_str = objs_stringio.getvalue()  # ShowObjects() table text as a string
+    objs_str: str = objs_stringio.getvalue()  # ShowObjects() table text as a string
 
     sys.stdout = old_stdout  # revert back to normal handling of stdout
 
-    rows = objs_str.split('\n')  # split the returned text into rows for easier parsing
-    data_rows = rows[2:]  # first two rows are always title and blank so remove them
-    coord_syses = [None] * len(data_rows)  # create a list to store the coord_syses
+    rows: list[str] = objs_str.split('\n')  # split the returned text into rows for easier parsing
+    data_rows: list[str] = rows[2:]  # first two rows are always title and blank so remove them
+    coord_syses: list[str | None] = [None] * len(data_rows)  # create a list to store the coord_syses
     for index, row in enumerate(data_rows):
         row = row[3:]  # remove indent
         coord_syses[index] = row
@@ -324,6 +326,31 @@ def generate_script() -> str:
     :return:
     """
     script = f'globals from gpy: {[item for item in globals().copy().values() if "gmat_py_simple" in str(type(item))]}'
-    #TODO complete function
+    # TODO complete function
     return script
 
+
+def get_sat_names() -> list[str]:
+    return [sat.lstrip() for sat in gmat.ShowObjectsForID(gmat.SPACECRAFT).split('\n')[2:-1]]
+
+
+def get_sat_objects() -> list[gmat.Spacecraft]:
+    # TODO tidy: duplicate of SpacecraftObjs, also similar to get_sat_names()
+    sat_names = get_sat_names()
+    sat_objs = [None] * len(sat_names)
+    for index, name in enumerate(sat_names):
+        try:
+            # See if there's a RuntimeObject for the sat, to use its latest info
+            sat_objs[index]: gmat.GmatBase = gmat.GetRuntimeObject(name)
+
+        except Exception as exc:
+            if 'Sandbox Exception: Sandbox::GetInternalObject(' in str(exc):
+                logging.info('No Runtime Object for sat - using GetObject instead')
+                try:
+                    sat_objs[index] = gmat.GetObject(name)
+                except Exception:
+                    raise
+            else:
+                raise
+    print(f'sat_objs: {sat_objs}')
+    return sat_objs

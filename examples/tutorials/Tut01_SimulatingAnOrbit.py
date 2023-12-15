@@ -15,17 +15,12 @@ gmat.UseLogFile(log_path)
 
 gmat.Clear()
 
+# TODO: remove warning in log: "Unexpected state transition in the Sandbox"
+gmat.Publisher.Instance().SetRunState(gmat.IDLE)
+
 script_path = os.path.normpath(f'{os.getcwd()}/Tut01.script')
 
-
 # TODO complete modelling the tutorial mission (inc. add drag, prop to Periapsis)
-
-def GetState(sc):
-    state: list[None | float] = [None] * 6
-    for i in range(13, 19):
-        state[i - 13] = float(sat.GetField(i))
-    return state
-
 
 sat_params = {
     'Name': 'Sat',
@@ -43,7 +38,9 @@ sat_params = {
     },
 }
 
-sat = gpy.Spacecraft.from_dict(sat_params)
+# sat = gpy.Spacecraft.from_dict(sat_params)
+sat = gpy.Spacecraft('One')
+sat.SetField('DateFormat', 'UTCGregorian')
 
 # lep_fm = o.ForceModel(name='LowEarthProp_ForceModel',
 #                       gravity_field=o.ForceModel.GravityField(
@@ -156,8 +153,8 @@ sat = gpy.Spacecraft.from_dict(sat_params)
 # # bms = gmat.BeginMissionSequence()
 #
 # print('\n', pgate.GetGeneratingString())
-
-sb = gmat.Moderator.Instance().GetSandbox()
+mod = gmat.Moderator.Instance()  # convert to wrapper Moderator
+sb = mod.GetSandbox()
 cm = gmat.ConfigManager.Instance()
 ss = gmat.GetSolarSystem()
 sb.AddSolarSystem(ss)
@@ -166,10 +163,10 @@ gmat.Initialize()
 
 vdator = gmat.Validator.Instance()
 vdator.SetSolarSystem(ss)
-vdator.SetObjectMap(gmat.Moderator.Instance().GetConfiguredObjectMap())
+vdator.SetObjectMap(mod.GetConfiguredObjectMap())
 
 # Create a BeginMissionSequence command
-bms = gmat.Moderator.Instance().CreateDefaultCommand('BeginMissionSequence')
+bms = mod.CreateDefaultCommand('BeginMissionSequence')
 sb.AddCommand(bms)
 bms.SetObjectMap(sb.GetObjectMap())
 bms.SetGlobalObjectMap(sb.GetGlobalObjectMap())
@@ -177,23 +174,22 @@ bms.SetSolarSystem(gmat.GetSolarSystem())
 bms.Initialize()
 
 # Create a Propagate command
-pgate = gmat.Moderator.Instance().CreateDefaultCommand('Propagate', 'Pgate')
+pgate = mod.CreateDefaultCommand('Propagate', 'Pgate')
 sat_name_from_pgate_field = pgate.GetField('Spacecraft')[1:-1]
 coord_sys_name = gmat.GetObject(sat_name_from_pgate_field).GetField('CoordinateSystem')
 coord_sys = gmat.GetObject(coord_sys_name)
 sb.SetInternalCoordSystem(coord_sys)
 
-# We now need to get the Propagate command linked into the rest of the system
+# We now need to link the Propagate command into the rest of the system
 prop = gmat.GetObject('DefaultProp')
-sat = gmat.GetObject(sat.GetName())
 
 # Add the PropSetup and Spacecraft to the Sandbox
 sb.AddObject(prop)
-sb.AddObject(sat)
+sb.AddObject(sat.gmat_obj)
 
 # Link the Propagate command to all the other objects
 pgate.SetSolarSystem(gmat.GetSolarSystem())
-pgate.SetObjectMap(gmat.Moderator.Instance().GetConfiguredObjectMap())
+pgate.SetObjectMap(mod.GetConfiguredObjectMap())
 pgate.SetGlobalObjectMap(sb.GetGlobalObjectMap())
 
 pgate.Initialize()
@@ -205,22 +201,23 @@ sb.Initialize()
 pgate.SetObjectMap(gmat.ConfigManager.Instance().GetObjectMap())
 pgate.SetGlobalObjectMap(sb.GetGlobalObjectMap())
 
+print(f'Detailed run state: {gpy.basics.Moderator.GetDetailedRunState()}')
 # Add commands to the Mission Command Sequence
 gmat.Moderator.Instance().AppendCommand(bms)
 gmat.Moderator.Instance().AppendCommand(pgate)
 
-print(f'Sat state before running: {sat.GetState().GetState()}')
+print(f'Sat state before running: {sat.GetState()}')
 print(f"Epoch before running: {sat.GetField('Epoch')}")
 
-# Run the mission
-run_mission_return_code = int(gmat.Moderator.Instance().RunMission())
-if run_mission_return_code == 1:
-    print(f'\nRunMission succeeded!\n')
-else:
+run_mission_return_code = int(mod.RunMission())  # Run the mission
+if run_mission_return_code != 1:
     raise Exception(f'RunMission did not complete successfully - returned code {run_mission_return_code}')
+else:
+    print(f'\nRunMission succeeded!\n')
 
-sat = gmat.GetRuntimeObject(sat.GetName())  # TODO: convert into a wrapper Spacecraft for easier handling
-print(f'Sat state after running: {GetState(sat)}')
-print(f'Sat epoch after running: {sat.GetField("Epoch")}')
+sat.was_propagated = True  # mark sat as propagated so GetState gets runtime values
+print(f'Sat state after running: {sat.GetState()}')
+print(f'Epoch after running: {sat.GetField("Epoch")}')
 
 gmat.SaveScript(script_path)
+print(f'Detailed run state: {gpy.basics.Moderator.GetDetailedRunState()}')

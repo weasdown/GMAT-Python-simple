@@ -6,6 +6,8 @@ from typing import Union
 
 
 class GmatObject:
+    # TODO: addition of self.gmat_runtime to sat means need to check any functions that call gmat_obj (particularly
+    #  properties/setters) to see if they should use gmat_runtime instead
     def __init__(self, obj_type: str, name: str):
         self.obj_type = obj_type
         self.name = name
@@ -72,7 +74,7 @@ class GmatObject:
         for index, _ in enumerate(specs):
             self.SetField(fields[index], values[index])
 
-    def GetField(self, field: str) -> str:
+    def GetField(self, field: str | int) -> str:
         """
         Get the value of a field in the Object's GMAT model.
 
@@ -141,3 +143,29 @@ class GmatCommand:
 
     # def Help(self):
     #     self.gmat_obj.Help()
+
+
+class Moderator:
+    @staticmethod
+    def GetRunState():
+        rs = gmat.Moderator.Instance().GetRunState()
+        if rs == 10001:
+            return 'Running'
+        elif rs == 10002:
+            return 'Paused'
+        elif rs == 10000:
+            return 'Idle'
+        else:
+            raise Exception(f'Run state not recognised: {rs}')
+
+    @staticmethod
+    def GetDetailedRunState():
+        drs = gmat.Moderator.Instance().GetDetailedRunState()
+        if drs == 10001:
+            return 'Running'
+        elif drs == 10002:
+            return 'Paused'
+        elif drs == 10000:
+            return 'Idle'
+        else:
+            raise Exception(f'Detailed run state not recognised: {drs}')

@@ -5,7 +5,7 @@ from load_gmat import gmat
 from gmat_py_simple.basics import HardwareItem
 from gmat_py_simple.orbit import OrbitState
 from gmat_py_simple.utils import (gmat_str_to_py_str, gmat_field_string_to_list,
-                                  list_to_gmat_field_string, rvector6_to_list)
+                                  list_to_gmat_field_string, rvector6_to_list, get_sat_objects)
 
 from typing import Union
 import logging
@@ -148,6 +148,8 @@ class Spacecraft(HardwareItem):
 
     def __init__(self, name, **kwargs):
         super().__init__('Spacecraft', name)
+        self.was_propagated = False  # determines whether to use GetObject() or GetRuntimeObject()
+        # TODO create a GetObject() method in GmatObj that abstracts away that distinction
 
         # TODO: add elements for non-Cartesian orbit states (e.g. 'SMA', 'ECC' for Kep) - get OrbitState allowed fields
         _AllowedFields = set()
@@ -271,14 +273,33 @@ class Spacecraft(HardwareItem):
         self._orbit = orbit
         pass
 
-    def GetState(self):
-        return self.gmat_obj.GetState().GetState()
+    def GetState(self) -> list[float]:
+        # TODO: in Propagate command, update sat.gmat_obj with RuntimeObject, to remove the two lines below
+        if self.was_propagated:  # spacecraft has been used in a mission run
+            self.gmat_obj = gmat.GetRuntimeObject(self.name)  # update Spacecraft's gmat_obj with the run data
+
+        state: list[float | None] = [None] * 6
+        for i in range(13, 19):
+            state[i - 13] = float(self.gmat_obj.GetField(i))  # int field refs used to be state type agnostic
+        return state
 
     def GetKeplerianState(self):
         return rvector6_to_list(self.gmat_obj.GetKeplerianState())
 
     def GetCartesianState(self):
         return rvector6_to_list(self.gmat_obj.GetCartesianState())
+
+    # @property
+    # def gmat_runtime(self):
+    #     return self._gmat_runtime
+    #
+    # @gmat_runtime.setter
+    # def gmat_runtime(self, grt: gmat.GmatBase):
+    #     # if not None, or if not a GmatBase
+    #     if not ((grt is not None) or ('gmat_py.GmatBase' not in str(type(grt)))):
+    #         raise TypeError('Spacecraft.gmat_runtime can only a gmat.GmatBase object, or None')
+    #     else:  # grt is something other than None or a gmat_py.GmatBase
+    #         self._gmat_runtime = grt
 
     @property
     def Thrusters(self):
@@ -311,6 +332,7 @@ class Spacecraft(HardwareItem):
     @property
     def ElectricTanks(self):
         return self.Hardware.ElectricTanks
+
 
     def add_tanks(self, tanks: list[ChemicalTank | ElectricTank]):
         """
