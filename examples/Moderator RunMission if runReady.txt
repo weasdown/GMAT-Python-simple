@@ -1,0 +1,158 @@
+// Copied from: src/base/executive/Moderator.cpp/RunMission()
+
+if (isRunReady)
+   {
+      // clear sandbox
+      if (sandboxNum > 0 && sandboxNum <= Gmat::MAX_SANDBOX)
+      {
+         #if DEBUG_RUN
+         MessageInterface::ShowMessage
+            ("Moderator::RunMission() before sandboxes[%d]->Clear()\n", sandboxNum-1);
+         #endif
+         
+         sandboxes[sandboxNum-1]->Clear();
+         
+         if (pCreateWidget)
+            sandboxes[sandboxNum-1]->SetWidgetCreator(pCreateWidget);
+         
+         #if DEBUG_RUN
+         MessageInterface::ShowMessage
+            ("Moderator::RunMission() after sandboxes[%d]->Clear()\n", sandboxNum-1);
+         #endif
+      }
+      else
+      {
+         status = -1;
+         MessageInterface::PopupMessage(Gmat::ERROR_,
+                                        "Invalid Sandbox number " +
+                                        std::to_string(sandboxNum));
+         return status;
+      }
+		
+		//--------------------------------------------------------------
+		// Initialize sandbox
+		//--------------------------------------------------------------
+      try
+      {
+         // add objects to sandbox
+         AddSolarSystemToSandbox(sandboxNum-1);
+         AddTriggerManagersToSandbox(sandboxNum-1);
+         AddInternalCoordSystemToSandbox(sandboxNum-1);
+         AddPublisherToSandbox(sandboxNum-1);
+         AddSubscriberToSandbox(sandboxNum-1);
+         AddOtherObjectsToSandbox(sandboxNum-1);
+         
+         // add command sequence to sandbox
+         AddCommandToSandbox(sandboxNum-1);
+         
+         #if DEBUG_RUN
+         MessageInterface::ShowMessage
+            ("Moderator::RunMission() after AddCommandToSandbox()\n");
+         #endif
+         
+         // initialize Sandbox
+         InitializeSandbox(sandboxNum-1);
+		}
+      catch (BaseException &e)
+      {
+			status = -2;
+         std::string msg = e.GetFullMessage();
+			MessageInterface::PopupMessage(Gmat::ERROR_, msg + "\n");
+			isRunReady = false;
+		}
+		#ifdef DEBUG_SHOW_SYSTEM_EXCEPTIONS
+      catch (const std::exception& ex) 
+      {
+         status = -3;
+         MessageInterface::ShowMessage("**** ERROR **** Moderator caught a "
+              "system level exception:\n    %s\nduring Sandbox initialization\n",
+              ex.what());
+         isRunReady = false;
+      }
+      #endif
+		catch (...)
+		{
+			status = -3;
+         MessageInterface::ShowMessage
+            ("**** ERROR **** Moderator caught an unknown error during Sandbox "
+				 "Initialization.\n");
+			isRunReady = false;
+		}
+		
+		
+		//--------------------------------------------------------------
+		// Execute sandbox
+		//--------------------------------------------------------------
+		if (isRunReady)
+		{
+		try
+		{
+         if (!loadSandboxAndPause)
+         {
+            #if DEBUG_RUN
+            MessageInterface::ShowMessage
+               ("Moderator::RunMission() after InitializeSandbox()\n");
+            #endif
+
+            // reset user interrupt flag
+            GmatGlobal::Instance()->SetRunInterrupted(false);
+
+            // execute sandbox
+            runState = Gmat::RUNNING;
+            ExecuteSandbox(sandboxNum-1);
+
+            #if DEBUG_RUN
+            MessageInterface::ShowMessage
+               ("Moderator::RunMission() after ExecuteSandbox()\n");
+            #endif
+         }
+         else
+         {
+            // Execute only the PrepareMissionSequence command
+            GmatCommand *cmd = commands[sandboxNum-1]->GetNext();
+            if (cmd->GetTypeName() == "PrepareMissionSequence")
+               cmd->Execute();
+         }
+      }
+      catch (BaseException &e)
+      {
+         std::string msg = e.GetFullMessage();
+         
+         // assign status
+         // Look for "interrupted" (loj: 2008.02.05)
+         //if (msg.find("Execution interrupted") != msg.npos)
+         if (msg.find("interrupted") != msg.npos)
+         {
+            status = -4;
+            MessageInterface::ShowMessage("GMAT execution stopped by user.\n");      
+         }
+         else
+         {
+            status = -5;
+            // msg = "**** ERROR **** " + msg;
+            // Dunn would like to note that this is the popup message we were
+            // getting that only said "ERROR" and did not provide a message.
+            // We might want to debug that some day.
+            MessageInterface::PopupMessage(Gmat::ERROR_, msg + "\n");
+         }
+      }
+      catch (...)
+      {
+         MessageInterface::ShowMessage
+            ("Moderator::RunMission() Unknown error occurred during Mission Run.\n");
+         status = -6;
+
+         #ifdef REPORT_UNHANDLED_EXCEPTIONS
+            std::exception_ptr p = std::current_exception();
+            std::stringstream msg;
+            msg << (p ? p.__cxa_exception_type()->name() : "null") << "\n";
+            MessageInterface::ShowMessage(msg.str().c_str());
+         #endif
+
+         // Tell commands to reset their run states
+         commands[sandboxNum-1]->RunComplete(true);
+
+         //throw; // LOJ: We want to finish up the clearing process below
+      }
+		} // if (isRunReady)
+   }

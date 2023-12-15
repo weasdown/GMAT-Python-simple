@@ -173,7 +173,7 @@ bms.SetObjectMap(sb.GetObjectMap())
 bms.SetGlobalObjectMap(sb.GetGlobalObjectMap())
 bms.SetSolarSystem(gmat.GetSolarSystem())
 bms.Initialize()
-bms.SetRunState(gmat.IDLE)
+# bms.SetRunState(gmat.IDLE)
 
 # Create a Propagate command
 pgate = mod.CreateDefaultCommand('Propagate', 'Pgate')
@@ -196,7 +196,7 @@ pgate.SetObjectMap(mod.GetConfiguredObjectMap())
 pgate.SetGlobalObjectMap(sb.GetGlobalObjectMap())
 
 pgate.Initialize()
-pgate.SetRunState(gmat.IDLE)
+# pgate.SetRunState(gmat.IDLE)
 
 sb.Initialize()
 
