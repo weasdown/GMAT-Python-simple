@@ -237,9 +237,8 @@ class Spacecraft(HardwareItem):
         return sc
 
     def update_from_runtime_object(self):
-        sat = gmat.GetRuntimeObject(self.name)
-        raise NotImplementedError
-        pass
+        self.gmat_obj = gmat.GetRuntimeObject(self.name)
+        self.was_propagated = True
 
     def update_hardware(self, hardware: SpacecraftHardware):
         self.Hardware = hardware
@@ -274,7 +273,8 @@ class Spacecraft(HardwareItem):
         pass
 
     def GetState(self) -> list[float]:
-        # TODO: in Propagate command, update sat.gmat_obj with RuntimeObject, to remove the two lines below
+        # TODO: in Propagate command, update sat.was_propagated, to be able to remove the two lines below.
+        #  Means won't need it in every function that requires updates from GetRuntimeObject().
         if self.was_propagated:  # spacecraft has been used in a mission run
             self.gmat_obj = gmat.GetRuntimeObject(self.name)  # update Spacecraft's gmat_obj with the run data
 

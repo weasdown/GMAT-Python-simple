@@ -55,8 +55,8 @@ sat_params = {
 }
 
 # sat = gpy.Spacecraft.from_dict(sat_params)
-sat = gpy.Spacecraft('One')
-
+sat = gpy.Spacecraft('SatOne')
+print(f'state: {sat.GetState()}')
 # sat.SetField('DateFormat', 'UTCGregorian')
 
 # lep_fm = o.ForceModel(name='LowEarthProp_ForceModel',
@@ -201,9 +201,9 @@ pgate = mod.CreateDefaultCommand('Propagate', 'Pgate')
 # FileManager::ReadStartupFile() cannot open GMAT startup file: "C:\Users\[name]\AppData\Local\Programs\Python\
 # Python312\\gmat_startup_file.txt""
 print('\nStartup file info:')
-print(gmat.FileManager.Instance().GetStartupFileDir())
-print(gmat.FileManager.Instance().GetStartupFileName())
-print(gmat.FileManager.Instance().GetFullStartupFilePath(), '\n')
+print('gmat.FileManager.Instance().GetStartupFileDir(): ', gmat.FileManager.Instance().GetStartupFileDir())
+print('gmat.FileManager.Instance().GetStartupFileName(): ', gmat.FileManager.Instance().GetStartupFileName())
+print('gmat.FileManager.Instance().GetFullStartupFilePath(): ', gmat.FileManager.Instance().GetFullStartupFilePath(), '\n')
 mod.Initialize()
 
 sat_name_from_pgate_field = pgate.GetField('Spacecraft')[1:-1]
@@ -240,15 +240,17 @@ mod.AppendCommand(pgate)
 print(f'Sat state before running: {sat.GetState()}')
 print(f"Epoch before running: {sat.GetField('Epoch')}")
 
-
+print(f'state: {sat.GetState()}')
 # RUN MISSION #
 run_mission_return_code = int(mod.RunMission())  # Run the mission
 if run_mission_return_code != 1:
     raise Exception(f'RunMission did not complete successfully - returned code {run_mission_return_code}')
 else:
     print(f'\nRunMission succeeded!\n')
-
+print(f'state: {sat.GetState()}')
+print('Setting sat.was_propagated to True')
 sat.was_propagated = True  # mark sat as propagated so GetState gets runtime values
+print('Set sat.was_propagated to True\n')
 print(f'Sat state after running: {sat.GetState()}')
 print(f'Epoch after running: {sat.GetField("Epoch")}')
 
