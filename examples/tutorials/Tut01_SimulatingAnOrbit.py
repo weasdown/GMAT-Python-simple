@@ -23,7 +23,7 @@ gmat.UseLogFile(log_path)
 # print(gmat.FileManager.Instance().GetGmatWorkingDirectory())
 # print(gmat.FileManager.Instance().GetCurrentWorkingDirectory())
 # print(os.getcwd(), '\n')
-print(gmat.FileManager.Instance().GetRootPath())
+# print(gmat.FileManager.Instance().GetRootPath())
 # print(gmat.FileManager.Instance().SetGmatWorkingDirectory(f'{os.getcwd()}'))
 # print(gmat.FileManager.Instance().SetCurrentWorkingDirectory(f'{os.getcwd()}'))
 
@@ -170,7 +170,7 @@ sat = gpy.Spacecraft('One')
 # # bms = gmat.BeginMissionSequence()
 #
 # print('\n', pgate.GetGeneratingString())
-mod = gmat.Moderator.Instance()  # convert to wrapper Moderator
+mod = gmat.Moderator.Instance()  # TODO: convert to wrapper Moderator
 sb = mod.GetSandbox()
 cm = gmat.ConfigManager.Instance()
 ss = gmat.GetSolarSystem()
@@ -189,10 +189,22 @@ bms.SetObjectMap(sb.GetObjectMap())
 bms.SetGlobalObjectMap(sb.GetGlobalObjectMap())
 bms.SetSolarSystem(gmat.GetSolarSystem())
 bms.Initialize()
+
+# GetRunState()
 # bms.SetRunState(gmat.IDLE)
 
 # Create a Propagate command
+
 pgate = mod.CreateDefaultCommand('Propagate', 'Pgate')
+
+# Get info about startup file settings, to debug log error #  "Error occurred during initialization: Utility Exception:
+# FileManager::ReadStartupFile() cannot open GMAT startup file: "C:\Users\[name]\AppData\Local\Programs\Python\
+# Python312\\gmat_startup_file.txt""
+print('\nStartup file info:')
+print(gmat.FileManager.Instance().GetStartupFileDir())
+print(gmat.FileManager.Instance().GetStartupFileName())
+print(gmat.FileManager.Instance().GetFullStartupFilePath(), '\n')
+mod.Initialize()
 
 sat_name_from_pgate_field = pgate.GetField('Spacecraft')[1:-1]
 coord_sys_name = gmat.GetObject(sat_name_from_pgate_field).GetField('CoordinateSystem')
@@ -224,12 +236,12 @@ pgate.SetGlobalObjectMap(sb.GetGlobalObjectMap())
 noop = mod.GetFirstCommand()
 mod.InsertCommand(bms, noop)
 mod.AppendCommand(pgate)
-mod.Initialize()
 
 print(f'Sat state before running: {sat.GetState()}')
 print(f"Epoch before running: {sat.GetField('Epoch')}")
 
 
+# RUN MISSION #
 run_mission_return_code = int(mod.RunMission())  # Run the mission
 if run_mission_return_code != 1:
     raise Exception(f'RunMission did not complete successfully - returned code {run_mission_return_code}')

@@ -149,23 +149,24 @@ class Moderator:
     @staticmethod
     def GetRunState():
         rs = gmat.Moderator.Instance().GetRunState()
-        if rs == 10001:
-            return 'Running'
+        if rs == 10000:
+            return 'IDLE', 10000
+        elif rs == 10001:
+            return 'RUNNING', 10001
         elif rs == 10002:
-            return 'Paused'
-        elif rs == 10000:
-            return 'Idle'
+            return 'PAUSED', 10002
         else:
             raise Exception(f'Run state not recognised: {rs}')
 
     @staticmethod
     def GetDetailedRunState():
         drs = gmat.Moderator.Instance().GetDetailedRunState()
-        if drs == 10001:
-            return 'Running'
+        if drs == 10000:
+            return 'IDLE'
+        elif drs == 10001:
+            return 'RUNNING'
         elif drs == 10002:
-            return 'Paused'
-        elif drs == 10000:
-            return 'Idle'
+            return 'PAUSED'
+        # TODO: add options for optimizer state etc
         else:
             raise Exception(f'Detailed run state not recognised: {drs}')
