@@ -20,6 +20,9 @@ class Moderator:
         else:  # no spacecraft found, so create one
             return self.gmat_obj.CreateSpacecraft('Spacecraft', 'DefaultSC')
 
+    def CreateDefaultMission(self):
+        self.gmat_obj.CreateDefaultMission()
+
     def GetRunState(self):
         rs = self.gmat_obj.GetRunState()
         if rs == 10000:
@@ -67,6 +70,9 @@ class Moderator:
     def GetListOfObjects(self, obj_type: int, exclude_defaults: bool = False, type_max: int = 0):
         return self.gmat_obj.GetListOfObjects(obj_type, exclude_defaults, type_max)
 
+    def CreateStopCondition(self, name: str) -> gmat.StopCondition:
+        return self.gmat_obj.CreateStopCondition('StopCondition', name)
+
     def CreateDefaultStopCondition(self) -> gmat.StopCondition:
         """
 
@@ -75,8 +81,8 @@ class Moderator:
 
         sc: gmat.Spacecraft = self.GetDefaultSpacecraft()
         sc_name: str = sc.GetName()
-        epoch_var = f'{sc_name}.A1ModJulian'
-        stop_var = f'{sc_name}.ElapsedSecs'
+        epoch_var = f'{sc_name}.A1ModJulian'  # EpochVar is mEpochParamName in StopCondition source
+        stop_var = f'{sc_name}.ElapsedSecs'  # StopVar is mStopParamName in StopCondition source
 
         mod = Moderator()
         if not mod.GetParameter(epoch_var):
@@ -87,12 +93,11 @@ class Moderator:
             param: gmat.Parameter = mod.gmat_obj.CreateParameter('ElapsedSecs', stop_var)
             param.SetRefObjectName(gmat.SPACECRAFT, sc_name)
 
-        stop_cond: gmat.StopCondition = mod.gmat_obj.CreateStopCondition('StopCondition', f'StopOn{stop_var}')
-        stop_cond.SetStringParameter('EpochVar', epoch_var)
-        stop_cond.SetStringParameter('StopVar', stop_var)
-        stop_cond.SetStringParameter('Goal', '12000.0')
-        stop_cond.Help()
-        gmat_py_simple.utils.CustomHelp(stop_cond)
+        stop_cond_name = f'StopOn{stop_var}'
+        stop_cond: gmat.StopCondition = mod.CreateStopCondition(stop_cond_name)
+        stop_cond.SetStringParameter('EpochVar', epoch_var)  # EpochVar is mEpochParamName in StopCondition source
+        stop_cond.SetStringParameter('StopVar', stop_var)  # StopVar is mStopParamName in StopCondition source
+        stop_cond.SetStringParameter('Goal', '12000.0')  # SetRhsString() called with goal value in source
         return stop_cond
 
     def GetParameter(self, param: str) -> gmat.Parameter:
