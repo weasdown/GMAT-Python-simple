@@ -56,6 +56,7 @@ sat_params = {
 
 # sat = gpy.Spacecraft.from_dict(sat_params)
 sat = gpy.Spacecraft('Sat')
+
 print(f'state: {sat.GetState()}')
 # sat.SetField('DateFormat', 'UTCGregorian')
 
@@ -195,8 +196,9 @@ bms.Initialize()
 
 # Create a Propagate command
 
-pgate: gmat.GmatCommand = gpy.Propagate.CreateDefault()
-# pgate = gpy.Propagate('WrapperPropagate')
+# pgate: gmat.GmatCommand = gpy.Propagate.CreateDefault()
+pgate = gpy.Propagate('WrapperPropagate')
+# pgate.Initialize()
 
 print(f'\n{pgate}, {type(pgate)}')
 # ty_ar = pgate.GetRefObjectTypeArray()
@@ -207,14 +209,16 @@ print(f'\n{pgate}, {type(pgate)}')
 # Get info about startup file settings, to debug log error #  "Error occurred during initialization: Utility Exception:
 # FileManager::ReadStartupFile() cannot open GMAT startup file: "C:\Users\[name]\AppData\Local\Programs\Python\
 # Python312\\gmat_startup_file.txt""
-print('\nStartup file info:')
-print('gmat.FileManager.Instance().GetStartupFileDir(): ', gmat.FileManager.Instance().GetStartupFileDir())
-print('gmat.FileManager.Instance().GetStartupFileName(): ', gmat.FileManager.Instance().GetStartupFileName())
-print('gmat.FileManager.Instance().GetFullStartupFilePath(): ', gmat.FileManager.Instance().GetFullStartupFilePath(), '\n')
-mod.Initialize()
+# print('\nStartup file info:')
+# print('gmat.FileManager.Instance().GetStartupFileDir(): ', gmat.FileManager.Instance().GetStartupFileDir())
+# print('gmat.FileManager.Instance().GetStartupFileName(): ', gmat.FileManager.Instance().GetStartupFileName())
+# print('gmat.FileManager.Instance().GetFullStartupFilePath(): ', gmat.FileManager.Instance().GetFullStartupFilePath(), '\n')
+# mod.Initialize()
 
-sat_name_from_pgate_field = pgate.GetField('Spacecraft')[1:-1]
-coord_sys_name = gmat.GetObject(sat_name_from_pgate_field).GetField('CoordinateSystem')
+# sat_name_from_pgate_field = pgate.GetField('Spacecraft')[1:-1]
+
+print(sat.GetField('CoordinateSystem'))
+coord_sys_name = gmat.GetObject(sat.GetName()).GetField('CoordinateSystem')
 coord_sys = gmat.GetObject(coord_sys_name)
 sb.SetInternalCoordSystem(coord_sys)
 

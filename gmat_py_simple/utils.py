@@ -65,10 +65,9 @@ def get_gmat_classes():
 
     sys.stdout = old_stdout  # revert back to normal handling of stdout
 
-    rows = classes_str.split('\n')  # split the Help() text into rows for easier parsing
-    data_rows = rows[:]  # first six rows are always headers etc. so remove them
-    classes = [None] * len(data_rows)  # create a list to store the fields
-    for index, row in enumerate(data_rows):
+    rows: list = classes_str.split('\n')  # split the Help() text into rows for easier parsing
+    classes = [None] * len(rows)  # create a list to store the fields
+    for index, row in enumerate(rows):
         row = row[3:]
         classes[index] = row
 

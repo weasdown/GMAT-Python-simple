@@ -183,6 +183,7 @@ class Spacecraft(HardwareItem):
 
         self._orbit = None
         self._dry_mass = self.GetField('DryMass')
+        gmat.Initialize()
 
     def __repr__(self):
         return f'Spacecraft with name {self.name}'

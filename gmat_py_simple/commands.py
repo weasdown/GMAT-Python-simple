@@ -11,7 +11,19 @@ class GmatCommand:
     def __init__(self, command_type: str, name: str):
         self.command_type: str = command_type
         self.name: str = name
-        self.gmat_obj: gmat.GmatCommand = gpy.Moderator().CreateCommand(self.command_type, self.name)
+
+        # CreateCommand currently broken (GMT-8100), so use CreateDefaultCommand and remove extras
+        self.gmat_obj: gmat.GmatCommand = gpy.Moderator().CreateDefaultCommand(self.command_type, self.name)
+        sat_name = gpy.Moderator().GetDefaultSpacecraft().GetName()
+        gmat.Clear(f'{sat_name}.ElapsedSecs')  # stop condition parameter
+        gmat.Clear(f'{sat_name}.A1ModJulian')  # stop condition parameter
+        gmat.Clear()
+
+        # TODO bugfix: switch to CreateCommand (uncomment below) when issue GMT-8100 fixed
+        # self.gmat_obj: gmat.GmatCommand = gpy.Moderator().CreateCommand(self.command_type, self.name)
+
+    def Initialize(self):
+        self.gmat_obj.Initialize()
 
     def GetGeneratingString(self) -> str:
         return self.gmat_obj.GetGeneratingString()
@@ -21,6 +33,10 @@ class GmatCommand:
 
     def SetField(self, field: str, val: str | list | int | float):
         self.gmat_obj.SetField(field, val)
+
+    def SetSolarSystem(self, ss: gmat.SolarSystem):
+        print(type(gmat.GetSolarSystem()))
+        self.gmat_obj.SetSolarSystem(ss)
 
     # def Help(self):
     #     self.gmat_obj.Help()
@@ -41,7 +57,6 @@ class Propagate(GmatCommand):
         @classmethod
         def CreateDefault(cls):
             return gmat_py_simple.Moderator().CreateDefaultStopCondition()
-
 
     """
     Propagate section of pgate = gmat.Moderator.Instance().CreateDefaultCommand('Propagate', 'Pgate') below.
@@ -253,11 +268,11 @@ class Propagate(GmatCommand):
         if stop_cond:
             self.gmat_obj.SetRefObject(stop_cond, gmat.STOP_CONDITION)
         else:
-            self.gmat_obj.SetRefObject(mod.CreateDefaultStopCondition(), gmat.STOP_CONDITION)
+            def_stop_cond = mod.CreateDefaultStopCondition()
+            self.gmat_obj.SetRefObject(def_stop_cond, gmat.STOP_CONDITION, def_stop_cond.GetName(), 0)
 
-        self.gmat_obj.SetSolarSystem(mod.GetConfiguredObject('SolarSystem'))
-
-        print(self.gmat_obj)
+        self.gmat_obj.SetSolarSystem(gmat.GetSolarSystem())
+        gmat.Initialize()
 
     @classmethod
     def CreateDefault(cls, name: str = 'DefaultPropagateCommand'):
