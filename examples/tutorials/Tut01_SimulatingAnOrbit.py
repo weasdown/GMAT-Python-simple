@@ -55,7 +55,7 @@ sat_params = {
 }
 
 # sat = gpy.Spacecraft.from_dict(sat_params)
-sat = gpy.Spacecraft('SatOne')
+sat = gpy.Spacecraft('Sat')
 print(f'state: {sat.GetState()}')
 # sat.SetField('DateFormat', 'UTCGregorian')
 
@@ -195,7 +195,30 @@ bms.Initialize()
 
 # Create a Propagate command
 
-pgate = mod.CreateDefaultCommand('Propagate', 'Pgate')
+pgate: gmat.GmatCommand = gpy.Propagate.CreateDefault()
+print(f'\n{pgate}, {type(pgate)}')
+ty_ar = pgate.GetRefObjectTypeArray()
+for num in ty_ar:
+    print(f'Object type ID: {num}')
+    print(gmat.ShowObjectsForID(num))
+
+# pgate.Help()
+
+# gmat.ShowObjects()
+a1m = gmat.GetObject(f'{sat.name}.A1ModJulian')
+es = gmat.GetObject(f'{sat.name}.ElapsedSecs')
+dp = gmat.GetObject(f'DefaultProp')
+dp_fm = gmat.GetObject(f'DefaultProp_ForceModel')
+
+# print(f'{a1m}, {type(a1m)}, {a1m.GetTypeName()}')
+# print(f'{es}, {type(es)}, {es.GetTypeName()}')
+# print(f'{dp}, {type(dp)}, {dp.GetTypeName()}')
+# print(f'{dp_fm}, {type(dp_fm)}, {dp_fm.GetTypeName()}')
+
+# a1m.Help()
+# es.Help()
+# dp.Help()
+# dp_fm.Help()
 
 # Get info about startup file settings, to debug log error #  "Error occurred during initialization: Utility Exception:
 # FileManager::ReadStartupFile() cannot open GMAT startup file: "C:\Users\[name]\AppData\Local\Programs\Python\
