@@ -234,11 +234,7 @@ class Propagate(GmatCommand):
         super().__init__(obj_type)
 
     @classmethod
-    def CreateDefault(cls, name: str = 'PropagateCommand'):
+    def CreateDefault(cls, name: str = 'DefaultPropagateCommand'):
         gmat_obj: gmat.Propagate = gmat_py_simple.Moderator().CreateDefaultCommand('Propagate', '')
         gmat_obj.SetName(name)
-
-        stop_cond = Propagate.StopCondition.CreateDefault()
-        print(f'Default stop condition: {stop_cond}')
-
         return gmat_obj
