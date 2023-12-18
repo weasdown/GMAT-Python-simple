@@ -47,7 +47,7 @@ class Moderator:
     def GetFirstCommand(self):
         return self.gmat_obj.GetFirstCommand()
 
-    def InsertCommand(self, command_to_insert: Type[GmatCommand], preceding_command: Type[GmatCommand]):
+    def InsertCommand(self, command_to_insert: GmatCommand, preceding_command: GmatCommand):
         return self.gmat_obj.InsertCommand(command_to_insert, preceding_command)
 
     def AppendCommand(self, command_to_append: Type[GmatCommand]):
