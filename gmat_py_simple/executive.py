@@ -37,14 +37,14 @@ class Moderator:
         if not mod.GetParameter(epoch_var):
             epoch_param = gmat.Moderator.Instance().CreateParameter('A1ModJulian', epoch_var)
             gmat.Moderator.Instance().SetParameterRefObject(epoch_param, 'Spacecraft', sc_name, '', '', 0)
-            epoch_param = gmat.GetObject(epoch_var)
-            epoch_param.Initialize()
+            # epoch_param = gmat.GetObject(epoch_var)
+            # epoch_param.Initialize()
 
         if not mod.GetParameter(stop_var):
             stop_param: gmat.Parameter = mod.gmat_obj.CreateParameter('ElapsedSecs', stop_var)
             # stop_param.SetRefObjectName(gmat.SPACECRAFT, sc_name)
-            stop_param = gmat.GetObject(epoch_var)
-            stop_param.Initialize()
+            # stop_param = gmat.GetObject(epoch_var)
+            # stop_param.Initialize()
             gmat.Moderator.Instance().SetParameterRefObject(stop_param, 'Spacecraft', sc_name, '', '', 0)
 
         stop_cond_name = f'StopOn{stop_var}'
@@ -52,7 +52,9 @@ class Moderator:
         stop_cond.SetStringParameter('EpochVar', epoch_var)  # EpochVar is mEpochParamName in StopCondition source
         stop_cond.SetStringParameter('StopVar', stop_var)  # StopVar is mStopParamName in StopCondition source
         stop_cond.SetStringParameter('Goal', '12000.0')  # SetRhsString() called with goal value in source
-        gmat.Initialize()
+
+        # gmat.Initialize()
+
         return stop_cond
 
     def CreateParameter(self, param_type: str, name: str):

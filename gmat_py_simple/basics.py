@@ -37,6 +37,9 @@ class GmatObject:
             raise SyntaxError(f"Required field 'name' not provided when building {type(obj_type).__name__} object")
         return name
 
+    def Initialize(self):
+        self.gmat_obj.Initialize()
+
     def GetName(self):
         return self.gmat_obj.GetName()
 

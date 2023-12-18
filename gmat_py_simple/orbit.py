@@ -341,6 +341,8 @@ class PropSetup(GmatObject):  # variable called prop in GMAT Python examples
             super().__init__(integrator, name)
             self.integrator = integrator
 
+            gmat.Initialize()
+
     def __init__(self, name: str, fm: ForceModel = None, gator: PropSetup.Propagator = None,
                  initial_step_size: int = 60, accuracy: int = 1e-12, min_step: int = 0):
         super().__init__('PropSetup', name)
@@ -362,6 +364,8 @@ class PropSetup(GmatObject):  # variable called prop in GMAT Python examples
 
         self.SetReference(self.force_model)
         self.psm = self.GetPropStateManager()
+
+        gmat.Initialize()
 
     def AddPropObject(self, sc: spc.Spacecraft):
         self.gmat_obj.AddPropObject(sc.gmat_obj)

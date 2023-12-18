@@ -191,16 +191,25 @@ bms.SetGlobalObjectMap(sb.GetGlobalObjectMap())
 bms.SetSolarSystem(gmat.GetSolarSystem())
 bms.Initialize()
 
+gmat.Initialize()
+
 # GetRunState()
 # bms.SetRunState(gmat.IDLE)
 
 # Create a Propagate command
 
 # pgate: gmat.GmatCommand = gpy.Propagate.CreateDefault()
-pgate = gpy.Propagate('WrapperPropagate')
-# pgate.Initialize()
+# prop = gpy.PropSetup('DefaultProp')
+prop = mod.GetDefaultPropSetup()
+# prop.Initialize()
+gmat.Initialize()
+
+pgate = gpy.Propagate('WrapperPropagate', prop, sat)
+pgate.Initialize()
+# gmat.Initialize()
 
 print(f'\n{pgate}, {type(pgate)}')
+
 # ty_ar = pgate.GetRefObjectTypeArray()
 # for num in ty_ar:
 #     print(f'Object type ID: {num}')
@@ -217,24 +226,15 @@ print(f'\n{pgate}, {type(pgate)}')
 
 # sat_name_from_pgate_field = pgate.GetField('Spacecraft')[1:-1]
 
-print(sat.GetField('CoordinateSystem'))
-coord_sys_name = gmat.GetObject(sat.GetName()).GetField('CoordinateSystem')
-coord_sys = gmat.GetObject(coord_sys_name)
-sb.SetInternalCoordSystem(coord_sys)
-
-# We now need to link the Propagate command into the rest of the system
-prop = gmat.GetObject('DefaultProp')
+# # We now need to link the Propagate command into the rest of the system
+# prop = gmat.GetObject('DefaultProp')
 
 # TODO Add the PropSetup and Spacecraft to the Sandbox
 # sb.AddObject(prop)
 # sb.AddObject(sat.gmat_obj)
 
 # Link the Propagate command to all the other objects
-pgate.SetSolarSystem(gmat.GetSolarSystem())
-pgate.SetObjectMap(mod.GetConfiguredObjectMap())
-pgate.SetGlobalObjectMap(sb.GetGlobalObjectMap())
 
-pgate.Initialize()
 # pgate.SetRunState(gmat.IDLE)
 
 sb.Initialize()
