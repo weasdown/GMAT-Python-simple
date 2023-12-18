@@ -196,11 +196,13 @@ bms.Initialize()
 # Create a Propagate command
 
 pgate: gmat.GmatCommand = gpy.Propagate.CreateDefault()
+# pgate = gpy.Propagate('WrapperPropagate')
+
 print(f'\n{pgate}, {type(pgate)}')
-ty_ar = pgate.GetRefObjectTypeArray()
-for num in ty_ar:
-    print(f'Object type ID: {num}')
-    print(gmat.ShowObjectsForID(num))
+# ty_ar = pgate.GetRefObjectTypeArray()
+# for num in ty_ar:
+#     print(f'Object type ID: {num}')
+#     print(gmat.ShowObjectsForID(num))
 
 # Get info about startup file settings, to debug log error #  "Error occurred during initialization: Utility Exception:
 # FileManager::ReadStartupFile() cannot open GMAT startup file: "C:\Users\[name]\AppData\Local\Programs\Python\

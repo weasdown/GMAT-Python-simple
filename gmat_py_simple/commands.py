@@ -2,16 +2,16 @@ from __future__ import annotations
 
 from load_gmat import gmat
 
+import gmat_py_simple as gpy
 from gmat_py_simple import GmatObject
-from gmat_py_simple.spacecraft import Spacecraft
-from gmat_py_simple.orbit import PropSetup
 from gmat_py_simple.utils import *
 
 
 class GmatCommand:
-    def __init__(self, obj_type: str):
-        self.obj_type = obj_type
-        self.gmat_obj = gmat.Construct(self.obj_type)
+    def __init__(self, command_type: str, name: str):
+        self.command_type: str = command_type
+        self.name: str = name
+        self.gmat_obj: gmat.GmatCommand = gpy.Moderator().CreateCommand(self.command_type, self.name)
 
     def GetGeneratingString(self) -> str:
         return self.gmat_obj.GetGeneratingString()
@@ -230,8 +230,34 @@ class Propagate(GmatCommand):
     #
     #     print(f'Propagate Generating String: {self.GetGeneratingString()}')
 
-    def __init__(self, obj_type: str):
-        super().__init__(obj_type)
+    def __init__(self, name, prop: gpy.PropSetup = None, stop_cond: Propagate.StopCondition = None):
+        super().__init__('Propagate', name)  # sets self.command_type, self.name, self.gmat_obj
+
+        mod = gpy.Moderator()
+        if prop:
+            self.gmat_obj.SetObject(prop.GetName(), gmat.PROP_SETUP)
+        else:
+            self.gmat_obj.SetObject(mod.GetDefaultPropSetup().GetName(), gmat.PROP_SETUP)
+
+        # Check for existing Formation
+        form = mod.GetListOfObjects(gmat.FORMATION)
+        if not form:  # no Formation exists
+            self.gmat_obj.SetObject(mod.GetDefaultSpacecraft().GetName(), gmat.SPACECRAFT)
+        else:  # a Formation does exist
+            sc_name = mod.GetSpacecraftNotInFormation()
+            if sc_name:
+                self.gmat_obj.SetObject(sc_name, gmat.SPACECRAFT)
+            else:
+                self.gmat_obj.SetObject(form[0], gmat.SPACECRAFT)
+
+        if stop_cond:
+            self.gmat_obj.SetRefObject(stop_cond, gmat.STOP_CONDITION)
+        else:
+            self.gmat_obj.SetRefObject(mod.CreateDefaultStopCondition(), gmat.STOP_CONDITION)
+
+        self.gmat_obj.SetSolarSystem(mod.GetConfiguredObject('SolarSystem'))
+
+        print(self.gmat_obj)
 
     @classmethod
     def CreateDefault(cls, name: str = 'DefaultPropagateCommand'):

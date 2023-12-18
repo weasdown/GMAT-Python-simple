@@ -13,68 +13,18 @@ class Moderator:
     def Initialize(self):
         self.gmat_obj.Initialize()
 
-    def GetDefaultSpacecraft(self) -> gmat.Spacecraft:
-        so_config_list: list[str] = self.gmat_obj.GetListOfObjects(gmat.SPACECRAFT)
-        if so_config_list:  # list length > 0
-            return self.gmat_obj.GetSpacecraft(so_config_list[0])
-        else:  # no spacecraft found, so create one
-            return self.gmat_obj.CreateSpacecraft('Spacecraft', 'DefaultSC')
-
-    def CreateDefaultMission(self):
-        self.gmat_obj.CreateDefaultMission()
-
-    def GetRunState(self):
-        rs = self.gmat_obj.GetRunState()
-        if rs == 10000:
-            return 'IDLE', 10000
-        elif rs == 10001:
-            return 'RUNNING', 10001
-        elif rs == 10002:
-            return 'PAUSED', 10002
-        else:
-            raise Exception(f'Run state not recognised: {rs}')
-
-    def GetDetailedRunState(self):
-        drs = self.gmat_obj.GetDetailedRunState()
-        if drs == 10000:
-            return 'IDLE'
-        elif drs == 10001:
-            return 'RUNNING'
-        elif drs == 10002:
-            return 'PAUSED'
-        # TODO: add options for optimizer state etc
-        else:
-            raise Exception(f'Detailed run state not recognised: {drs}')
-
-    def GetSandbox(self):
-        return self.gmat_obj.GetSandbox()
-
-    def GetConfiguredObjectMap(self):
-        return self.gmat_obj.GetConfiguredObjectMap()
+    def AppendCommand(self, command_to_append: GmatCommand):
+        return self.gmat_obj.AppendCommand(command_to_append)
 
     def CreateCommand(self, command_type: str, name: str) -> gmat.GmatCommand:
-        return self.gmat_obj.CreateCommand(command_type, name)
+        # True (retFlag) isn't actually used in source, but still required
+        return self.gmat_obj.CreateCommand(command_type, name, True)
 
     def CreateDefaultCommand(self, command_type: str = 'Propagate', name: str = ''):
         return self.gmat_obj.CreateDefaultCommand(command_type, name)
 
-    def GetFirstCommand(self):
-        return self.gmat_obj.GetFirstCommand()
-
-    def InsertCommand(self, command_to_insert: GmatCommand, preceding_command: GmatCommand):
-        return self.gmat_obj.InsertCommand(command_to_insert, preceding_command)
-
-    def AppendCommand(self, command_to_append: Type[GmatCommand]):
-        return self.gmat_obj.AppendCommand(command_to_append)
-
-    def RunMission(self):
-        return self.gmat_obj.RunMission()
-
-    def GetListOfObjects(self, obj_type: int, exclude_defaults: bool = False, type_max: int = 0):
-        return self.gmat_obj.GetListOfObjects(obj_type, exclude_defaults, type_max)
-
-    def CreateStopCondition(self, name: str) -> gmat.StopCondition:
-        return self.gmat_obj.CreateStopCondition('StopCondition', name)
+    def CreateDefaultMission(self):
+        self.gmat_obj.CreateDefaultMission()
 
     def CreateDefaultStopCondition(self) -> gmat.StopCondition:
         """
@@ -103,5 +53,70 @@ class Moderator:
         stop_cond.SetStringParameter('Goal', '12000.0')  # SetRhsString() called with goal value in source
         return stop_cond
 
+    def CreateStopCondition(self, name: str) -> gmat.StopCondition:
+        return self.gmat_obj.CreateStopCondition('StopCondition', name)
+
+    def GetConfiguredObject(self, name: str) -> gmat.GmatBase:
+        return self.gmat_obj.GetConfiguredObject(name)
+
+    def GetConfiguredObjectMap(self):
+        return self.gmat_obj.GetConfiguredObjectMap()
+
+    def GetDefaultPropSetup(self) -> gmat.PropSetup:
+        config_list: list[str] = self.gmat_obj.GetListOfObjects(gmat.SPACECRAFT)
+        if config_list:  # list length > 0
+            return self.gmat_obj.GetPropSetup(config_list[0])
+        else:  # no spacecraft found, so create one
+            return self.gmat_obj.CreatePropSetup('DefaultProp')
+
+    def GetDefaultSpacecraft(self) -> gmat.Spacecraft:
+        so_config_list: list[str] = self.gmat_obj.GetListOfObjects(gmat.SPACECRAFT)
+        if so_config_list:  # list length > 0
+            return self.gmat_obj.GetSpacecraft(so_config_list[0])
+        else:  # no spacecraft found, so create one
+            return self.gmat_obj.CreateSpacecraft('Spacecraft', 'DefaultSC')
+
+    def GetDetailedRunState(self):
+        drs = self.gmat_obj.GetDetailedRunState()
+        if drs == 10000:
+            return 'IDLE'
+        elif drs == 10001:
+            return 'RUNNING'
+        elif drs == 10002:
+            return 'PAUSED'
+        # TODO: add options for optimizer state etc
+        else:
+            raise Exception(f'Detailed run state not recognised: {drs}')
+
+    def GetListOfObjects(self, obj_type: int, exclude_defaults: bool = False, type_max: int = 0) -> list[str]:
+        return self.gmat_obj.GetListOfObjects(obj_type, exclude_defaults, type_max)
+
     def GetParameter(self, param: str) -> gmat.Parameter:
         return self.gmat_obj.GetParameter(param)
+
+    def GetSpacecraftNotInFormation(self) -> str:
+        return self.gmat_obj.GetSpacecraftNotInFormation()
+
+    def GetRunState(self):
+        rs = self.gmat_obj.GetRunState()
+        if rs == 10000:
+            return 'IDLE', 10000
+        elif rs == 10001:
+            return 'RUNNING', 10001
+        elif rs == 10002:
+            return 'PAUSED', 10002
+        else:
+            raise Exception(f'Run state not recognised: {rs}')
+
+    def GetSandbox(self):
+        return self.gmat_obj.GetSandbox()
+
+    def GetFirstCommand(self):
+        return self.gmat_obj.GetFirstCommand()
+
+    def InsertCommand(self, command_to_insert: GmatCommand, preceding_command: GmatCommand):
+        return self.gmat_obj.InsertCommand(command_to_insert, preceding_command)
+
+    def RunMission(self):
+        return self.gmat_obj.RunMission()
+
