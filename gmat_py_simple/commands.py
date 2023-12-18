@@ -2,10 +2,28 @@ from __future__ import annotations
 
 from load_gmat import gmat
 
-from gmat_py_simple import GmatObject, GmatCommand
+from gmat_py_simple import GmatObject
 from gmat_py_simple.spacecraft import Spacecraft
 from gmat_py_simple.orbit import PropSetup
 from gmat_py_simple.utils import *
+
+
+class GmatCommand:
+    def __init__(self, obj_type: str):
+        self.obj_type = obj_type
+        self.gmat_obj = gmat.Construct(self.obj_type)
+
+    def GetGeneratingString(self) -> str:
+        return self.gmat_obj.GetGeneratingString()
+
+    def GetField(self, field: str):
+        self.gmat_obj.GetField(field)
+
+    def SetField(self, field: str, val: str | list | int | float):
+        self.gmat_obj.SetField(field, val)
+
+    # def Help(self):
+    #     self.gmat_obj.Help()
 
 
 class Propagate(GmatCommand):
@@ -205,3 +223,7 @@ class Propagate(GmatCommand):
         # self.propagator.Help()
 
         print(f'Propagate Generating String: {self.GetGeneratingString()}')
+
+    def CreateDefault(self):
+
+        pass

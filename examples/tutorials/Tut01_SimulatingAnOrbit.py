@@ -170,7 +170,7 @@ print(f'state: {sat.GetState()}')
 # # bms = gmat.BeginMissionSequence()
 #
 # print('\n', pgate.GetGeneratingString())
-mod = gmat.Moderator.Instance()  # TODO: convert to wrapper Moderator
+mod = gpy.Moderator()  # TODO: convert to wrapper Moderator
 sb = mod.GetSandbox()
 cm = gmat.ConfigManager.Instance()
 ss = gmat.GetSolarSystem()

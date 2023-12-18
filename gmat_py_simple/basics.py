@@ -127,46 +127,6 @@ class Parameter(GmatObject):
         super().__init__('Parameter', name)
 
 
-class GmatCommand:
-    def __init__(self, obj_type: str):
-        self.obj_type = obj_type
-        self.gmat_obj = gmat.Construct(self.obj_type)
-
-    def GetGeneratingString(self) -> str:
-        return self.gmat_obj.GetGeneratingString()
-
-    def GetField(self, field: str):
-        self.gmat_obj.GetField(field)
-
-    def SetField(self, field: str, val: str | list | int | float):
-        self.gmat_obj.SetField(field, val)
-
-    # def Help(self):
-    #     self.gmat_obj.Help()
 
 
-class Moderator:
-    @staticmethod
-    def GetRunState():
-        rs = gmat.Moderator.Instance().GetRunState()
-        if rs == 10000:
-            return 'IDLE', 10000
-        elif rs == 10001:
-            return 'RUNNING', 10001
-        elif rs == 10002:
-            return 'PAUSED', 10002
-        else:
-            raise Exception(f'Run state not recognised: {rs}')
 
-    @staticmethod
-    def GetDetailedRunState():
-        drs = gmat.Moderator.Instance().GetDetailedRunState()
-        if drs == 10000:
-            return 'IDLE'
-        elif drs == 10001:
-            return 'RUNNING'
-        elif drs == 10002:
-            return 'PAUSED'
-        # TODO: add options for optimizer state etc
-        else:
-            raise Exception(f'Detailed run state not recognised: {drs}')
