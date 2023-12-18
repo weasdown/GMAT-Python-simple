@@ -52,6 +52,9 @@ class Moderator:
     def GetConfiguredObjectMap(self):
         return self.gmat_obj.GetConfiguredObjectMap()
 
+    def CreateCommand(self):  # TODO
+        raise NotImplementedError
+
     def CreateDefaultCommand(self, command_type: str = 'Propagate', name: str = ''):
         return self.gmat_obj.CreateDefaultCommand(command_type, name)
 
