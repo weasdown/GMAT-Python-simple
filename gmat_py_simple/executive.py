@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Type
 
+import gmat_py_simple.utils
 from load_gmat import gmat
 from gmat_py_simple import GmatCommand
 
@@ -86,11 +87,12 @@ class Moderator:
             param: gmat.Parameter = mod.gmat_obj.CreateParameter('ElapsedSecs', stop_var)
             param.SetRefObjectName(gmat.SPACECRAFT, sc_name)
 
-        stop_cond_name = f'StopOn{stop_var}'
-        stop_cond: gmat.StopCondition = mod.gmat_obj.CreateStopCondition('StopCondition', stop_cond_name)
+        stop_cond: gmat.StopCondition = mod.gmat_obj.CreateStopCondition('StopCondition', f'StopOn{stop_var}')
         stop_cond.SetStringParameter('EpochVar', epoch_var)
         stop_cond.SetStringParameter('StopVar', stop_var)
         stop_cond.SetStringParameter('Goal', '12000.0')
+        stop_cond.Help()
+        gmat_py_simple.utils.CustomHelp(stop_cond)
         return stop_cond
 
     def GetParameter(self, param: str) -> gmat.Parameter:

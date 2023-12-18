@@ -354,3 +354,35 @@ def get_sat_objects() -> list[gmat.Spacecraft]:
                 raise
     print(f'sat_objs: {sat_objs}')
     return sat_objs
+
+
+def CustomHelp(obj):
+    print(f'CustomHelp for {obj.GetName()}:')
+    if 'gmat_py_simple' in str(type(obj)):
+        param_count = obj.gmat_obj.GetParameterCount()
+    else:
+        param_count = obj.GetParameterCount()
+
+    print(f'Object parameter count: {param_count}\n')
+    for i in range(param_count):
+        try:
+            param_name = obj.GetParameterText(i)
+            param_type = obj.GetParameterTypeString(i)
+            print(f'Parameter: {param_name}')
+            print(f'- Type: {param_type}')
+            if param_type == 'String':
+                val = obj.GetStringParameter(i)
+            elif param_type == 'Object':
+                val = obj.GetName()
+            elif (param_type == 'Real') or (param_type == 'UnsignedInt') or (param_name == 'InitialEpoch'):
+                val = obj.GetRealParameter(i)
+            elif param_type == 'Rmatrix':
+                val = obj.GetRmatrixParameter(i)
+            else:
+                raise TypeError(f'Unrecognised type: {param_type}')
+
+            print(f'- Value: {val}\n')
+
+        except Exception as exc:
+            print(exc, '\n')
+            # raise
