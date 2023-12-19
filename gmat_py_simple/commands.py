@@ -360,6 +360,7 @@ class Propagate(GmatCommand):
 
 
 class PropagateMulti(Propagate):
+    # TODO: consider making this a nested/inner class of Propagate, so would call Propagate.Multi()
     """
     Note: this command does not exist in standard GMAT. It is here to reduce ambiguity when propagating multiple
      spacecraft. This class can only be used to propagate multiple spacecraft - to propagate a single spacecraft, use
