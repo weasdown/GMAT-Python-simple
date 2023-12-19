@@ -33,13 +33,10 @@ print(f'Sat state before running: {sat.GetState()}')
 print(f"Epoch before running: {sat.GetField('Epoch')}")
 
 # Mission Command Sequence
-mcs = [
-    gpy.BeginMissionSequence(),
-    gpy.Propagate('PropagateCommand', prop, sat)
-]
+mcs = [gpy.BeginMissionSequence(),
+       gpy.Propagate('PropagateCommand', prop, sat)]
 
-# RUN MISSION #
-run_mission_return_code = int(gpy.RunMission(mcs))  # Run the mission
+gpy.RunMission(mcs)  # Run the mission
 
 print(f'Sat state after running: {sat.GetState()}')
 print(f'Epoch after running: {sat.GetField("Epoch")}')

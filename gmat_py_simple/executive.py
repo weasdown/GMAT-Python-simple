@@ -141,6 +141,10 @@ class Moderator:
         :param mission_command_sequence:
         :return:
         """
+        if not isinstance(mission_command_sequence, list):
+            raise TypeError('mission_command_sequence must be a list of GmatCommand objects'
+                            ' (e.g. BeginMissionSequence, Propagate)')
+
         mod = gpy.Moderator()
         sb = gpy.Sandbox()
 
