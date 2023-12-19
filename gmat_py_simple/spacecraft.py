@@ -82,9 +82,6 @@ class Spacecraft(GmatObject):
                 except KeyError:
                     raise
 
-                # sc_hardware.Tanks = {'Chemical': sc_hardware.ChemicalTanks,
-                #                      'Electric': sc_hardware.ElectricTanks}
-
             except KeyError as ke:
                 logging.info(f'No tanks found in Hardware dict parsing')
 
