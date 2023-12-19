@@ -45,7 +45,7 @@ class GmatObject:
         self.gmat_obj.IsInitialized()
 
     def GetName(self):
-        return self.gmat_obj.GetName()
+        return self.name
 
     def SetName(self, name: str):
         self.gmat_obj.SetName(name)
