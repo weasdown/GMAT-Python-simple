@@ -356,6 +356,7 @@ def get_sat_objects() -> list[gmat.Spacecraft]:
 
 
 def CustomHelp(obj):
+    print(obj)
     print(f'CustomHelp for {obj.GetName()}:')
     if 'gmat_py_simple' in str(type(obj)):
         param_count = obj.gmat_obj.GetParameterCount()

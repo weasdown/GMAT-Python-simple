@@ -27,6 +27,9 @@ class Moderator:
     def CreateDefaultMission(self):
         self.gmat_obj.CreateDefaultMission()
 
+    def CreateDefaultPropSetup(self):
+        self.gmat_obj.CreateDefaultPropSetup()
+
     def CreateDefaultStopCondition(self) -> gmat.StopCondition:
         sc: gmat.Spacecraft = self.GetDefaultSpacecraft()
         sc_name: str = sc.GetName()

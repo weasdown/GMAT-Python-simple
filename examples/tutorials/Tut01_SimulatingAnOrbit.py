@@ -17,22 +17,10 @@ import os
 # # gmat.Setup('C:\\Users\\weasd\\Desktop\\GMAT\\gmat-win-R2022a\\GMAT\\bin')
 # print('\n', gmat.FileManager.Instance().GetFullStartupFilePath())
 
-log_path = os.path.normpath(f'{os.getcwd()}/GMAT-Log.txt')
-gmat.UseLogFile(log_path)
-
-# print(gmat.FileManager.Instance().GetGmatWorkingDirectory())
-# print(gmat.FileManager.Instance().GetCurrentWorkingDirectory())
-# print(os.getcwd(), '\n')
-# print(gmat.FileManager.Instance().GetRootPath())
-# print(gmat.FileManager.Instance().SetGmatWorkingDirectory(f'{os.getcwd()}'))
-# print(gmat.FileManager.Instance().SetCurrentWorkingDirectory(f'{os.getcwd()}'))
-
-# gmat.Setup(gmat.FileManager.Instance().GetCurrentWorkingDirectory())
-
 # gmat.Clear()
 
-# # TODO: remove warning in log: "Unexpected state transition in the Sandbox"
-# gmat.Publisher.Instance().SetRunState(gmat.IDLE)
+log_path = os.path.normpath(f'{os.getcwd()}/GMAT-Log.txt')
+gmat.UseLogFile(log_path)
 
 script_path = os.path.normpath(f'{os.getcwd()}/Tut01.script')
 
@@ -171,16 +159,11 @@ print(f'state: {sat.GetState()}')
 # # bms = gmat.BeginMissionSequence()
 #
 # print('\n', pgate.GetGeneratingString())
-mod = gpy.Moderator()  # TODO: convert to wrapper Moderator
+mod = gpy.Moderator()
 sb = mod.GetSandbox()
-cm = gmat.ConfigManager.Instance()
-ss = gmat.GetSolarSystem()
-sb.AddSolarSystem(ss)
-
-gmat.Initialize()
 
 vdator = gmat.Validator.Instance()
-vdator.SetSolarSystem(ss)
+vdator.SetSolarSystem(gmat.GetSolarSystem())
 vdator.SetObjectMap(mod.GetConfiguredObjectMap())
 
 # Create a BeginMissionSequence command
@@ -189,69 +172,24 @@ sb.AddCommand(bms)
 bms.SetObjectMap(sb.GetObjectMap())
 bms.SetGlobalObjectMap(sb.GetGlobalObjectMap())
 bms.SetSolarSystem(gmat.GetSolarSystem())
-bms.Initialize()
 
-gmat.Initialize()
-
-# GetRunState()
-# bms.SetRunState(gmat.IDLE)
-
-# Create a Propagate command
-
-# pgate: gmat.GmatCommand = gpy.Propagate.CreateDefault()
-# prop = gpy.PropSetup('DefaultProp')
-prop = mod.GetDefaultPropSetup()
-# prop.Initialize()
-gmat.Initialize()
-
-pgate = gpy.Propagate('WrapperPropagate', prop, sat)
-pgate.Initialize()
-# gmat.Initialize()
-
-print(f'\n{pgate}, {type(pgate)}')
-
-# ty_ar = pgate.GetRefObjectTypeArray()
-# for num in ty_ar:
-#     print(f'Object type ID: {num}')
-#     print(gmat.ShowObjectsForID(num))
-
-# Get info about startup file settings, to debug log error #  "Error occurred during initialization: Utility Exception:
-# FileManager::ReadStartupFile() cannot open GMAT startup file: "C:\Users\[name]\AppData\Local\Programs\Python\
-# Python312\\gmat_startup_file.txt""
-# print('\nStartup file info:')
-# print('gmat.FileManager.Instance().GetStartupFileDir(): ', gmat.FileManager.Instance().GetStartupFileDir())
-# print('gmat.FileManager.Instance().GetStartupFileName(): ', gmat.FileManager.Instance().GetStartupFileName())
-# print('gmat.FileManager.Instance().GetFullStartupFilePath(): ', gmat.FileManager.Instance().GetFullStartupFilePath(), '\n')
-# mod.Initialize()
-
-# sat_name_from_pgate_field = pgate.GetField('Spacecraft')[1:-1]
-
-# # We now need to link the Propagate command into the rest of the system
-# prop = gmat.GetObject('DefaultProp')
-
-# TODO Add the PropSetup and Spacecraft to the Sandbox
-# sb.AddObject(prop)
-# sb.AddObject(sat.gmat_obj)
-
-# Link the Propagate command to all the other objects
-
-# pgate.SetRunState(gmat.IDLE)
-
-sb.Initialize()
-
-pgate.SetObjectMap(gmat.ConfigManager.Instance().GetObjectMap())
+# Create a Propagator and Propagate Command
+prop = gpy.PropSetup('DefaultProp')
+pgate = gpy.Propagate('PropagateCommand', prop, sat)
+sb.AddCommand(pgate.gmat_obj)
+pgate.SetSolarSystem(gmat.GetSolarSystem())
+pgate.SetObjectMap(gmat.Moderator.Instance().GetConfiguredObjectMap())
 pgate.SetGlobalObjectMap(sb.GetGlobalObjectMap())
 
-# print(f'Detailed run state: {gpy.basics.Moderator.GetDetailedRunState()}')
-# Add commands to the Mission Command Sequence
-noop = mod.GetFirstCommand()
-mod.InsertCommand(bms, noop)
-mod.AppendCommand(pgate)
+# Commands must be validated before running, for some reason (TODO: determine why)
+gmat.Moderator.Instance().ValidateCommand(bms)
+gmat.Moderator.Instance().ValidateCommand(pgate.gmat_obj)
+print(f'Added bms to command sequence: {gmat.Moderator.Instance().AppendCommand(bms)}')
+pgate.TakeAction('PrepareToPropagate')
 
 print(f'Sat state before running: {sat.GetState()}')
 print(f"Epoch before running: {sat.GetField('Epoch')}")
 
-print(f'state: {sat.GetState()}')
 # RUN MISSION #
 run_mission_return_code = int(mod.RunMission())  # Run the mission
 if run_mission_return_code != 1:
@@ -259,11 +197,9 @@ if run_mission_return_code != 1:
 else:
     print(f'\nRunMission succeeded!\n')
 print(f'state: {sat.GetState()}')
-print('Setting sat.was_propagated to True')
 sat.was_propagated = True  # mark sat as propagated so GetState gets runtime values
-print('Set sat.was_propagated to True\n')
+
 print(f'Sat state after running: {sat.GetState()}')
 print(f'Epoch after running: {sat.GetField("Epoch")}')
 
 gmat.SaveScript(script_path)
-# print(f'Detailed run state: {gpy.basics.Moderator.GetDetailedRunState()}')

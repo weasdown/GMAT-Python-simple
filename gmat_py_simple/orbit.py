@@ -121,12 +121,11 @@ class ForceModel(GmatObject):
             self.gravity = self.GravityField()  # setup default field
         else:
             self.gravity: ForceModel.GravityField = gravity_field
-            self.AddForce(self.gravity)
+        self.AddForce(self.gravity)
 
         # TODO replace below with creation of GravityFields
         #  PrimaryBodies is alias for GravityFields as per page 162 of GMAT Architectucral Specification
         self._primary_bodies = primary_bodies if primary_bodies else self._central_body
-        # self.SetField('PrimaryBodies', self._primary_bodies)
 
         self._polyhedral_bodies = polyhedral_bodies
 
