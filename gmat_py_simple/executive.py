@@ -148,6 +148,7 @@ class Moderator:
         vdator.SetSolarSystem(gmat.GetSolarSystem())
         vdator.SetObjectMap(mod.GetConfiguredObjectMap())
 
+        propagate_commands: list[gpy.Propagate] = []
         for command in mission_command_sequence:
             command.SetObjectMap(sb.GetObjectMap())
             command.SetGlobalObjectMap(sb.GetGlobalObjectMap())
@@ -158,8 +159,14 @@ class Moderator:
                 raise RuntimeError(f'Command {command.name} was not successfully appended to the Moderator in'
                                    f' RunMission. Returned value: {appended}')
 
+            if isinstance(command, gpy.Propagate):
+                propagate_commands.append(command)
+
         run_mission_return = self.gmat_obj.RunMission()
         if run_mission_return == 1:
+            print(f'\nRunMission succeeded!\n')
+            for propagate in propagate_commands:
+                propagate.wrapper_sat.was_propagated = True  # mark sat as propagated so GetState uses runtime values
             return run_mission_return
         elif run_mission_return == -1:
             raise RuntimeError('Sandbox number given to gmat.Moderator.RunMission() was invalid')

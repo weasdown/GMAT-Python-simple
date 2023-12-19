@@ -252,7 +252,8 @@ class Propagate(GmatCommand):
             self.prop: gmat.PropSetup = None
 
         if sat:
-            self.sat: gmat.Spacecraft = sat.gmat_obj
+            self.wrapper_sat = sat
+            self.sat: gmat.Spacecraft = self.wrapper_sat.gmat_obj
         else:
             self.sat: gmat.Spacecraft = None
 
@@ -269,7 +270,6 @@ class Propagate(GmatCommand):
 
         self.stop_cond: gmat.StopCondition = stop_cond if stop_cond else None
 
-        # sb.AddObject(self.sat)
         coord_sys_name = self.sat.GetField('CoordinateSystem')
         coord_sys = gmat.GetObject(coord_sys_name)
         sb.SetInternalCoordSystem(coord_sys)
@@ -304,8 +304,6 @@ class Propagate(GmatCommand):
         self.SetSolarSystem(gmat.GetSolarSystem())
         self.SetObjectMap(gmat.Moderator.Instance().GetConfiguredObjectMap())
         self.SetGlobalObjectMap(sb.GetGlobalObjectMap())
-
-        # gpy.Moderator().ValidateCommand(self)
 
     @classmethod
     def CreateDefault(cls, name: str = 'DefaultPropagateCommand'):

@@ -40,11 +40,6 @@ mcs = [
 
 # RUN MISSION #
 run_mission_return_code = int(gpy.RunMission(mcs))  # Run the mission
-if run_mission_return_code != 1:
-    raise Exception(f'RunMission did not complete successfully - returned code {run_mission_return_code}')
-else:
-    print(f'\nRunMission succeeded!\n')
-    sat.was_propagated = True  # mark sat as propagated so GetState gets runtime values
 
 print(f'Sat state after running: {sat.GetState()}')
 print(f'Epoch after running: {sat.GetField("Epoch")}')
