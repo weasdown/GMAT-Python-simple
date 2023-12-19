@@ -11,14 +11,6 @@ import gmat_py_simple as gpy
 
 import os
 
-# gmat_startup_file_path = os.path.normpath(f'{load_gmat.GmatBinPath}/gmat_startup_file.txt')
-# print('\n\n', gmat.FileManager.Instance().ReadStartupFile(gmat_startup_file_path))
-# os.chdir(load_gmat.GmatBinPath)
-# # gmat.Setup('C:\\Users\\weasd\\Desktop\\GMAT\\gmat-win-R2022a\\GMAT\\bin')
-# print('\n', gmat.FileManager.Instance().GetFullStartupFilePath())
-
-# gmat.Clear()
-
 log_path = os.path.normpath(f'{os.getcwd()}/GMAT-Log.txt')
 gmat.UseLogFile(log_path)
 
@@ -42,8 +34,7 @@ sat_params = {
     },
 }
 
-# sat = gpy.Spacecraft.from_dict(sat_params)
-sat = gpy.Spacecraft('Sat')
+sat = gpy.Spacecraft.from_dict(sat_params)
 
 mod = gpy.Moderator()
 sb = mod.GetSandbox()
@@ -62,14 +53,9 @@ bms.SetSolarSystem(gmat.GetSolarSystem())
 # Create a Propagator and Propagate Command
 prop = gpy.PropSetup('DefaultProp')
 pgate = gpy.Propagate('PropagateCommand', prop, sat)
-sb.AddCommand(pgate.gmat_obj)
-pgate.SetSolarSystem(gmat.GetSolarSystem())
-pgate.SetObjectMap(gmat.Moderator.Instance().GetConfiguredObjectMap())
-pgate.SetGlobalObjectMap(sb.GetGlobalObjectMap())
 
 # Commands must be validated before running, for some reason (TODO: determine why)
 gmat.Moderator.Instance().ValidateCommand(bms)
-gmat.Moderator.Instance().ValidateCommand(pgate.gmat_obj)
 gmat.Moderator.Instance().AppendCommand(bms)  # add BeginMissionSequence to Mission Command Sequence
 pgate.TakeAction('PrepareToPropagate')
 

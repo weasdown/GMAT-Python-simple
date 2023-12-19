@@ -291,6 +291,13 @@ class Propagate(GmatCommand):
 
         self.SetRefObject(self.stop_cond, gmat.STOP_CONDITION, self.stop_cond.GetName())
 
+        sb.AddCommand(self.gmat_obj)
+        self.SetSolarSystem(gmat.GetSolarSystem())
+        self.SetObjectMap(gmat.Moderator.Instance().GetConfiguredObjectMap())
+        self.SetGlobalObjectMap(sb.GetGlobalObjectMap())
+
+        gmat.Moderator.Instance().ValidateCommand(self.gmat_obj)
+
     @classmethod
     def CreateDefault(cls, name: str = 'DefaultPropagateCommand'):
         gmat_obj: gmat.Propagate = gmat_py_simple.Moderator().CreateDefaultCommand('Propagate', '')
