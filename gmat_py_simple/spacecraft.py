@@ -86,7 +86,7 @@ class Spacecraft(GmatObject):
                 #                      'Electric': sc_hardware.ElectricTanks}
 
             except KeyError as ke:
-                logging.warning(f'No tanks found in Hardware dict parsing')
+                logging.info(f'No tanks found in Hardware dict parsing')
 
             # parse thrusters
             try:
@@ -112,11 +112,8 @@ class Spacecraft(GmatObject):
                 except KeyError:
                     raise
 
-                # sc_hardware.Thrusters = {'Chemical': sc_hardware.ChemicalThrusters,
-                #                          'Electric': sc_hardware.ElectricThrusters}
-
             except KeyError as ke:
-                logging.warning(f'No thrusters found in Hardware dict parsing')
+                logging.info(f'No thrusters found in Hardware dict parsing')
 
             # TODO: parse SolarPowerSystem, NuclearPowerSystem, Imager
 
@@ -206,7 +203,7 @@ class Spacecraft(GmatObject):
             hardware = specs['Hardware']
             specs.pop('Hardware')
         except KeyError:
-            logging.warning('No hardware parameters specified in Spacecraft dictionary - none will be built')
+            logging.info('No hardware parameters specified in Spacecraft dictionary - none will be built')
             hardware = {}
 
         hardware_obj = Spacecraft.SpacecraftHardware.from_dict(hardware, sc)
@@ -217,7 +214,7 @@ class Spacecraft(GmatObject):
             orbit = specs['Orbit']
             specs.pop('Orbit')
         except KeyError:
-            logging.warning('No hardware parameters specified in Spacecraft dictionary - none will be built')
+            logging.info('No orbit parameters specified in Spacecraft dictionary - none will be built')
             orbit = {}
 
         if not orbit:  # orbit dict is empty
