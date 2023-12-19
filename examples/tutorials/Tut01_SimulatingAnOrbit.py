@@ -1,20 +1,11 @@
 from __future__ import annotations
-
 from load_gmat import gmat
-import load_gmat
-
 import gmat_py_simple as gpy
-# import gmat_py_simple.utils
-# from gmat_py_simple import orbit as o
-# from gmat_py_simple.orbit import PropSetup
-# from gmat_py_simple.commands import Propagate
-
 import os
 
 log_path = os.path.normpath(f'{os.getcwd()}/GMAT-Log.txt')
-gmat.UseLogFile(log_path)
-
 script_path = os.path.normpath(f'{os.getcwd()}/Tut01.script')
+gmat.UseLogFile(log_path)
 
 # TODO complete modelling the tutorial mission (inc. add drag, prop to Periapsis)
 
