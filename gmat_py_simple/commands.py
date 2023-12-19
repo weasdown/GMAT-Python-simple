@@ -13,6 +13,8 @@ class GmatCommand:
 
         # CreateCommand currently broken (GMT-8100), so use CreateDefaultCommand and remove extras
         self.gmat_obj: gmat.GmatCommand = gpy.Moderator().CreateDefaultCommand(self.command_type, self.name)
+        self.gmat_obj.SetName(self.name)
+
         if self.command_type == 'Propagate':
             # TODO: find name of mission's spacecraft rather than assuming default
             sat_name = gpy.Moderator().GetDefaultSpacecraft().GetName()
@@ -61,6 +63,9 @@ class BeginMissionSequence(GmatCommand):
 
 
 class Propagate(GmatCommand):
+    """
+    Propagate the orbit of a single spacecraft. For multiple spacecraft, use PropagateMulti
+    """
     class StopCondition:
         # def __init__(self, name: str, base_epoch=None, epoch=None, epoch_var=None, stop_var=None,
         #              goal=None, repeat=None):
@@ -248,7 +253,7 @@ class Propagate(GmatCommand):
     #     print(f'Propagate Generating String: {self.GetGeneratingString()}')
 
     def __init__(self, name: str = None, prop: gpy.PropSetup = None, sat: gpy.Spacecraft = None,
-                 stop_cond: Propagate.StopCondition = None):
+                 stop_cond: Propagate.StopCondition = None, synchronized: bool = False):
         if not name:  # make sure the new Propagate has a unique name
             num_propagates: int = len(gmat.GetCommands('Propagate'))
             name = f'PropagateCommand{num_propagates+1}'
@@ -315,6 +320,12 @@ class Propagate(GmatCommand):
             if not sc_name:
                 self.gmat_obj.SetObject(form[0], gmat.SPACECRAFT)
 
+        if not synchronized:
+            self.synchronized = False
+        else:
+            # TODO: check for multiple sats - required for synchro. First need to define syntax for multi-sat prop
+            self.synchronized = True
+
         self.SetRefObject(self.stop_cond, gmat.STOP_CONDITION, self.stop_cond.GetName())
 
         self.SetSolarSystem(gmat.GetSolarSystem())
@@ -344,4 +355,20 @@ class Propagate(GmatCommand):
 
     def Validate(self):
         self.gmat_obj.Validate()
+
+
+class PropagateMulti(Propagate):
+    """
+    Note: this command does not exist in standard GMAT. It is here to reduce ambiguity when propagating multiple
+     spacecraft. This class can only be used to propagate multiple spacecraft - to propagate a single spacecraft, use
+      Propagate (which only suports a single spacecraft).
+
+    """
+    def __init__(self, name: str = None, prop: gpy.PropSetup = None, sat: gpy.Spacecraft = None,
+                 stop_cond: Propagate.StopCondition = None, synchronized: bool = False):
+        if not name:  # make sure the new Propagate has a unique name
+            num_propagates: int = len(gmat.GetCommands('Propagate'))
+            name = f'PropagateMulti{num_propagates+1}'
+
+        super().__init__(name, prop, sat, stop_cond, synchronized)
 
