@@ -25,36 +25,23 @@ sat_params = {
     },
 }
 
-sat = gpy.Spacecraft.from_dict(sat_params)
+# sat = gpy.Spacecraft.from_dict(sat_params)
+sat = gpy.Spacecraft('Sat')
 
 mod = gpy.Moderator()
-sb = mod.GetSandbox()
+sb = gpy.Sandbox()
 
-vdator = gmat.Validator.Instance()
-vdator.SetSolarSystem(gmat.GetSolarSystem())
-vdator.SetObjectMap(mod.GetConfiguredObjectMap())
-
-# Create a BeginMissionSequence command
-bms = mod.CreateDefaultCommand('BeginMissionSequence')
-sb.AddCommand(bms)
-bms.SetObjectMap(sb.GetObjectMap())
-bms.SetGlobalObjectMap(sb.GetGlobalObjectMap())
-bms.SetSolarSystem(gmat.GetSolarSystem())
-
+bms = gpy.BeginMissionSequence()
 # Create a Propagator and Propagate Command
 prop = gpy.PropSetup('DefaultProp')
 pgate = gpy.Propagate('PropagateCommand', prop, sat)
-
-# Commands must be validated before running, for some reason (TODO: determine why)
-gmat.Moderator.Instance().ValidateCommand(bms)
-gmat.Moderator.Instance().AppendCommand(bms)  # add BeginMissionSequence to Mission Command Sequence
-pgate.TakeAction('PrepareToPropagate')
 
 print(f'Sat state before running: {sat.GetState()}')
 print(f"Epoch before running: {sat.GetField('Epoch')}")
 
 # RUN MISSION #
-run_mission_return_code = int(mod.RunMission())  # Run the mission
+mcs = [gpy.BeginMissionSequence(), pgate]  # Mission Command Sequence
+run_mission_return_code = int(mod.RunMission(mcs))  # Run the mission
 if run_mission_return_code != 1:
     raise Exception(f'RunMission did not complete successfully - returned code {run_mission_return_code}')
 else:

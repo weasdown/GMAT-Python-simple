@@ -3,7 +3,6 @@ from __future__ import annotations
 from load_gmat import gmat
 
 import gmat_py_simple as gpy
-from gmat_py_simple import GmatObject
 from gmat_py_simple.utils import *
 
 
@@ -14,9 +13,11 @@ class GmatCommand:
 
         # CreateCommand currently broken (GMT-8100), so use CreateDefaultCommand and remove extras
         self.gmat_obj: gmat.GmatCommand = gpy.Moderator().CreateDefaultCommand(self.command_type, self.name)
-        sat_name = gpy.Moderator().GetDefaultSpacecraft().GetName()
-        gmat.Clear(f'{sat_name}.ElapsedSecs')  # stop condition parameter
-        gmat.Clear(f'{sat_name}.A1ModJulian')  # stop condition parameter
+        if self.command_type == 'Propagate':
+            # TODO: find name of mission's spacecraft rather than assuming default
+            sat_name = gpy.Moderator().GetDefaultSpacecraft().GetName()
+            gmat.Clear(f'{sat_name}.ElapsedSecs')  # stop condition parameter
+            gmat.Clear(f'{sat_name}.A1ModJulian')  # stop condition parameter
 
         # TODO bugfix: switch to CreateCommand (uncomment below) when issue GMT-8100 fixed
         # self.gmat_obj: gmat.GmatCommand = gpy.Moderator().CreateCommand(self.command_type, self.name)
@@ -30,6 +31,9 @@ class GmatCommand:
     def GetField(self, field: str):
         self.gmat_obj.GetField(field)
 
+    def Help(self):
+        self.gmat_obj.Help()
+
     def SetField(self, field: str, val: str | list | int | float):
         self.gmat_obj.SetField(field, val)
 
@@ -42,8 +46,14 @@ class GmatCommand:
     def SetGlobalObjectMap(self, gom: gmat.ObjectMap):
         self.gmat_obj.SetGlobalObjectMap(gom)
 
-    def Help(self):
-        self.gmat_obj.Help()
+    def Validate(self) -> bool:
+        return self.gmat_obj.Validate()
+
+
+class BeginMissionSequence(GmatCommand):
+    def __init__(self):
+        super().__init__('BeginMissionSequence', 'BeginMissionSequenceCommand')
+        gpy.Moderator().ValidateCommand(self)
 
 
 class Propagate(GmatCommand):
@@ -291,12 +301,11 @@ class Propagate(GmatCommand):
 
         self.SetRefObject(self.stop_cond, gmat.STOP_CONDITION, self.stop_cond.GetName())
 
-        sb.AddCommand(self.gmat_obj)
         self.SetSolarSystem(gmat.GetSolarSystem())
         self.SetObjectMap(gmat.Moderator.Instance().GetConfiguredObjectMap())
         self.SetGlobalObjectMap(sb.GetGlobalObjectMap())
 
-        gmat.Moderator.Instance().ValidateCommand(self.gmat_obj)
+        # gpy.Moderator().ValidateCommand(self)
 
     @classmethod
     def CreateDefault(cls, name: str = 'DefaultPropagateCommand'):
@@ -315,3 +324,4 @@ class Propagate(GmatCommand):
 
     def Validate(self):
         self.gmat_obj.Validate()
+

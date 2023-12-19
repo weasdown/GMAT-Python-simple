@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Type
 
-import gmat_py_simple.utils
+import gmat_py_simple as gpy
 from load_gmat import gmat
 from gmat_py_simple import GmatCommand
 
@@ -13,8 +13,8 @@ class Moderator:
     def Initialize(self):
         self.gmat_obj.Initialize()
 
-    def AppendCommand(self, command_to_append: GmatCommand):
-        return self.gmat_obj.AppendCommand(command_to_append)
+    def AppendCommand(self, command: GmatCommand) -> bool:
+        return self.gmat_obj.AppendCommand(command.gmat_obj)
 
     def CreateCommand(self, command_type: str, name: str) -> gmat.GmatCommand:
         # True (retFlag) isn't actually used in source, but still required
@@ -118,8 +118,9 @@ class Moderator:
         else:
             raise Exception(f'Run state not recognised: {rs}')
 
-    def GetSandbox(self):
-        return self.gmat_obj.GetSandbox()
+    @staticmethod
+    def GetSandbox():
+        return gpy.Sandbox()
 
     def GetFirstCommand(self):
         return self.gmat_obj.GetFirstCommand()
@@ -127,6 +128,46 @@ class Moderator:
     def InsertCommand(self, command_to_insert: GmatCommand, preceding_command: GmatCommand):
         return self.gmat_obj.InsertCommand(command_to_insert, preceding_command)
 
-    def RunMission(self):
+    def RunMission(self, mission_command_sequence: list[GmatCommand]) -> int:
+        """
+        Note: this method has different behaviour and an extra argument relative to the native GMAT method.
+
+        :param mission_command_sequence:
+        :return:
+        """
+        mod = gpy.Moderator()
+        sb = gpy.Sandbox()
+
+        vdator = gmat.Validator.Instance()
+        vdator.SetSolarSystem(gmat.GetSolarSystem())
+        vdator.SetObjectMap(mod.GetConfiguredObjectMap())
+
+        for command in mission_command_sequence:
+            command.SetObjectMap(sb.GetObjectMap())
+            command.SetGlobalObjectMap(sb.GetGlobalObjectMap())
+            command.SetSolarSystem(gmat.GetSolarSystem())
+            mod.ValidateCommand(command)  # Commands must be validated before running TODO: determine why
+            appended = mod.AppendCommand(command)
+            if not appended:
+                raise RuntimeError(f'Command {command.name} was not successfully appended to the Moderator in'
+                                   f' RunMission. Returned value: {appended}')
+
         return self.gmat_obj.RunMission()
 
+    def ValidateCommand(self, command: GmatCommand) -> bool:
+        return self.gmat_obj.ValidateCommand(command.gmat_obj)
+
+
+class Sandbox:
+    def __init__(self):
+        self.gmat_obj = gmat.Moderator.Instance().GetSandbox()
+
+    def AddCommand(self, command: GmatCommand):
+        print(f'command in Sandbox.AddCommand: {command.name}')
+        self.gmat_obj.AddCommand(command.gmat_obj)
+
+    def GetObjectMap(self) -> gmat.ObjectMap:
+        return self.gmat_obj.GetObjectMap()
+
+    def GetGlobalObjectMap(self) -> gmat.ObjectMap:
+        return self.gmat_obj.GetGlobalObjectMap()
