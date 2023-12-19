@@ -155,8 +155,6 @@ class Moderator:
         vdator.SetSolarSystem(gmat.GetSolarSystem())
         vdator.SetObjectMap(mod.GetConfiguredObjectMap())
 
-        # print(f'CM objects before validator: {gmat.ConfigManager.Instance().GetListOfAllItems()}')
-
         propagate_commands: list[gpy.Propagate] = []  # start a list of Propagates so their sats can be updated later
         for command in mission_command_sequence:
             command.SetObjectMap(sb.GetObjectMap())
