@@ -149,7 +149,6 @@ class Spacecraft(GmatObject):
     def __init__(self, name, **kwargs):
         super().__init__('Spacecraft', name)
         self.was_propagated = False  # determines whether to use GetObject() or GetRuntimeObject()
-        # TODO create a GetObject() method in GmatObj that abstracts away that distinction
 
         # TODO: add elements for non-Cartesian orbit states (e.g. 'SMA', 'ECC' for Kep) - get OrbitState allowed fields
         _AllowedFields = set()

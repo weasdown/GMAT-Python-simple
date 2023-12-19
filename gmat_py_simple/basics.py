@@ -103,14 +103,14 @@ class GmatObject:
             self.gmat_obj.SetReference(ref)
 
     def GetObject(self):
-        if not self.was_propagated:
+        if not self.was_propagated:  # sat not yet propagated
             return gmat.GetObject(self.name)
-        else:
+        else:  # sat has been propagated so gmat.GetObject() would return incorrect (starting) values
             return gmat.GetRuntimeObject(self.name)
 
     def GetGeneratingString(self) -> str:
         """
-        Return the GMAT script equivalent of an object
+        Return the GMAT script commands to form an object
         :return:
         """
         return self.gmat_obj.GetGeneratingString()

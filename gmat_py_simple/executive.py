@@ -1,5 +1,4 @@
 from __future__ import annotations
-from typing import Type
 
 import gmat_py_simple as gpy
 from load_gmat import gmat
@@ -201,13 +200,6 @@ class Moderator:
 class Sandbox:
     def __init__(self):
         self.gmat_obj = gmat.Moderator.Instance().GetSandbox()
-
-    # def AddCommand(self, command: GmatCommand):
-    #     print(f'command in Sandbox.AddCommand: {command.name}')
-    #     self.gmat_obj.AddCommand(command.gmat_obj)
-
-    # def AddObject(self, obj: gpy.GmatObject):
-    #     self.gmat_obj.AddObject(obj)
 
     def GetObjectMap(self) -> gmat.ObjectMap:
         return self.gmat_obj.GetObjectMap()
