@@ -7,7 +7,7 @@ log_path = os.path.normpath(f'{os.getcwd()}/GMAT-Log.txt')
 script_path = os.path.normpath(f'{os.getcwd()}/Tut01.script')
 gmat.UseLogFile(log_path)
 
-# TODO complete modelling the tutorial mission (inc. add drag, prop to Periapsis)
+# TODO complete modelling the tutorial mission (inc. prop to Periapsis)
 
 sat_params = {
     'Name': 'Sat',
