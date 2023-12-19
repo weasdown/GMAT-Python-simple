@@ -28,14 +28,15 @@ sat_params = {
 sat = gpy.Spacecraft.from_dict(sat_params)
 fm = gpy.ForceModel(name='LowEarthProp_ForceModel', point_masses=['Luna', 'Sun'], drag=gpy.ForceModel.DragForce(),
                     srp=True, gravity_field=gpy.ForceModel.GravityField(degree=10, order=10))
-prop = gpy.PropSetup('DefaultProp', fm=fm)
+prop = gpy.PropSetup('LowEarthProp', fm=fm, accuracy=9.999999999999999e-12, gator=gpy.PropSetup.Propagator(name='LowEarthProp',
+                                                                           integrator='RungeKutta89'))
 
 print(f'Sat state before running: {sat.GetState()}')
 print(f"Epoch before running: {sat.GetField('Epoch')}")
 
 # Mission Command Sequence
 mcs = [gpy.BeginMissionSequence(),
-       gpy.Propagate('PropagateCommand', prop, sat)]
+       gpy.Propagate(prop=prop, sat=sat)]
 
 gpy.RunMission(mcs)  # Run the mission
 

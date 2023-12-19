@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from load_gmat import gmat
 
-from gmat_py_simple.basics import HardwareItem
+from gmat_py_simple.basics import GmatObject
 from gmat_py_simple.orbit import OrbitState
 from gmat_py_simple.utils import (gmat_str_to_py_str, gmat_field_string_to_list,
                                   list_to_gmat_field_string, rvector6_to_list, get_sat_objects)
@@ -11,7 +11,7 @@ from typing import Union
 import logging
 
 
-class Spacecraft(HardwareItem):
+class Spacecraft(GmatObject):
     class SpacecraftHardware:
         """
         Container for a Spacecraft's hardware objects.
@@ -277,7 +277,7 @@ class Spacecraft(HardwareItem):
         # TODO: in Propagate command, update sat.was_propagated, to be able to remove the two lines below.
         #  Means won't need it in every function that requires updates from GetRuntimeObject().
         if self.was_propagated:  # spacecraft has been used in a mission run
-            self.gmat_obj = gmat.GetRuntimeObject(self.name)  # update Spacecraft's gmat_obj with the run data
+            self.gmat_obj = self.GetObject()  # update Spacecraft's gmat_obj with the run data
 
         state: list[float | None] = [None] * 6
         for i in range(13, 19):
@@ -366,7 +366,7 @@ class Spacecraft(HardwareItem):
         self.SetField('Thrusters', value)
 
 
-class Tank(HardwareItem):
+class Tank(GmatObject):
     def __init__(self, tank_type: str, name: str):
         super().__init__(tank_type, name)
         self.tank_type = tank_type  # 'ChemicalTank' or 'ElectricTank'
@@ -438,7 +438,7 @@ class ElectricTank(Tank):
         return ep_tank
 
 
-class Thruster(HardwareItem):
+class Thruster(GmatObject):
     def __init__(self, thruster_type: str, name: str):
         super().__init__(thruster_type, name)
         self.thruster_type = thruster_type  # 'ChemicalThruster' or 'ElectricThruster'

@@ -54,6 +54,10 @@ class BeginMissionSequence(GmatCommand):
     def __init__(self):
         super().__init__('BeginMissionSequence', 'BeginMissionSequenceCommand')
         gpy.Moderator().ValidateCommand(self)
+        # sb = gpy.Sandbox()
+        # self.SetObjectMap(sb.GetObjectMap())
+        # self.SetGlobalObjectMap(sb.GetGlobalObjectMap())
+        # self.SetSolarSystem(gmat.GetSolarSystem())
 
 
 class Propagate(GmatCommand):
@@ -67,8 +71,13 @@ class Propagate(GmatCommand):
             # self.stop_var = stop_var
             # self.goal = goal
             # self.repeat = repeat
+            # self.sat = sat
             self.name = name
             self.gmat_obj = gmat.Moderator.Instance().CreateStopCondition('StopCondition', name)
+
+            # self.gmat_obj.SetStringParameter('EpochVar', f'{self.sat.GetName()}.A1ModJulian')
+            # self.gmat_obj.SetStringParameter('StopVar', f'{self.sat.GetName()}.ElapsedSecs')
+            # self.gmat_obj.SetStringParameter('Goal', '12000.0')
 
         @classmethod
         def CreateDefault(cls):
@@ -238,8 +247,11 @@ class Propagate(GmatCommand):
     #
     #     print(f'Propagate Generating String: {self.GetGeneratingString()}')
 
-    def __init__(self, name, prop: gpy.PropSetup = None, sat: gpy.Spacecraft = None,
+    def __init__(self, name: str = None, prop: gpy.PropSetup = None, sat: gpy.Spacecraft = None,
                  stop_cond: Propagate.StopCondition = None):
+        if not name:  # make sure the new Propagate has a unique name
+            num_propagates: int = len(gmat.GetCommands('Propagate'))
+            name = f'PropagateCommand{num_propagates+1}'
         super().__init__('Propagate', name)  # sets self.command_type, self.name, self.gmat_obj
 
         mod = gpy.Moderator()
@@ -266,17 +278,14 @@ class Propagate(GmatCommand):
             else:
                 self.sat = sat
             self.prop.AddPropObject(self.sat)
+        # self.prop.Initialize()
         gmat.Initialize()
 
         self.stop_cond: gmat.StopCondition = stop_cond if stop_cond else None
 
-        coord_sys_name = self.sat.GetField('CoordinateSystem')
-        coord_sys = gmat.GetObject(coord_sys_name)
-        sb.SetInternalCoordSystem(coord_sys)
-
         if not stop_cond:  # no stop_cond defined
             if self.sat:  # no stop_cond defined, but have a sat so can't use default stop condition
-                stop_cond: Propagate.StopCondition = Propagate.StopCondition()
+                stop_cond: Propagate.StopCondition = Propagate.StopCondition()  # self.sat)
                 self.stop_cond = stop_cond.gmat_obj
                 # TODO: remove hard-coding of A1ModJulian/ElapsedSecs/12000.0
                 self.stop_cond.SetStringParameter('EpochVar', f'{self.sat.GetName()}.A1ModJulian')
@@ -284,7 +293,14 @@ class Propagate(GmatCommand):
                 self.stop_cond.SetStringParameter('Goal', '12000.0')
 
             else:  # no self.sat defined. Generating default stop condition will also build default sat
+                # TODO bugfix: this branch doesn't setup objects correctly in Sandbox. Raise NotImplementedError for now
+                self.sat = mod.CreateSpacecraft()
                 self.stop_cond = mod.CreateDefaultStopCondition()
+                raise NotImplementedError
+
+        coord_sys_name = self.sat.GetField('CoordinateSystem')
+        coord_sys = gmat.GetObject(coord_sys_name)
+        sb.SetInternalCoordSystem(coord_sys)
 
         # # Check for existing Formation
         form = mod.GetListOfObjects(gmat.FORMATION)
@@ -304,6 +320,12 @@ class Propagate(GmatCommand):
         self.SetSolarSystem(gmat.GetSolarSystem())
         self.SetObjectMap(gmat.Moderator.Instance().GetConfiguredObjectMap())
         self.SetGlobalObjectMap(sb.GetGlobalObjectMap())
+
+        # vdator = gmat.Validator.Instance()
+        # vdator.SetSolarSystem(gmat.GetSolarSystem())
+        # vdator.SetObjectMap(mod.GetConfiguredObjectMap())
+        #
+        # gpy.Moderator().ValidateCommand(self)
 
     @classmethod
     def CreateDefault(cls, name: str = 'DefaultPropagateCommand'):

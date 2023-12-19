@@ -12,6 +12,7 @@ class GmatObject:
         self.obj_type = obj_type
         self.name = name
         self.gmat_obj = gmat.Construct(self.obj_type, self.name)
+        self.was_propagated = False
 
     # @staticmethod
     # def Construct(obj_type: str, name: str, *args):
@@ -39,6 +40,9 @@ class GmatObject:
 
     def Initialize(self):
         self.gmat_obj.Initialize()
+
+    def IsInitialized(self):
+        self.gmat_obj.IsInitialized()
 
     def GetName(self):
         return self.gmat_obj.GetName()
@@ -98,8 +102,11 @@ class GmatObject:
         else:  # native GMAT object
             self.gmat_obj.SetReference(ref)
 
-    def GetState(self):
-        return self.gmat_obj.GetState()
+    def GetObject(self):
+        if not self.was_propagated:
+            return gmat.GetObject(self.name)
+        else:
+            return gmat.GetRuntimeObject(self.name)
 
     def GetGeneratingString(self) -> str:
         """
@@ -107,17 +114,6 @@ class GmatObject:
         :return:
         """
         return self.gmat_obj.GetGeneratingString()
-
-
-class HardwareItem(GmatObject):
-    def __init__(self, obj_type: str, name: str):
-        super().__init__(obj_type, name)
-
-    def __repr__(self):
-        return f'A piece of Hardware of type {self.obj_type} and name {self.name}'
-
-    def IsInitialized(self):
-        self.gmat_obj.IsInitialized()
 
 
 class Parameter(GmatObject):

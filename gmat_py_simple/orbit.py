@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import gmat_py_simple
 from load_gmat import gmat
 
 from gmat_py_simple.basics import GmatObject
@@ -96,7 +98,7 @@ class ForceModel(GmatObject):
                  point_masses: str | list[str] | PointMassForce = None, drag: DragForce = None,
                  srp: bool | SolarRadiationPressure = False, relativistic_correction: bool = False,
                  error_control: list = None, user_defined: list[str] = None):
-        super().__init__('ODEModel', name)
+        super().__init__('ForceModel', name)
 
         def validate_point_masses(pm) -> list[ForceModel.PointMassForce]:
             celestial_bodies = CelestialBodies()
@@ -168,15 +170,6 @@ class ForceModel(GmatObject):
             for force in self.point_mass_forces:
                 self.AddForce(force)
 
-        if not drag:
-            self.drag = False
-        elif isinstance(drag, ForceModel.DragForce):
-            self.drag = drag
-            self.AddForce(self.drag)
-        else:
-            self.drag = ForceModel.DragForce(fm=self)  # create and use a default drag model
-            self.AddForce(self.drag)
-
         # if just srp=True, create and use a default srp object
         if not srp:
             self.srp = None
@@ -186,6 +179,15 @@ class ForceModel(GmatObject):
         else:
             self.srp = ForceModel.SolarRadiationPressure(fm=self)
             self.AddForce(self.srp)
+
+        if not drag:
+            self.drag = False
+        elif isinstance(drag, ForceModel.DragForce):
+            self.drag = drag
+            self.AddForce(self.drag)
+        else:
+            self.drag = ForceModel.DragForce(fm=self)  # create and use a default drag model
+            self.AddForce(self.drag)
 
         # Add other effects
         self.relativistic_correction = relativistic_correction
@@ -379,15 +381,24 @@ class PropSetup(GmatObject):  # variable called prop in GMAT Python examples
     class Propagator(GmatObject):  # variable called gator in GMAT Python examples
         # Labelled in GMAT GUI as "Integrator"
         def __init__(self, integrator: str = 'PrinceDormand78', name: str = 'Prop', **kwargs):
-            integrator_allowed_types = ['']
-            name = f'{name}_{integrator}'
+            integrator_allowed_types = ['RungeKutta89', 'PrinceDormand78', 'PrinceDormand45', 'RungeKutta68',
+                                        'RungeKutta56', 'AdamsBashforthMoulton', 'SPK', 'Code500', 'STK', 'CCSDS-OEM'
+                                        'PrinceDormand853', 'RungeKutta4', 'SPICESGP4']
+            if integrator in integrator_allowed_types:
+                self.integrator = integrator
+            else:
+                raise AttributeError(f'integrator must be one of the following: {integrator_allowed_types}')
+
+            if name == 'Prop':
+                name = f'{name}_{integrator}'
+
             super().__init__(integrator, name)
-            self.integrator = integrator
 
             gmat.Initialize()
 
     def __init__(self, name: str, fm: ForceModel = None, gator: PropSetup.Propagator = None,
-                 initial_step_size: int = 60, accuracy: int = 1e-12, min_step: int = 0):
+                 initial_step_size: int = 60, accuracy: int | float = 1e-12, min_step: int = 0):
+        # TODO add other args as per pg 449 (PDF pg 458) of User Guide
         super().__init__('PropSetup', name)
         self.force_model = fm if fm else ForceModel()
         self.gator = gator if gator else PropSetup.Propagator()

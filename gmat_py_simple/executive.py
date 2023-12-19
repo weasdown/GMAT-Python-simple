@@ -29,10 +29,13 @@ class Moderator:
         return self.gmat_obj.CreateDefaultCommand(command_type, name)
 
     def CreateDefaultMission(self):
-        self.gmat_obj.CreateDefaultMission()
+        return self.gmat_obj.CreateDefaultMission()
 
     def CreateDefaultPropSetup(self):
-        self.gmat_obj.CreateDefaultPropSetup()
+        return self.gmat_obj.CreateDefaultPropSetup()
+
+    def CreateSpacecraft(self):
+        return self.gmat_obj.CreateSpacecraft('Spacecraft', 'DefaultSC', True)
 
     def CreateDefaultStopCondition(self) -> gmat.StopCondition:
         sc: gmat.Spacecraft = self.GetDefaultSpacecraft()
@@ -145,6 +148,7 @@ class Moderator:
             raise TypeError('mission_command_sequence must be a list of GmatCommand objects'
                             ' (e.g. BeginMissionSequence, Propagate)')
 
+        # gmat.Initialize()
         mod = gpy.Moderator()
         sb = gpy.Sandbox()
 
@@ -152,7 +156,9 @@ class Moderator:
         vdator.SetSolarSystem(gmat.GetSolarSystem())
         vdator.SetObjectMap(mod.GetConfiguredObjectMap())
 
-        propagate_commands: list[gpy.Propagate] = []
+        # print(f'CM objects before validator: {gmat.ConfigManager.Instance().GetListOfAllItems()}')
+
+        propagate_commands: list[gpy.Propagate] = []  # start a list of Propagates so their sats can be updated later
         for command in mission_command_sequence:
             command.SetObjectMap(sb.GetObjectMap())
             command.SetGlobalObjectMap(sb.GetGlobalObjectMap())
@@ -196,9 +202,12 @@ class Sandbox:
     def __init__(self):
         self.gmat_obj = gmat.Moderator.Instance().GetSandbox()
 
-    def AddCommand(self, command: GmatCommand):
-        print(f'command in Sandbox.AddCommand: {command.name}')
-        self.gmat_obj.AddCommand(command.gmat_obj)
+    # def AddCommand(self, command: GmatCommand):
+    #     print(f'command in Sandbox.AddCommand: {command.name}')
+    #     self.gmat_obj.AddCommand(command.gmat_obj)
+
+    # def AddObject(self, obj: gpy.GmatObject):
+    #     self.gmat_obj.AddObject(obj)
 
     def GetObjectMap(self) -> gmat.ObjectMap:
         return self.gmat_obj.GetObjectMap()
