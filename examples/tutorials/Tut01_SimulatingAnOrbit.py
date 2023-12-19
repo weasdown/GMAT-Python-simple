@@ -16,7 +16,7 @@ sat_params = {
         'DateFormat': 'UTCGregorian',
         'CoordSys': 'EarthMJ2000Eq',
         'StateType': 'Keplerian',
-        'SMA': 83474.31800000001,
+        'SMA': 83474.318,
         'ECC': 0.89652,
         'INC': 12.4606,
         'RAAN': 292.8362,
