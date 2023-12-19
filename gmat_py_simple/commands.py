@@ -77,6 +77,8 @@ class Propagate(GmatCommand):
             # self.goal = goal
             # self.repeat = repeat
             # self.sat = sat
+            # TODO note: currently, name must have the sat name (e.g. "Sat") - fix this
+            #  It's not dependent on the fullstop/period or "ElapsedSecs"
             self.name = name
             self.gmat_obj = gmat.Moderator.Instance().CreateStopCondition('StopCondition', name)
 
