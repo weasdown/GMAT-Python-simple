@@ -112,7 +112,7 @@ class Spacecraft(GmatObject):
                 except KeyError:
                     raise
 
-            except KeyError as ke:
+            except KeyError:
                 logging.info(f'No thrusters found in Hardware dict parsing')
 
             # TODO: parse SolarPowerSystem, NuclearPowerSystem, Imager
