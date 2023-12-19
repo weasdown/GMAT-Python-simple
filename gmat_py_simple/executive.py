@@ -6,6 +6,10 @@ from load_gmat import gmat
 from gmat_py_simple import GmatCommand
 
 
+def RunMission(mcs: list[GmatCommand]) -> int:
+    return gpy.Moderator().RunMission(mcs)
+
+
 class Moderator:
     def __init__(self):
         self.gmat_obj = gmat.Moderator.Instance()

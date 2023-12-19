@@ -27,21 +27,19 @@ sat_params = {
 
 # sat = gpy.Spacecraft.from_dict(sat_params)
 sat = gpy.Spacecraft('Sat')
-
-mod = gpy.Moderator()
-sb = gpy.Sandbox()
-
-bms = gpy.BeginMissionSequence()
-# Create a Propagator and Propagate Command
 prop = gpy.PropSetup('DefaultProp')
-pgate = gpy.Propagate('PropagateCommand', prop, sat)
 
 print(f'Sat state before running: {sat.GetState()}')
 print(f"Epoch before running: {sat.GetField('Epoch')}")
 
+# Mission Command Sequence
+mcs = [
+    gpy.BeginMissionSequence(),
+    gpy.Propagate('PropagateCommand', prop, sat)
+]
+
 # RUN MISSION #
-mcs = [gpy.BeginMissionSequence(), pgate]  # Mission Command Sequence
-run_mission_return_code = int(mod.RunMission(mcs))  # Run the mission
+run_mission_return_code = int(gpy.RunMission(mcs))  # Run the mission
 if run_mission_return_code != 1:
     raise Exception(f'RunMission did not complete successfully - returned code {run_mission_return_code}')
 else:
