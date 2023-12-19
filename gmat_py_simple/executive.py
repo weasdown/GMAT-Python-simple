@@ -130,7 +130,9 @@ class Moderator:
 
     def RunMission(self, mission_command_sequence: list[GmatCommand]) -> int:
         """
-        Note: this method has different behaviour and an extra argument relative to the native GMAT method.
+        Run the mission command sequence
+
+        IMPORTANT: this method has different behaviour and an extra argument relative to the native GMAT method.
 
         :param mission_command_sequence:
         :return:
@@ -152,7 +154,24 @@ class Moderator:
                 raise RuntimeError(f'Command {command.name} was not successfully appended to the Moderator in'
                                    f' RunMission. Returned value: {appended}')
 
-        return self.gmat_obj.RunMission()
+        run_mission_return = self.gmat_obj.RunMission()
+        if run_mission_return == 1:
+            return run_mission_return
+        elif run_mission_return == -1:
+            raise RuntimeError('Sandbox number given to gmat.Moderator.RunMission() was invalid')
+        elif run_mission_return == -2:
+            raise RuntimeError('An exception was thrown during Sandbox initialization. See GMAT log for details')
+        elif run_mission_return == -3:
+            raise RuntimeError('An unknown error during Sandbox initialization. See GMAT log for details')
+        elif run_mission_return == -4:
+            raise RuntimeError('Execution of RunMission() was interrupted by the user')
+        elif run_mission_return == -5:
+            raise RuntimeError('An exception was thrown during Sandbox execution. See GMAT log for details')
+        elif run_mission_return == -6:
+            raise RuntimeError('An unknown error during Sandbox execution. See GMAT log for details')
+        else:
+            raise RuntimeError(f'RunMission return value not recognized: {run_mission_return}.'
+                               f' See GMAT log for possible hints')
 
     def ValidateCommand(self, command: GmatCommand) -> bool:
         return self.gmat_obj.ValidateCommand(command.gmat_obj)
