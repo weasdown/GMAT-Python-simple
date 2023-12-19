@@ -16,8 +16,8 @@ sat_params = {
         'DateFormat': 'UTCGregorian',
         'CoordSys': 'EarthMJ2000Eq',
         'StateType': 'Keplerian',
-        'SMA': 83474.31800000004,
-        'ECC': 0.8965199999999998,
+        'SMA': 83474.31800000001,
+        'ECC': 0.89652,
         'INC': 12.4606,
         'RAAN': 292.8362,
         'AOP': 218.9805,
@@ -25,9 +25,10 @@ sat_params = {
     },
 }
 
-# sat = gpy.Spacecraft.from_dict(sat_params)
-sat = gpy.Spacecraft('Sat')
-prop = gpy.PropSetup('DefaultProp')
+sat = gpy.Spacecraft.from_dict(sat_params)
+fm = gpy.ForceModel(name='LowEarthProp_ForceModel', point_masses=['Luna', 'Sun'], drag=gpy.ForceModel.DragForce(),
+                    srp=True, gravity_field=gpy.ForceModel.GravityField(degree=10, order=10))
+prop = gpy.PropSetup('DefaultProp', fm=fm)
 
 print(f'Sat state before running: {sat.GetState()}')
 print(f"Epoch before running: {sat.GetField('Epoch')}")

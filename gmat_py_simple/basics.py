@@ -129,7 +129,3 @@ class Parameter(GmatObject):
                  owned_obj_type: int = None):
         super().__init__('Parameter', name)
 
-
-
-
-

@@ -1,36 +1,45 @@
 from __future__ import annotations
-
-import logging
-
 from load_gmat import gmat
 
-# CelestialBodies, SpacecraftObjs, LibrationPoints, Barycenter, GroundStations, GmatObject, \
-#     Spacecraft, CoordSystems, py_str_to_gmat_str, gmat_str_to_py_str
 from gmat_py_simple.basics import GmatObject
 import gmat_py_simple.spacecraft as spc
 from gmat_py_simple.utils import *
 
 
 class AtmosphereModel(GmatObject):
-    def __init__(self, name: str = 'AtmoModel', model: str = 'JacchiaRoberts', f107: int = 150, f107a: int = 150,
+    def __init__(self, name: str = 'AtmoModel', atmo_model: str = 'JacchiaRoberts', f107: int = 150,
+                 f107a: int = 150,
                  magnetic_index=3, cssi_space_weather_file='SpaceWeather-All-v1.2.txt',
                  schatten_file='SchattenPredict.txt'):
 
-        self.model = model
+        self.atmo_model = str(atmo_model)
         self.allowed_models = ['JacchiaRoberts', 'MSISE86', 'MSISE90', 'NRLMSISE00', 'MarsGRAM2005']
-        if self.model not in self.allowed_models:
+        if self.atmo_model not in self.allowed_models:
             raise AttributeError(f'model parameter must be one of the following: {self.allowed_models}')
 
-        super().__init__(model, name)
+        super().__init__(atmo_model, name)
 
-        self.f107 = f107
-        self.SetField('F107', self.f107)
+        if (not isinstance(f107, (int, float))) or (f107 < 0):
+            raise TypeError('f107 must be an integer or float greater than 0')
+        else:
+            if (f107 > 400) or (f107 < 50):
+                logging.warning('Realistic values of f107 are between 50 and 400 inclusive')
+            self.f107 = f107
+            self.SetField('F107', self.f107)
 
-        self.f107a = f107a
-        self.SetField('F107A', self.f107a)
+        if (not isinstance(f107a, (int, float))) or (f107a < 0):
+            raise TypeError('f107a must be an integer or float greater than 0')
+        else:
+            if (f107 > 400) or (f107 < 50):
+                logging.warning('Realistic values of f107a are between 50 and 400 inclusive')
+            self.f107a = f107a
+            self.SetField('F107A', self.f107a)
 
-        self.magnetic_index = magnetic_index
-        self.SetField('MagneticIndex', self.magnetic_index)
+        if (not isinstance(magnetic_index, (int, float))) or (magnetic_index < 0) or (magnetic_index > 9):
+            raise TypeError('magnetic_index must be an integer or float between 0 and 9 inclusive')
+        else:
+            self.magnetic_index = magnetic_index
+            self.SetField('MagneticIndex', self.magnetic_index)
 
         if cssi_space_weather_file:
             self.cssi_space_weather_file = cssi_space_weather_file
@@ -43,6 +52,25 @@ class AtmosphereModel(GmatObject):
             self.SetField('SchattenFile', self.schatten_file)
         else:
             self.schatten_file = None
+
+        # # TODO: complete merging these fields into AtmosphereModel() (from Drag())
+        # self.historic_weather_source = historic_weather_source
+        # self.SetField('HistoricWeatherSource', self.historic_weather_source)
+        #
+        # self.predicted_weather_source = predicted_weather_source
+        # self.SetField('PredictedWeatherSource', self.predicted_weather_source)
+        #
+        # self.cssi_space_weather_file = cssi_space_weather_file
+        # self.SetField('CSSISpaceWeatherFile', self.cssi_space_weather_file)
+        #
+        # self.schatten_file = schatten_file
+        # self.SetField('SchattenFile', self.schatten_file)
+        #
+        # self.schatten_error_model = schatten_error_model
+        # self.SetField('SchattenErrorModel', self.schatten_error_model)
+        #
+        # self.schatten_timing_model = schatten_timing_model
+        # self.SetField('SchattenTimingModel', self.schatten_timing_model)
 
 
 # class ExponentialAtmosphere(AtmosphereModel):
@@ -65,7 +93,7 @@ class PhysicalModel(GmatObject):
 class ForceModel(GmatObject):
     def __init__(self, name: str = 'FM', central_body: str = 'Earth', primary_bodies=None,
                  polyhedral_bodies: list = None, gravity_field: GravityField = None,
-                 point_masses: str | list[str] | PointMassForce = None, drag=None,
+                 point_masses: str | list[str] | PointMassForce = None, drag: DragForce = None,
                  srp: bool | SolarRadiationPressure = False, relativistic_correction: bool = False,
                  error_control: list = None, user_defined: list[str] = None):
         super().__init__('ODEModel', name)
@@ -76,17 +104,17 @@ class ForceModel(GmatObject):
             # point_masses is a single string
             if isinstance(point_masses, str):
                 # point mass for a body cannot be set if that body is already in an attached GravityField
-                if self.gravity and (self._central_body in point_masses):
-                    raise SyntaxError(f'Point mass for {self._central_body} cannot be used because '
-                                      f'{self._central_body} is already set as the central body')
+                if self.gravity and (self.central_body in point_masses):
+                    raise SyntaxError(f'Point mass for {self.central_body} cannot be used because '
+                                      f'{self.central_body} is already set as the central body')
 
                 return [ForceModel.PointMassForce(body=point_masses)]
 
             # point_masses is a single PointMassForce
             elif isinstance(point_masses, ForceModel.PointMassForce):
-                if self.gravity and (self._central_body in point_masses.primary_body):
-                    raise SyntaxError(f'Point mass for {self._central_body} cannot be used because a GravityField '
-                                      f'containing {self._central_body} is already set')
+                if self.gravity and (self.central_body in point_masses.primary_body):
+                    raise SyntaxError(f'Point mass for {self.central_body} cannot be used because a GravityField '
+                                      f'containing {self.central_body} is already set')
                 return [point_masses]
 
             # point_masses is a list (presumably of celestial body strings)
@@ -97,9 +125,9 @@ class ForceModel(GmatObject):
                 if not all([f in celestial_bodies for f in point_masses]):
                     raise SyntaxError(f'Not all strings in point_masses are valid celestial body names')
 
-                if self.gravity and (any(force in self._central_body for force in point_masses)):
-                    raise SyntaxError(f'Point mass for {self._central_body} cannot be used because '
-                                      f'{self._central_body} is already set as the central body')
+                if self.gravity and (any(force in self.central_body for force in point_masses)):
+                    raise SyntaxError(f'Point mass for {self.central_body} cannot be used because '
+                                      f'{self.central_body} is already set as the central body')
 
                 # point_masses is a valid list of celestial body name strings
                 pmf_list = []
@@ -114,20 +142,23 @@ class ForceModel(GmatObject):
         self._allowed_values = {'arg': 'value'}
         defaults = {'error_control': ['RSSStep'], 'point_masses': ['Earth'], 'primary_bodies': []}
 
-        self._central_body = central_body
-        self.SetField('CentralBody', self._central_body)
-
-        if not gravity_field:
-            self.gravity = self.GravityField()  # setup default field
-        else:
-            self.gravity: ForceModel.GravityField = gravity_field
-        self.AddForce(self.gravity)
+        self.central_body = central_body
+        self.SetField('CentralBody', self.central_body)
 
         # TODO replace below with creation of GravityFields
         #  PrimaryBodies is alias for GravityFields as per page 162 of GMAT Architectucral Specification
-        self._primary_bodies = primary_bodies if primary_bodies else self._central_body
+        self._primary_bodies = primary_bodies if primary_bodies else self.central_body
 
         self._polyhedral_bodies = polyhedral_bodies
+
+        if not gravity_field:
+            self.gravity = self.GravityField()  # setup default field
+        elif isinstance(gravity_field, ForceModel.GravityField):
+            self.gravity: ForceModel.GravityField = gravity_field
+        else:
+            raise TypeError(f'gravity_field type not recognized - {type(gravity_field).__name__}.'
+                            f' Must be None or a gpy.ForceModel.GravityField')
+        self.AddForce(self.gravity)
 
         self.point_mass_forces: list[ForceModel.PointMassForce] | None = None
         if not point_masses:
@@ -186,63 +217,65 @@ class ForceModel(GmatObject):
                      gravity: ForceModel.GravityField = None,
                      drag: ForceModel.DragForce | False = False):
             self._force_model = fm
-            self._body = body if body else self._force_model._central_body
+            self._body = body if body else self._force_model.central_body
             self._gravity = gravity if gravity else ForceModel.GravityField()
             self._drag = drag if drag else ForceModel.DragForce(self._force_model)
 
     class DragForce(PhysicalModel):
-        def __init__(self, fm: ForceModel = None, name: str = 'DF',
-                     atmosphere_model: str = 'JacchiaRoberts',
+        def __init__(self, fm: ForceModel = None, name: str = 'DF', atmo_model: str = 'JacchiaRoberts',
                      drag_model: str = 'Spherical', f107: int = 150, f107a: int = 150, magnetic_index: int = 3,
                      historic_weather_source: str = 'ConstantFluxAndGeoMag',
                      predicted_weather_source: str = 'ConstantFluxAndGeoMag',
                      cssi_space_weather_file: str = 'SpaceWeather-All-v1.2.txt',
-                     schatten_file: str = 'SchattenPredict.txt',
-                     schatten_error_model: str = 'Nominal',
-                     schatten_timing_model: str = 'NominalCycle', density_model=None,
-                     input_file=None):
+                     schatten_file: str = 'SchattenPredict.txt', schatten_error_model: str = 'Nominal',
+                     schatten_timing_model: str = 'NominalCycle',
+                     density_model='Only used if atmo_model is MarsGRAM2005', input_file=None):
+            # TODO remove unused args once moved to AtmosphereModel()
 
             super().__init__('DragForce', name)
 
-            self.allowed_models = ['JacchiaRoberts', 'MSISE86', 'MSISE90', 'NRLMSISE00', 'MarsGRAM2005']
-            if atmosphere_model not in self.allowed_models:
-                raise AttributeError(f'model parameter must be one of the following: {self.allowed_models}')
+            self.primary_body: str = fm.central_body if fm else 'Earth'
+            # TODO: move to AtmosphereModel as appropriate
+            self.allowed_values = {'models': {'Earth': ['JacchiaRoberts', 'MSISE86', 'MSISE90', 'NRLMSISE00'],
+                                              'Mars': 'MarsGRAM2005'},
+                                   'drag_model': ['Spherical', 'SPADFile'],
+                                   'historic_weather_source': ['ConstantFluxAndGeoMag', 'CSSISpaceWeatherFile'],
+                                   'predicted_weather_source': 'SchattenFile',
+                                   'schatten_error_model': ['Nominal', 'PlusTwoSigma', 'MinusTwoSigma'],
+                                   'schatten_timing_model': ['NominalCycle', 'EarlyCycle', 'LateCycle'],
+                                   'density_model': ['High', 'Mean', 'Low']}
+            allowed_models = self.allowed_values['models'][self.primary_body]
+            if atmo_model not in allowed_models:
+                raise AttributeError(f'model parameter must be one of the following: {allowed_models}')
             else:
-                self.atmosphere_model = AtmosphereModel(model=atmosphere_model)
+                self.atmosphere_model = AtmosphereModel(atmo_model=atmo_model)
                 self.SetReference(self.atmosphere_model)
-
-            self.drag_model = drag_model
-            self.f107 = f107
-            self.f107a = f107a
-            self.magnetic_index = magnetic_index
-
-            self.historic_weather_source = historic_weather_source
-            self.SetField('HistoricWeatherSource', self.historic_weather_source)
-
-            self.predicted_weather_source = predicted_weather_source
-            self.SetField('PredictedWeatherSource', self.predicted_weather_source)
-
-            self.cssi_space_weather_file = cssi_space_weather_file
-            self.SetField('CSSISpaceWeatherFile', self.cssi_space_weather_file)
-
-            self.schatten_file = schatten_file
-            self.SetField('SchattenFile', self.schatten_file)
-
-            self.schatten_error_model = schatten_error_model
-            self.SetField('SchattenErrorModel', self.schatten_error_model)
-
-            self.schatten_timing_model = schatten_timing_model
-            self.SetField('SchattenTimingModel', self.schatten_timing_model)
+                self.SetField('AtmosphereModel', self.atmosphere_model.atmo_model)
 
             if self.atmosphere_model == 'MarsGRAM2005':
-                self.density_model = density_model
+                if density_model != 'Only used if atmo_model is MarsGRAM2005':
+                    if density_model in self.allowed_values['density_model']:
+                        self.density_model = density_model
+                    else:
+                        raise AttributeError('density_model must be "High", "Mean" or "Low" (default is "Mean")')
+                else:
+                    self.density_model = 'Mean'  # default density model
                 self.SetField('DensityModel', self.density_model)
 
                 self.input_file = input_file
                 self.SetField('InputFile', self.input_file)
-            else:
+            elif self.atmosphere_model:
                 self.density_model = None
                 self.input_file = None
+                self.drag_model = drag_model
+                self.f107 = f107
+                self.f107a = f107a
+                self.magnetic_index = magnetic_index
+            else:  # these four fields must not be used if no atmosphere model is specified
+                self.drag_model = None
+                self.f107 = None
+                self.f107a = None
+                self.magnetic_index = None
 
             if not fm:
                 self.force_model = None
@@ -318,15 +351,26 @@ class ForceModel(GmatObject):
             self.SetField('BodyName', body)
 
     class SolarRadiationPressure(PhysicalModel):
-        # TODO flux and nominal Sun needed as arguments?
         def __init__(self, fm: ForceModel = None, name: str = 'SRP', model: str = 'Spherical', flux: float | int = 1367,
                      nominal_sun: float | int = 149597870.691):
             super().__init__('SolarRadiationPressure', name)
-            self.force_model = fm
-            self.model = model
-            self.flux = flux
-            self.nominal_sun = nominal_sun
 
+            if model in ['Spherical', 'SPADFile', 'NPlate']:
+                self.model = model
+            else:
+                raise AttributeError('Invalid model given for SolarRadiationPressure. Must be "Spherical", "SPADFile"'
+                                     ' or "NPlate')
+            if 1200 < flux < 1450:
+                self.flux = flux
+            else:
+                raise AttributeError('flux argument must be between 1200 and 1450 (default is 1367)')
+
+            if 135e6 < nominal_sun < 165e6:
+                self.nominal_sun = nominal_sun
+            else:
+                raise AttributeError('nominal_sun argument must be between 135e6 and 165e6 (default is 149597870.691)')
+
+            self.force_model = fm
             if self.force_model:
                 self.force_model.AddForce(self)
 
