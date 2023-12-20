@@ -15,7 +15,7 @@ sat_params = {
         'Epoch': '22 Jul 2014 11:29:10.811',
         'DateFormat': 'UTCGregorian',
         'CoordSys': 'EarthMJ2000Eq',
-        'StateType': 'Keplerian',
+        'DisplayStateType': 'Keplerian',
         'SMA': 83474.318,
         'ECC': 0.89652,
         'INC': 12.4606,
@@ -26,17 +26,25 @@ sat_params = {
 }
 
 sat = gpy.Spacecraft.from_dict(sat_params)
+# sat = gpy.Spacecraft('Sat')
 fm = gpy.ForceModel(name='LowEarthProp_ForceModel', point_masses=['Luna', 'Sun'], drag=gpy.ForceModel.DragForce(),
                     srp=True, gravity_field=gpy.ForceModel.GravityField(degree=10, order=10))
 prop = gpy.PropSetup('LowEarthProp', fm=fm, accuracy=9.999999999999999e-12,
                      gator=gpy.PropSetup.Propagator(name='LowEarthProp', integrator='RungeKutta89'))
 
+mod = gpy.Moderator()
+sb = mod.GetSandbox()
+vdator = gmat.Validator.Instance()
+vdator.SetSolarSystem(gmat.GetSolarSystem())
+vdator.SetObjectMap(mod.GetConfiguredObjectMap())
+
 print(f'Sat state before running: {sat.GetState()}')
 print(f"Epoch before running: {sat.GetField('Epoch')}")
 
+pgate = gpy.Propagate(prop=prop, sat=sat)
 # Mission Command Sequence
 mcs = [gpy.BeginMissionSequence(),
-       gpy.Propagate(prop=prop, sat=sat)]
+       pgate]
 
 gpy.RunMission(mcs)  # Run the mission
 

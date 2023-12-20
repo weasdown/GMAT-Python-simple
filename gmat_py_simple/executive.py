@@ -67,10 +67,17 @@ class Moderator:
         return stop_cond
 
     def CreateParameter(self, param_type: str, name: str):
-        return self.gmat_obj.CreateParameter(param_type, name)
+        if self.gmat_obj.CreateParameter(param_type, name) is not None:
+            return self.GetParameter(name)
+        else:
+            raise RuntimeError(f'CreateParameter failed to create a parameter of type {param_type} called {name}')
 
     def CreateStopCondition(self, name: str) -> gmat.StopCondition:
         return self.gmat_obj.CreateStopCondition('StopCondition', name)
+
+    def FindObject(self, name: str):
+        raise NotImplementedError('Method available within GMAT but not exposed in API')
+        # return self.gmat_obj.FindObject(name)
 
     def GetConfiguredObject(self, name: str) -> gmat.GmatBase:
         return self.gmat_obj.GetConfiguredObject(name)
@@ -107,8 +114,15 @@ class Moderator:
     def GetListOfObjects(self, obj_type: int, exclude_defaults: bool = False, type_max: int = 0) -> list[str]:
         return self.gmat_obj.GetListOfObjects(obj_type, exclude_defaults, type_max)
 
-    def GetParameter(self, param: str) -> gmat.Parameter:
-        return self.gmat_obj.GetParameter(param)
+    @staticmethod
+    def GetParameter(name: str) -> gmat.Parameter:
+        obj = gmat.Validator.Instance().FindObject(name)
+        # instead of Validator, could use ElementWrapper or Moderator
+        if (obj is not None) and (obj.IsOfType(gmat.PARAMETER)):
+            obj: gmat.Parameter = obj
+            return obj  # obj is a Parameter
+        else:
+            return None  # Parameter not found
 
     def GetSpacecraftNotInFormation(self) -> str:
         return self.gmat_obj.GetSpacecraftNotInFormation()
@@ -149,7 +163,7 @@ class Moderator:
 
         # gmat.Initialize()
         mod = gpy.Moderator()
-        sb = gpy.Sandbox()
+        sb = mod.GetSandbox()
 
         vdator = gmat.Validator.Instance()
         vdator.SetSolarSystem(gmat.GetSolarSystem())
@@ -157,17 +171,31 @@ class Moderator:
 
         propagate_commands: list[gpy.Propagate] = []  # start a list of Propagates so their sats can be updated later
         for command in mission_command_sequence:
-            command.SetObjectMap(sb.GetObjectMap())
-            command.SetGlobalObjectMap(sb.GetGlobalObjectMap())
+            # print(f'\nAdded {command.name} to sb: {sb.AddCommand(command)}')
             command.SetSolarSystem(gmat.GetSolarSystem())
-            mod.ValidateCommand(command)  # Commands must be validated before running TODO: determine why
+            # command.SetObjectMap(sb.GetObjectMap())
+            command.SetObjectMap(mod.GetConfiguredObjectMap())
+            command.SetGlobalObjectMap(sb.GetGlobalObjectMap())
+            command.Initialize()
+            print('Initialized command')
+
+            if command.name == 'PropagateCommand1':  # TODO remove
+                command.SetName('PropagateCommand')
+                print(f'Renamed PropagateCommand1 to {command.GetName()}')
+
+            print(f'Last command currently in sequence: {gmat.GetLastCommand(mod.GetFirstCommand())}')
+
             appended = mod.AppendCommand(command)
             if not appended:
                 raise RuntimeError(f'Command {command.name} was not successfully appended to the Moderator in'
                                    f' RunMission. Returned value: {appended}')
+            print(f'At this point in RunMission with command {command.name}')
+            mod.ValidateCommand(command)
+            print(f'Validated command "{command.name}"')  # Commands must be validated before running TODO: determine why
 
             if isinstance(command, gpy.Propagate):
                 propagate_commands.append(command)
+                command.TakeAction('PrepareToPropagate')
 
         run_mission_return = self.gmat_obj.RunMission()
         if run_mission_return == 1:
@@ -191,13 +219,21 @@ class Moderator:
             raise RuntimeError(f'RunMission return value not recognized: {run_mission_return}.'
                                f' See GMAT log for possible hints')
 
-    def ValidateCommand(self, command: GmatCommand) -> bool:
-        return self.gmat_obj.ValidateCommand(command.gmat_obj)
+    def ValidateCommand(self, command: GmatCommand | gmat.GmatCommand):
+        command = gpy.extract_gmat_obj(command)
+        print(f'\nIn ValidateCommand, command type: {command.GetTypeName()} (command name: {command.GetName()})')
+        print(f'Generating string: {command.GetGeneratingString()}')
+        self.gmat_obj.ValidateCommand(command)
+        # if not response:
+        #     raise RuntimeError(f'ValidateCommand failed for {command.GetName()} with response: {response}')
 
 
 class Sandbox:
     def __init__(self):
         self.gmat_obj = gmat.Moderator.Instance().GetSandbox()
+
+    def AddCommand(self, command: gpy.GmatCommand | gmat.GmatCommand):
+        return self.gmat_obj.AddCommand(gpy.extract_gmat_obj(command))
 
     def GetObjectMap(self) -> gmat.ObjectMap:
         return self.gmat_obj.GetObjectMap()

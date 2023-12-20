@@ -9,7 +9,10 @@ from gmat_py_simple.utils import *
 class GmatCommand:
     def __init__(self, command_type: str, name: str):
         self.command_type: str = command_type
-        self.name: str = name
+        if self.command_type == 'BeginMissionSequence':  # TODO: remove if not needed - TBC
+            self.name: str = ''  # the BeginMissionSequence command is not allowed to have a name
+        else:
+            self.name: str = name
 
         # CreateCommand currently broken (GMT-8100), so use CreateDefaultCommand and remove extras
         self.gmat_obj: gmat.GmatCommand = gpy.Moderator().CreateDefaultCommand(self.command_type, self.name)
@@ -21,6 +24,7 @@ class GmatCommand:
             gmat.Clear(f'{sat_name}.ElapsedSecs')  # stop condition parameter
             gmat.Clear(f'{sat_name}.A1ModJulian')  # stop condition parameter
 
+        self.Validate()
         # TODO bugfix: switch to CreateCommand (uncomment below) when issue GMT-8100 fixed
         # self.gmat_obj: gmat.GmatCommand = gpy.Moderator().CreateCommand(self.command_type, self.name)
 
@@ -33,11 +37,18 @@ class GmatCommand:
     def GetField(self, field: str):
         self.gmat_obj.GetField(field)
 
+    def GetName(self) -> str:
+        return self.gmat_obj.GetName()
+
     def Help(self):
         self.gmat_obj.Help()
 
     def SetField(self, field: str, val: str | list | int | float):
         self.gmat_obj.SetField(field, val)
+
+    def SetName(self, name: str):
+        self.name = name
+        self.gmat_obj.SetName(name)
 
     def SetSolarSystem(self, ss: gmat.SolarSystem):
         self.gmat_obj.SetSolarSystem(ss)
@@ -55,22 +66,25 @@ class GmatCommand:
 class BeginMissionSequence(GmatCommand):
     def __init__(self):
         super().__init__('BeginMissionSequence', 'BeginMissionSequenceCommand')
-        gpy.Moderator().ValidateCommand(self)
-        # sb = gpy.Sandbox()
-        # self.SetObjectMap(sb.GetObjectMap())
-        # self.SetGlobalObjectMap(sb.GetGlobalObjectMap())
-        # self.SetSolarSystem(gmat.GetSolarSystem())
+        # gpy.Moderator().ValidateCommand(self)
+        sb = gpy.Sandbox()
+        self.SetObjectMap(sb.GetObjectMap())
+        self.SetGlobalObjectMap(sb.GetGlobalObjectMap())
+        self.SetSolarSystem(gmat.GetSolarSystem())
+        self.Initialize()
 
 
 class Propagate(GmatCommand):
     """
     Propagate the orbit of a single spacecraft. For multiple spacecraft, use PropagateMulti
     """
+
     class StopCondition:
         # def __init__(self, name: str, base_epoch=None, epoch=None, epoch_var=None, stop_var=None,
         #              goal=None, repeat=None):
-        def __init__(self, sat: gpy.Spacecraft, epoch_var: str = 'Sat.A1ModJulian', stop_var: str = 'Sat.ElapsedSecs',
-                     name: str = 'StopForSat.ElapsedSecs'):
+        def __init__(self, sat: gpy.Spacecraft, epoch_var: str = 'A1ModJulian', stop_var: str = 'ElapsedSecs',
+                     goal: int | float = 12000.0, name: str = 'StopOnSat.ElapsedSecs', description: str = ''):
+            # TODO fill other possible args - see StopCondition.cpp
             # self.base_epoch = base_epoch
             # self.epoch = epoch
             # self.epoch_var = epoch_var
@@ -78,49 +92,139 @@ class Propagate(GmatCommand):
             # self.goal = goal
             # self.repeat = repeat
             # self.sat = sat
-            # TODO note: currently, name must have the sat name (e.g. "Sat") - fix this
-            #  It's not dependent on the fullstop/period or "ElapsedSecs"
+
+            """
+            Create a StopCondition
+
+            :param sat:
+            :param epoch_var:
+            :param stop_var:
+            :param name:
+            :param description:
+            """
+
+            # See Moderator.CreateDefaultStopCondition in source
+
             self.sat = sat
             sat_name = self.sat.GetName()
 
-            if (sat_name not in epoch_var) or (sat_name not in epoch_var):
-                raise AttributeError('epoch_var and stop_var are required when using a satellite name other than Sat')
-            else:
-                self.epoch_var = epoch_var
-                self.stop_var = stop_var
+            self.epoch_var_no_sat = epoch_var
+            self.epoch_var = f'{sat_name}.{epoch_var}'
 
-            def test_name(n):
-                # Try the suggested name. If taken, keep adding 1 to name until it is new
-                name_index = 1
-                while True:
-                    try:
-                        gmat.GetObject(n)
-                        name_index += 1
-                        n = f'{n}{name_index}'
-                    except AttributeError:  # object not found, so name is new - use it
-                        return n
-
-            self.name = test_name(f'StopOn{stop_var}')
+            self.stop_var_no_sat = stop_var
+            self.stop_var = f'{sat_name}.{stop_var}'
+            self.goal = str(goal)
+            self.description = description
+            self.name = name if name else f'StopOn{self.stop_var}'
 
             mod = gpy.Moderator()
-            stop_cond_vars = [self.epoch_var, self.stop_var]
-            for var in stop_cond_vars:
-                if not mod.GetParameter(var):  # no existing Parameter for var
-                    param_type = var.split('.')[1]  # remove "Sat." from string
-                    param = gmat.Moderator.Instance().CreateParameter(param_type, var)
-                    gmat.Moderator.Instance().SetParameterRefObject(param, 'Spacecraft', sat_name, '', '', 0)
+            self.epoch_param = mod.GetParameter(self.epoch_var)
+            if self.epoch_param is None:
+                self.epoch_param = mod.CreateParameter(self.epoch_var_no_sat, self.epoch_var)
+                self.epoch_param.SetRefObjectName(gmat.SPACECRAFT, sat_name)  # TODO fix (can't handle Swig Parameter)
 
-            # if not mod.GetParameter(stop_var):  # no existing Parameter for stop_var
-            #     stop_param: gmat.Parameter = mod.gmat_obj.CreateParameter('ElapsedSecs', stop_var)
-            #     gmat.Moderator.Instance().SetParameterRefObject(stop_param, 'Spacecraft', sat_name, '', '', 0)
+            self.stop_param = mod.GetParameter(self.stop_var)
+            if self.stop_param is None:
+                self.stop_param = mod.CreateParameter(self.stop_var_no_sat, self.stop_var)
+                self.stop_param.SetRefObjectName(gmat.SPACECRAFT, sat_name)
 
-            # stop_cond_name = f'StopOn{stop_var}'
-            self.gmat_obj: gmat.StopCondition = mod.CreateStopCondition(self.name)
-            self.SetStringParameter('EpochVar', self.epoch_var)  # EpochVar is mEpochParamName in StopCondition source
-            self.SetStringParameter('StopVar', self.stop_var)  # StopVar is mStopParamName in StopCondition source
-            self.SetStringParameter('Goal', '12000.0')  # SetRhsString() called with goal value in source
+            # self.goal_param = mod.GetParameter(self.goal)
+            # if self.goal_param is None:
+            #     self.goal_param = mod.CreateParameter('Goal', self.goal)
+            #     self.goal_param.SetRefObjectName(gmat.SPACECRAFT, sat_name)
 
-            self.gmat_obj.Validate()
+            self.gmat_obj = mod.CreateStopCondition(self.name)
+
+            print(f'self.epoch_param: {self.epoch_param}, GMAT type: {self.epoch_param.GetTypeName()}')
+            self.SetEpochParameter(self.epoch_param)
+            self.SetStopParameter(self.stop_param)
+            self.SetGoalParameter(self.goal)
+
+            print('Setting string parameters:')
+            print('- EpochVar:  ', self.SetStringParameter('EpochVar', self.epoch_var))
+            print('- StopVar    ', self.SetStringParameter('StopVar', self.stop_var))
+            print('- Goal:      ', self.SetStringParameter('Goal', str(goal)))
+
+            print('\nCurrent parameter values:')
+            print('- BaseEpoch:  ', self.GetRealParameter('BaseEpoch'))
+            print('- Epoch:  ', self.GetRealParameter('Epoch'))
+            print('- EpochVar:  ', self.GetStringParameter('EpochVar'))
+            print('- StopVar:  ', self.GetStringParameter('StopVar'))
+            print('- Goal:  ', self.GetStringParameter('Goal'))
+            print('- Repeat:  ', self.GetIntegerParameter('Repeat'))
+
+            self.Validate()
+            self.Initialize()
+
+            print('StopCondition init complete!')
+            # def test_name(n):
+            #     # Try the suggested name. If taken, keep adding 1 to name until it is new
+            #     name_index = 1
+            #     while True:
+            #         try:
+            #             gmat.GetObject(n)
+            #             name_index += 1
+            #             n = f'{n}{name_index}'
+            #         except AttributeError:  # object not found, so name is new - use it
+            #             return n
+            #
+            # self.name = test_name(f'StopOn{stop_var}')
+            #
+            # # mod = gpy.Moderator()
+            # # stop_cond_vars = [self.epoch_var, self.stop_var]
+            # # for var in stop_cond_vars:
+            # #     if not mod.GetParameter(var):  # no existing Parameter for var
+            # #         param_type = var.split('.')[1]  # remove "Sat." from string
+            # #         param = gmat.Moderator.Instance().CreateParameter(param_type, var)
+            # #         gmat.Moderator.Instance().SetParameterRefObject(param, 'Spacecraft', sat_name, '', '', 0)
+            # #
+            # # # if not mod.GetParameter(stop_var):  # no existing Parameter for stop_var
+            # # #     stop_param: gmat.Parameter = mod.gmat_obj.CreateParameter('ElapsedSecs', stop_var)
+            # # #     gmat.Moderator.Instance().SetParameterRefObject(stop_param, 'Spacecraft', sat_name, '', '', 0)
+            # #
+            # # # stop_cond_name = f'StopOn{stop_var}'
+            # # self.gmat_obj: gmat.StopCondition = mod.CreateStopCondition(self.name)
+            # # self.SetStringParameter('EpochVar', self.epoch_var)  # EpochVar is mEpochParamName in StopCondition source
+            # # self.SetStringParameter('StopVar', self.stop_var)  # StopVar is mStopParamName in StopCondition source
+            # # self.SetStringParameter('Goal', '12000.0')  # SetRhsString() called with goal value in source
+            #
+            # # TODO: correct epoch_param/stop_param, remove hardcoding from others
+            # epoch_param: gmat.Parameter = epoch_var
+            # stop_param: gmat.Parameter = stop_var
+            # goal: int | float = 12000.0
+            # tolerance: int | float = 1
+            # repeat_count: int = 0
+            # interpolator: gmat.Interpolator = None
+            #
+            # self.gmat_obj = gmat.Moderator.Instance().CreateStopCondition('StopCondition', name)
+            # # self.gmat_obj = gmat.StopCondition(name)
+            # """
+            # From StopCondition.cpp:
+            # StopCondition::StopCondition(const std::string &name, const std::string &desc,
+            #                  Parameter *epochParam, Parameter *stopParam,
+            #                  const Real &goal, const Real &tol,
+            #                  const Integer repeatCount,
+            #                  Interpolator *interp)
+            # """
+            # self.gmat_obj.Help()
+            # self.SetStringParameter('EpochVar', self.epoch_var)  # EpochVar is mEpochParamName in StopCondition source
+            # self.SetStringParameter('StopVar', self.stop_var)  # StopVar is mStopParamName in StopCondition source
+            # self.SetStringParameter('Goal', '12000.0')  # SetRhsString() called with goal value in source
+
+            # if (sat_name not in epoch_var) or (sat_name not in epoch_var):
+            #     raise AttributeError('epoch_var and stop_var are required when using a satellite name other than Sat')
+            # else:
+            #     self.epoch_var = epoch_var
+            #     self.stop_var = stop_var
+            # self.SetStringParameter('EpochVar', self.epoch_var)  # EpochVar is mEpochParamName in StopCondition source
+            # self.SetStringParameter('StopVar', self.stop_var)  # StopVar is mStopParamName in StopCondition source
+            # self.SetStringParameter('Goal', '12000.0')  # SetRhsString() called with goal value in source
+            # self.SetStringParameter('EpochVar',
+            #                         f'{self.sat.GetName()}.A1ModJulian')  # EpochVar is mEpochParamName in StopCondition source
+            # self.SetStringParameter('StopVar',
+            #                         f'{self.sat.GetName()}.ElapsedSecs')  # StopVar is mStopParamName in StopCondition source
+            # self.SetStringParameter('Goal', '12000.0')  # SetRhsString() called with goal value in source
+            # self.gmat_obj.Validate()
 
             # self.gmat_obj = gpy.Moderator().CreateStopCondition(name)
 
@@ -129,22 +233,69 @@ class Propagate(GmatCommand):
             # self.SetStringParameter('StopVar', f'{self.sat.GetName()}.ElapsedSecs')
             # self.SetStringParameter('Goal', '12000.0')
 
-            # self.gmat_obj.SetStringParameter('EpochVar', f'{self.sat.GetName()}.A1ModJulian')
-            # self.gmat_obj.SetStringParameter('StopVar', f'{self.sat.GetName()}.ElapsedSecs')
-            # self.gmat_obj.SetStringParameter('Goal', '12000.0')
-
         @classmethod
         def CreateDefault(cls):
             return gmat_py_simple.Moderator().CreateDefaultStopCondition()
 
         def SetStringParameter(self, param_name: str, value: str):
-            self.gmat_obj.SetStringParameter(param_name, value)
+            return self.gmat_obj.SetStringParameter(param_name, value)
+
+        def GetIntegerParameter(self, param_name: str) -> int:
+            return self.gmat_obj.GetIntegerParameter(param_name)
 
         def GetName(self):
             return self.gmat_obj.GetName()
 
+        def GetRealParameter(self, param_name: str) -> int | float:
+            return self.gmat_obj.GetRealParameter(param_name)
+
+        def GetStringParameter(self, param_name: str) -> str:
+            return self.gmat_obj.GetStringParameter(param_name)
+
         def Help(self):
             self.gmat_obj.Help()
+
+        def Initialize(self):
+            return self.gmat_obj.Initialize()
+
+        def SetDescription(self, description: str) -> bool:
+            self.description = description
+            return self.gmat_obj.SetDescription(description)
+
+        # TODO: work out how to convert GmatBase to Parameter
+        def SetEpochParameter(self, epoch_param: gmat.Parameter) -> bool:
+            name = epoch_param.GetName()
+            param = gpy.Moderator().GetParameter(name)
+            param_type = param.GetTypeName()
+
+            ss = gmat.GetSolarSystem()
+            obj_map = None
+            glob_obj_map = None
+            print(gmat.ConfigManager.Instance().GetListOfAllItems())
+            param = gmat.ElementWrapper.FindObject(name, ss, obj_map, glob_obj_map)
+            param = gmat.GetObject(name)
+            param = gmat.Validator.Instance().GetParameter(name)
+            print(f'param: {param}')
+            # print(f'param: {param}, GMAT type: {param.GetTypeName()}')
+            return self.gmat_obj.SetEpochParameter(param)
+
+        def SetGoalParameter(self, goal_param: gmat.Parameter) -> bool:
+            return self.gmat_obj.SetGoalParameter(goal_param)
+
+        def SetInterpolator(self, interp: gmat.Interpolator) -> bool:
+            return self.gmat_obj.SetInterpolator(interp)
+
+        def SetPropDirection(self, direction: int) -> bool:
+            return self.gmat_obj.SetPropDirection(direction)
+
+        def SetSolarSystem(self, ss: gmat.SolarSystem) -> bool:
+            return self.gmat_obj.SetSolarSystem(ss)
+
+        def SetStopParameter(self, param) -> bool:
+            return self.gmat_obj.SetStopParameter(param)
+
+        def Validate(self) -> bool:
+            return self.gmat_obj.Validate()
 
     # OLD - from before using CreateDefaultCondition
     # def __init__(self, propagator: PropSetup, sc: Spacecraft, stop: tuple = ('DefaultSC.ElapsedSecs', 8640),
@@ -307,7 +458,7 @@ class Propagate(GmatCommand):
                  stop_cond: Propagate.StopCondition = None, synchronized: bool = False):
         if not name:  # make sure the new Propagate has a unique name
             num_propagates: int = len(gmat.GetCommands('Propagate'))
-            name = f'PropagateCommand{num_propagates+1}'
+            name = 'PropagateCommand' if num_propagates == 0 else f'PropagateCommand{num_propagates + 1}'
         super().__init__('Propagate', name)  # sets self.command_type, self.name, self.gmat_obj
 
         mod = gpy.Moderator()
@@ -315,7 +466,14 @@ class Propagate(GmatCommand):
         sb.AddSolarSystem(gmat.GetSolarSystem())
 
         if prop:
-            self.prop: gmat.PropSetup = prop.gmat_obj
+            if 'simple' in str(type(prop)):  # wrapper PropSetup object
+                self.prop: gmat.PropSetup = prop.gmat_obj
+            elif type(prop).__name__ == 'PropSetup':  # assuming wrapper case handled, so now a GMAT native PropSetup
+                # self.prop: gmat.PropSetup = prop
+                # TODO: add support for prop being a gmat.PropSetup
+                raise TypeError('prop currently expects a gpy.PropSetup - gmat.PropSetup will be supported in future')
+            else:
+                raise TypeError(f'prop type not recognized in Propagate.__init__(): {type(prop)}')
         else:
             self.prop: gmat.PropSetup = None
 
@@ -329,35 +487,38 @@ class Propagate(GmatCommand):
             self.prop = gmat.Moderator.Instance().CreateDefaultPropSetup('DefaultProp')
             if not self.sat:
                 self.sat = mod.GetDefaultSpacecraft()
-            elif 'gmat_py_simple' in str(type(sat)):
-                self.sat = self.sat.gmat_obj
             else:
-                self.sat = sat
+                self.sat = gpy.extract_gmat_obj(sat)
             self.prop.AddPropObject(self.sat)
 
-        gmat.Initialize()
+        # gmat.Initialize()
+        sb.AddObject(self.prop)
 
-        if stop_cond:
-            self.stop_cond = stop_cond
-        else:
-            print('Making wrapper stop_cond (in Prop init if stop_cond)')
-            Propagate.StopCondition(self.sat)
+        if not stop_cond:
+            stop_cond: Propagate.StopCondition = Propagate.StopCondition(self.sat)
 
-        if not self.stop_cond:  # no stop_cond defined
-            print('No stop_cond found, still')
-            if self.sat:  # no stop_cond defined, but have a sat so can't use default stop condition
-                print('Found a satellite but no StopCondition - making one')
-                self.stop_cond: Propagate.StopCondition = Propagate.StopCondition(self.sat)  # self.sat)
+        self.stop_cond: gmat.StopCondition = stop_cond
+        self.stop_cond.Initialize()
+        print(self.stop_cond.SetStringParameter('EpochVar', f'{self.sat.GetName()}.A1ModJulian'))
+        print(self.stop_cond.SetStringParameter('StopVar', f'{self.sat.GetName()}.ElapsedSecs'))
+        print(self.stop_cond.SetStringParameter('Goal', '12000.0'))
 
-            else:  # no self.sat defined. Generating default stop condition will also build default sat
-                # TODO bugfix: this branch doesn't setup objects correctly in Sandbox. Raise NotImplementedError for now
-                self.sat = mod.CreateSpacecraft()
-                self.stop_cond = mod.CreateDefaultStopCondition()
-                raise NotImplementedError
+        # print('No stop_cond found, still')
+        #     if self.sat:  # no stop_cond defined, but have a sat so can't use default stop condition
+        #         print('Found a satellite but no StopCondition - making one')
+        #         self.stop_cond: Propagate.StopCondition = Propagate.StopCondition(self.sat)  # self.sat)
 
-        coord_sys_name = self.sat.GetField('CoordinateSystem')
-        coord_sys = gmat.GetObject(coord_sys_name)
-        sb.SetInternalCoordSystem(coord_sys)
+        # if not self.stop_cond:  # no stop_cond defined
+        #     print('No stop_cond found, still')
+        #     if self.sat:  # no stop_cond defined, but have a sat so can't use default stop condition
+        #         print('Found a satellite but no StopCondition - making one')
+        #         self.stop_cond: Propagate.StopCondition = Propagate.StopCondition(self.sat)  # self.sat)
+        #
+        #     else:  # no self.sat defined. Generating default stop condition will also build default sat
+        #         # TODO bugfix: this branch doesn't setup objects correctly in Sandbox. Raise NotImplementedError for now
+        #         self.sat = mod.CreateSpacecraft()
+        #         self.stop_cond = mod.CreateDefaultStopCondition()
+        #         raise NotImplementedError
 
         # # Check for existing Formation
         form = mod.GetListOfObjects(gmat.FORMATION)
@@ -372,19 +533,44 @@ class Propagate(GmatCommand):
             if not sc_name:
                 self.gmat_obj.SetObject(form[0], gmat.SPACECRAFT)
 
-        if not synchronized:
+        coord_sys_name = self.sat.GetField('CoordinateSystem')
+        coord_sys = gmat.GetObject(coord_sys_name)
+        sb.SetInternalCoordSystem(coord_sys)
+
+        # gmat.Initialize()
+        sb.AddObject(self.sat)
+        # gmat.Initialize()
+
+        if not synchronized:  # default is not be synchronized
             self.synchronized = False
         else:
             # TODO: check for multiple sats - required for synchro. First need to define syntax for multi-sat prop
             self.synchronized = True
 
-        print(f'self.stop_cond.gmat_obj: {self.stop_cond}')
-        print(f'stop_cond name: {self.stop_cond.GetName()}')
+        # TODO: see Propagate.SetRefObject in source for hints about string/param handling behind the scenes
         self.SetRefObject(self.stop_cond, gmat.STOP_CONDITION, self.stop_cond.GetName())
 
-        self.SetSolarSystem(gmat.GetSolarSystem())
-        self.SetObjectMap(gmat.Moderator.Instance().GetConfiguredObjectMap())
+        # sb.AddCommand(self.gmat_obj)
+        # print('Added Propagate to Sandbox (in Propagate init)')
+        # self.SetSolarSystem(gmat.GetSolarSystem())
+        # self.SetObjectMap(gmat.Moderator.Instance().GetConfiguredObjectMap())
+        # self.SetGlobalObjectMap(sb.GetGlobalObjectMap())
+
+        # print(f'Propagate valid: {self.Validate()}')
+        # print(self.gmat_obj)
+        # gpy.Moderator().ValidateCommand(self.gmat_obj)
+        # print('Attempting to ValidateCommand (in Propagate.init)...')
+        # print(gmat.Moderator.Instance().ValidateCommand(self.gmat_obj))
+        # print('Validated')
+        # self.TakeAction('PrepareToPropagate')
+        self.SetObjectMap(sb.GetObjectMap())
         self.SetGlobalObjectMap(sb.GetGlobalObjectMap())
+        self.SetSolarSystem(gmat.GetSolarSystem())
+
+        self.Validate()
+        self.Initialize()
+        gmat.Initialize()
+        print('Propagate init complete!\n')
 
     @classmethod
     def CreateDefault(cls, name: str = 'DefaultPropagateCommand'):
@@ -393,21 +579,32 @@ class Propagate(GmatCommand):
         return gmat_obj
 
     def SetObject(self, obj, type_int: int):
-        self.gmat_obj.SetObject(obj, type_int)
+        return self.gmat_obj.SetObject(obj, type_int)
 
     def SetRefObject(self, obj, type_int: int, name: str, index: int = 0):
-        if 'simple' in str(type(obj)):  # wrapper obj
-            print('wrapper obj')
-            self.gmat_obj.SetRefObject(obj.gmat_obj, type_int, name, index)
-            print('Done')
-        else:
-            self.gmat_obj.SetRefObject(obj, type_int, name, index)
+        """
+        Return True if obj successfully set, False otherwise
+
+        :param obj:
+        :param type_int:
+        :param name:
+        :param index:
+        :return:
+        """
+        obj = gpy.extract_gmat_obj(obj)
+        response: bool = self.gmat_obj.SetRefObject(obj, type_int, name, index)
+        return response
 
     def TakeAction(self, action: str):
-        self.gmat_obj.TakeAction(action)
+        return self.gmat_obj.TakeAction(action)
 
-    def Validate(self):
-        self.gmat_obj.Validate()
+    # def Validate(self):
+    #     """
+    #     Return True if valid, False otherwise.
+    #
+    #     :return:
+    #     """
+    #     return self.gmat_obj.Validate()
 
 
 class PropagateMulti(Propagate):
@@ -418,11 +615,11 @@ class PropagateMulti(Propagate):
       Propagate (which only suports a single spacecraft).
 
     """
+
     def __init__(self, name: str = None, prop: gpy.PropSetup = None, sat: gpy.Spacecraft = None,
                  stop_cond: Propagate.StopCondition = None, synchronized: bool = False):
         if not name:  # make sure the new Propagate has a unique name
             num_propagates: int = len(gmat.GetCommands('Propagate'))
-            name = f'PropagateMulti{num_propagates+1}'
+            name = f'PropagateMulti{num_propagates + 1}'
 
         super().__init__(name, prop, sat, stop_cond, synchronized)
-

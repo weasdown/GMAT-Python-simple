@@ -176,6 +176,8 @@ class Spacecraft(GmatObject):
 
         self._orbit = None
         self._dry_mass = self.GetField('DryMass')
+
+        self.Validate()
         gmat.Initialize()
 
     def __repr__(self):
@@ -225,6 +227,8 @@ class Spacecraft(GmatObject):
             attr_name = gmat_str_to_py_str(spec, True)
             setattr(sc, attr_name, specs[spec])
             sc.SetField(spec, specs[spec])
+
+        sc.Validate()
 
         gmat.Initialize()
 
@@ -368,6 +372,8 @@ class Tank(GmatObject):
         self.spacecraft = None
         self.fuel_mass = self.GetField('FuelMass')
 
+        self.Validate()
+
     def __repr__(self):
         return f'{self.tank_type} with name {self.name}'
 
@@ -386,6 +392,8 @@ class Tank(GmatObject):
         # TODO convert to thr.SetFields
         for field in fields:
             tank.SetField(field, tank_dict[field])
+
+        tank.Validate()
 
         return tank
 
@@ -406,6 +414,7 @@ class ChemicalTank(Tank):
     @classmethod
     def from_dict(cls, cp_tank_dict: dict):
         cp_tank = super().from_dict('ChemicalTank', cp_tank_dict)
+        cp_tank.Validate()
         return cp_tank
 
     # def attach_to_sat(self):
@@ -424,10 +433,12 @@ class ElectricTank(Tank):
 
     def __init__(self, name: str):
         super().__init__('ElectricTank', name)
+        self.Validate()
 
     @classmethod
     def from_dict(cls, ep_tank_dict: dict):
         ep_tank = Tank.from_dict('ElectricTank', ep_tank_dict)
+        ep_tank.Validate()
         return ep_tank
 
 
@@ -440,6 +451,8 @@ class Thruster(GmatObject):
         self.spacecraft = None
         self.tanks: list[ChemicalTank | ElectricTank] | None = None
         self._decrement_mass = self.decrement_mass
+
+        self.Validate()
 
     def __repr__(self):
         return f'A {self.thruster_type} with name {self.name}'
@@ -468,6 +481,8 @@ class Thruster(GmatObject):
             else:
                 thr.SetField(field, thr_dict[field])
             setattr(thr, field, thr_dict[field])
+
+        thr.Validate()
 
         return thr
 
@@ -500,20 +515,24 @@ class Thruster(GmatObject):
 class ChemicalThruster(Thruster):
     def __init__(self, name: str):
         super().__init__('ChemicalThruster', name)
+        self.Validate()
 
     @classmethod
     def from_dict(cls, cp_thr_dict: dict) -> ChemicalThruster:
         cp_thr: ChemicalThruster = Thruster.from_dict('ChemicalThruster', cp_thr_dict)
+        cp_thr.Validate()
         return cp_thr
 
 
 class ElectricThruster(Thruster):
     def __init__(self, name: str):
         super().__init__('ElectricThruster', name)
+        self.Validate()
 
     @classmethod
     def from_dict(cls, ep_thr_dict: dict):
         ep_thr = Thruster.from_dict('ElectricThruster', ep_thr_dict)
+        ep_thr.Validate()
         return ep_thr
 
     @property

@@ -358,10 +358,8 @@ def get_sat_objects() -> list[gmat.Spacecraft]:
 def CustomHelp(obj):
     print(obj)
     print(f'CustomHelp for {obj.GetName()}:')
-    if 'gmat_py_simple' in str(type(obj)):
-        param_count = obj.gmat_obj.GetParameterCount()
-    else:
-        param_count = obj.GetParameterCount()
+    obj = extract_gmat_obj(obj)
+    param_count = obj.GetParameterCount()
 
     print(f'Object parameter count: {param_count}\n')
     for i in range(param_count):
@@ -386,3 +384,13 @@ def CustomHelp(obj):
         except Exception as exc:
             print(exc, '\n')
             # raise
+
+
+def extract_gmat_obj(obj):
+    obj_type = str(type(obj))
+    if 'gmat_py_simple' in obj_type:  # wrapper object
+        return obj.gmat_obj
+    elif 'gmat_py' in obj_type:  # native GMAT object
+        return obj
+    else:
+        raise TypeError(f'obj type not recognised in utils.extract_gmat_obj: {obj_type}')

@@ -570,20 +570,21 @@ class OrbitState:
                              }
 
         self._key_param_defaults = {'date_format': 'TAIModJulian', 'epoch': str(21545), 'coord_sys': 'EarthMJ2000Eq',
-                                    'state_type': 'Cartesian', 'sc': None}
+                                    'display_state_type': 'Cartesian', 'sc': None}
 
         fields_remaining: list[str] = list(self._key_param_defaults.keys())
 
         # use Cartesian as default StateType
-        if 'state_type' not in kwargs:
-            self._state_type = 'Cartesian'
+        if 'display_state_type' not in kwargs:
+            self._display_state_type = 'Cartesian'
         else:  # state_type is specified but may not be valid
-            if kwargs['state_type'] not in list(self._allowed_state_elements.keys()):  # invalid state_type was given
-                raise SyntaxError(f'Invalid state_type parameter given: {kwargs["state_type"]}\n'
+            if kwargs['display_state_type'] not in list(self._allowed_state_elements.keys()):
+                # invalid display_state_type was given
+                raise SyntaxError(f'Invalid display_state_type parameter given: {kwargs["display_state_type"]}\n'
                                   f'Valid values are: {self._allowed_state_elements.keys()}')
             else:
-                self._state_type = kwargs['state_type']
-            fields_remaining.remove('state_type')
+                self._display_state_type = kwargs['display_state_type']
+            fields_remaining.remove('display_state_type')
 
         # Set key parameters to value in kwargs, or None if not specified
         # TODO: add validity checking of other kwargs against StateType
@@ -613,10 +614,10 @@ class OrbitState:
 
         # extend attrs_to_set with the elements corresponding to the current state_type
         try:  # state_type is recognized
-            elements_for_given_state_type = self._allowed_state_elements[self._state_type]
+            elements_for_given_state_type = self._allowed_state_elements[self._display_state_type]
             attrs_to_set.extend(elements_for_given_state_type)
         except KeyError:  # state_type attribute invalid
-            raise AttributeError(f'Invalid state_type set as attribute: {self._state_type}')
+            raise AttributeError(f'Invalid state_type set as attribute: {self._display_state_type}')
 
         for attr in attrs_to_set:
             try:
@@ -640,11 +641,14 @@ class OrbitState:
         o_s: OrbitState = cls()  # create OrbitState object, with sc set as None by default
 
         try:
-            o_s._state_type = orbit_dict['StateType']  # extract state_type from dict (required)
+            o_s._display_state_type = orbit_dict['DisplayStateType']  # get display_state_type from dict (required)
+            orbit_dict.pop('DisplayStateType')  # remove DisplayStateType so we don't try setting it again later
         except KeyError:
-            raise KeyError(f"Required parameter 'StateType' was not found in OrbitState.from_dict")
-
-        orbit_dict.pop('StateType')  # remove StateType so we don't try setting it again later
+            try:   # maybe the user used the old name, StateType, instead of DisplayStateType
+                o_s._display_state_type = orbit_dict['StateType']
+                orbit_dict.pop('StateType')  # remove StateType so we don't try setting it again later
+            except KeyError:
+                raise KeyError(f"Required parameter 'DisplayStateType' was not found in OrbitState.from_dict")
 
         o_s._allowed_values['coord_sys'] = CoordSystems()
 

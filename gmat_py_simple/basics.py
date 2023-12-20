@@ -115,6 +115,9 @@ class GmatObject:
         """
         return self.gmat_obj.GetGeneratingString()
 
+    def Validate(self) -> bool:
+        return self.gmat_obj.Validate()
+
 
 class Parameter(GmatObject):
     # TODO: see src/base/parameter/Parameter.cpp
