@@ -337,7 +337,11 @@ class Propagate(GmatCommand):
 
         gmat.Initialize()
 
-        self.stop_cond = stop_cond if stop_cond else Propagate.StopCondition(self.sat)
+        if stop_cond:
+            self.stop_cond = stop_cond
+        else:
+            print('Making wrapper stop_cond (in Prop init if stop_cond)')
+            Propagate.StopCondition(self.sat)
 
         if not self.stop_cond:  # no stop_cond defined
             print('No stop_cond found, still')
