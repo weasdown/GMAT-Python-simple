@@ -175,36 +175,26 @@ class Moderator:
 
         propagate_commands: list[gpy.Propagate] = []  # start a list of Propagates so their sats can be updated later
         for command in mission_command_sequence:
-            # print(f'\nAdded {command.name} to sb: {sb.AddCommand(command)}')
             command.SetSolarSystem(gmat.GetSolarSystem())
             # command.SetObjectMap(sb.GetObjectMap())
             command.SetObjectMap(mod.GetConfiguredObjectMap())
             command.SetGlobalObjectMap(sb.GetGlobalObjectMap())
             command.Initialize()
-            print('Initialized command')
-
-            if command.name == 'PropagateCommand1':  # TODO remove
-                command.SetName('PropagateCommand')
-                print(f'Renamed PropagateCommand1 to {command.GetName()}')
-
-            print(f'Last command currently in sequence: {gmat.GetLastCommand(mod.GetFirstCommand())}')
 
             appended = mod.AppendCommand(command)
             if not appended:
                 raise RuntimeError(f'Command {command.name} was not successfully appended to the Moderator in'
                                    f' RunMission. Returned value: {appended}')
-            print(f'At this point in RunMission with command {command.name}')
             mod.ValidateCommand(command)
-            print(
-                f'Validated command "{command.name}"')  # Commands must be validated before running TODO: determine why
 
             if isinstance(command, gpy.Propagate):
                 propagate_commands.append(command)
                 command.TakeAction('PrepareToPropagate')
 
+        print('\nMission Command Sequence setup complete. Running mission...')
         run_mission_return = self.gmat_obj.RunMission()
         if run_mission_return == 1:
-            print(f'\nRunMission succeeded!\n')
+            print(f'Mission run complete!\n')
             for propagate in propagate_commands:
                 propagate.wrapper_sat.was_propagated = True  # mark sat as propagated so GetState uses runtime values
             return run_mission_return
@@ -226,11 +216,7 @@ class Moderator:
 
     def ValidateCommand(self, command: GmatCommand | gmat.GmatCommand):
         command = gpy.extract_gmat_obj(command)
-        print(f'\nIn ValidateCommand, command type: {command.GetTypeName()} (command name: {command.GetName()})')
-        print(f'Generating string: {command.GetGeneratingString()}')
         self.gmat_obj.ValidateCommand(command)
-        # if not response:
-        #     raise RuntimeError(f'ValidateCommand failed for {command.GetName()} with response: {response}')
 
 
 class Sandbox:

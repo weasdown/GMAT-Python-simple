@@ -32,6 +32,8 @@ fm = gpy.ForceModel(name='LowEarthProp_ForceModel', point_masses=['Luna', 'Sun']
 prop = gpy.PropSetup('LowEarthProp', fm=fm, accuracy=9.999999999999999e-12,
                      gator=gpy.PropSetup.Propagator(name='LowEarthProp', integrator='RungeKutta89'))
 
+prop = gmat.Construct('Propagator', 'WoahAGMATProp')
+
 mod = gpy.Moderator()
 sb = mod.GetSandbox()
 vdator = gmat.Validator.Instance()

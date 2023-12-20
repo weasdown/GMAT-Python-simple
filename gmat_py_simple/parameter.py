@@ -32,8 +32,3 @@ class Parameter:
     def SetRefObjectName(self, type_int: int, name: str) -> bool:
         # GMAT's SetRefObjectName cannot be called on a Swig Parameter object, only a GmatBase (or subclass thereof)
         return self.gmat_base.SetRefObjectName(type_int, name)
-
-    # @classmethod
-    # def from_SwigPyObject(cls, swig_py_obj: gmat.SwigPyObject) -> Parameter:
-    #     param_type = None
-    #     param = Parameter(param_type, name)
