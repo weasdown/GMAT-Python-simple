@@ -141,6 +141,9 @@ class Propagate(GmatCommand):
         def CreateDefault(cls):
             return gmat_py_simple.Moderator().CreateDefaultStopCondition()
 
+        def parse_stop_params(self, stop_params: tuple):
+            pass
+
         def SetStringParameter(self, param_name: str, value: str):
             return self.gmat_obj.SetStringParameter(param_name, value)
 
