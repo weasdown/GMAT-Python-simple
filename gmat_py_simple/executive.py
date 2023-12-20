@@ -67,8 +67,9 @@ class Moderator:
         return stop_cond
 
     def CreateParameter(self, param_type: str, name: str):
-        if self.gmat_obj.CreateParameter(param_type, name) is not None:
-            return self.GetParameter(name)
+        new_param = self.gmat_obj.CreateParameter(param_type, name)
+        if new_param is not None:
+            return new_param  # GMAT Swig Parameter type
         else:
             raise RuntimeError(f'CreateParameter failed to create a parameter of type {param_type} called {name}')
 
@@ -115,12 +116,15 @@ class Moderator:
         return self.gmat_obj.GetListOfObjects(obj_type, exclude_defaults, type_max)
 
     @staticmethod
-    def GetParameter(name: str) -> gmat.Parameter:
+    def GetParameter(name: str):
         obj = gmat.Validator.Instance().FindObject(name)
         # instead of Validator, could use ElementWrapper or Moderator
-        if (obj is not None) and (obj.IsOfType(gmat.PARAMETER)):
-            obj: gmat.Parameter = obj
-            return obj  # obj is a Parameter
+        if obj and obj.IsOfType(gmat.PARAMETER):
+            if type(obj).__name__ == 'GmatBase':
+                # Convert to Swig Parameter (the type required for a Parameter function argument)
+                obj: gmat.Parameter = gpy.GmatBase_to_Parameter(obj)
+                print(type(obj))
+            return obj  # obj is a Swig Parameter
         else:
             return None  # Parameter not found
 
@@ -191,7 +195,8 @@ class Moderator:
                                    f' RunMission. Returned value: {appended}')
             print(f'At this point in RunMission with command {command.name}')
             mod.ValidateCommand(command)
-            print(f'Validated command "{command.name}"')  # Commands must be validated before running TODO: determine why
+            print(
+                f'Validated command "{command.name}"')  # Commands must be validated before running TODO: determine why
 
             if isinstance(command, gpy.Propagate):
                 propagate_commands.append(command)

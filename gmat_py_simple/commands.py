@@ -99,12 +99,10 @@ class Propagate(GmatCommand):
             :param sat:
             :param epoch_var:
             :param stop_var:
+            :param goal:
             :param name:
             :param description:
             """
-
-            # See Moderator.CreateDefaultStopCondition in source
-
             self.sat = sat
             sat_name = self.sat.GetName()
 
@@ -117,28 +115,21 @@ class Propagate(GmatCommand):
             self.description = description
             self.name = name if name else f'StopOn{self.stop_var}'
 
-            mod = gpy.Moderator()
-            self.epoch_param = mod.GetParameter(self.epoch_var)
-            if self.epoch_param is None:
-                self.epoch_param = mod.CreateParameter(self.epoch_var_no_sat, self.epoch_var)
-                self.epoch_param.SetRefObjectName(gmat.SPACECRAFT, sat_name)  # TODO fix (can't handle Swig Parameter)
+            self.epoch_param: gpy.Parameter = gpy.CreateParameter(self.epoch_var_no_sat, self.epoch_var)
+            self.epoch_param.SetRefObjectName(gmat.SPACECRAFT, sat_name)
 
-            self.stop_param = mod.GetParameter(self.stop_var)
-            if self.stop_param is None:
-                self.stop_param = mod.CreateParameter(self.stop_var_no_sat, self.stop_var)
-                self.stop_param.SetRefObjectName(gmat.SPACECRAFT, sat_name)
+            self.stop_param: gpy.Parameter = gpy.CreateParameter(self.epoch_var_no_sat, self.epoch_var)
+            self.stop_param.SetRefObjectName(gmat.SPACECRAFT, sat_name)
 
-            # self.goal_param = mod.GetParameter(self.goal)
-            # if self.goal_param is None:
-            #     self.goal_param = mod.CreateParameter('Goal', self.goal)
-            #     self.goal_param.SetRefObjectName(gmat.SPACECRAFT, sat_name)
+            self.goal_param = gpy.CreateParameter('Variable', self.goal)
 
-            self.gmat_obj = mod.CreateStopCondition(self.name)
+            self.gmat_obj = gpy.Moderator().CreateStopCondition(self.name)
 
             print(f'self.epoch_param: {self.epoch_param}, GMAT type: {self.epoch_param.GetTypeName()}')
-            self.SetEpochParameter(self.epoch_param)
-            self.SetStopParameter(self.stop_param)
-            self.SetGoalParameter(self.goal)
+            print('Setting params: ')
+            print('- Epoch:     ', self.SetEpochParameter(self.epoch_param))
+            print('- Stop:      ', self.SetStopParameter(self.stop_param))
+            print('- Goal:      ', self.SetGoalParameter(self.goal_param))
 
             print('Setting string parameters:')
             print('- EpochVar:  ', self.SetStringParameter('EpochVar', self.epoch_var))
@@ -146,17 +137,17 @@ class Propagate(GmatCommand):
             print('- Goal:      ', self.SetStringParameter('Goal', str(goal)))
 
             print('\nCurrent parameter values:')
-            print('- BaseEpoch:  ', self.GetRealParameter('BaseEpoch'))
-            print('- Epoch:  ', self.GetRealParameter('Epoch'))
+            print('- BaseEpoch: ', self.GetRealParameter('BaseEpoch'))
+            print('- Epoch:     ', self.GetRealParameter('Epoch'))
             print('- EpochVar:  ', self.GetStringParameter('EpochVar'))
-            print('- StopVar:  ', self.GetStringParameter('StopVar'))
-            print('- Goal:  ', self.GetStringParameter('Goal'))
-            print('- Repeat:  ', self.GetIntegerParameter('Repeat'))
+            print('- StopVar:   ', self.GetStringParameter('StopVar'))
+            print('- Goal:      ', self.GetStringParameter('Goal'))
+            print('- Repeat:    ', self.GetIntegerParameter('Repeat'))
 
             self.Validate()
             self.Initialize()
 
-            print('StopCondition init complete!')
+            print('\nStopCondition init complete!')
             # def test_name(n):
             #     # Try the suggested name. If taken, keep adding 1 to name until it is new
             #     name_index = 1
@@ -263,23 +254,10 @@ class Propagate(GmatCommand):
             return self.gmat_obj.SetDescription(description)
 
         # TODO: work out how to convert GmatBase to Parameter
-        def SetEpochParameter(self, epoch_param: gmat.Parameter) -> bool:
-            name = epoch_param.GetName()
-            param = gpy.Moderator().GetParameter(name)
-            param_type = param.GetTypeName()
+        def SetEpochParameter(self, epoch_param: gpy.Parameter) -> bool:
+            return self.gmat_obj.SetEpochParameter(epoch_param.swig_param)
 
-            ss = gmat.GetSolarSystem()
-            obj_map = None
-            glob_obj_map = None
-            print(gmat.ConfigManager.Instance().GetListOfAllItems())
-            param = gmat.ElementWrapper.FindObject(name, ss, obj_map, glob_obj_map)
-            param = gmat.GetObject(name)
-            param = gmat.Validator.Instance().GetParameter(name)
-            print(f'param: {param}')
-            # print(f'param: {param}, GMAT type: {param.GetTypeName()}')
-            return self.gmat_obj.SetEpochParameter(param)
-
-        def SetGoalParameter(self, goal_param: gmat.Parameter) -> bool:
+        def SetGoalParameter(self, goal_param: gpy.Parameter) -> bool:
             return self.gmat_obj.SetGoalParameter(goal_param)
 
         def SetInterpolator(self, interp: gmat.Interpolator) -> bool:
@@ -291,8 +269,8 @@ class Propagate(GmatCommand):
         def SetSolarSystem(self, ss: gmat.SolarSystem) -> bool:
             return self.gmat_obj.SetSolarSystem(ss)
 
-        def SetStopParameter(self, param) -> bool:
-            return self.gmat_obj.SetStopParameter(param)
+        def SetStopParameter(self, stop_param: gpy.Parameter) -> bool:
+            return self.gmat_obj.SetStopParameter(stop_param.swig_param)
 
         def Validate(self) -> bool:
             return self.gmat_obj.Validate()
