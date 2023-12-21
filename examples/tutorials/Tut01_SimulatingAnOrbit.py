@@ -7,8 +7,6 @@ log_path = os.path.normpath(f'{os.getcwd()}/GMAT-Log.txt')
 script_path = os.path.normpath(f'{os.getcwd()}/Tut01.script')
 gmat.UseLogFile(log_path)
 
-# TODO complete modelling the tutorial mission (inc. prop to Periapsis)
-
 sat_params = {
     'Name': 'Sat',
     'Orbit': {
@@ -26,22 +24,16 @@ sat_params = {
 }
 
 sat = gpy.Spacecraft.from_dict(sat_params)
-# sat = gpy.Spacecraft('Sat')
 fm = gpy.ForceModel(name='LowEarthProp_ForceModel', point_masses=['Luna', 'Sun'], drag=gpy.ForceModel.DragForce(),
                     srp=True, gravity_field=gpy.ForceModel.GravityField(degree=10, order=10))
 prop = gpy.PropSetup('LowEarthProp', fm=fm, accuracy=9.999999999999999e-12,
                      gator=gpy.PropSetup.Propagator(name='LowEarthProp', integrator='RungeKutta89'))
 
-mod = gpy.Moderator()
-sb = mod.GetSandbox()
-vdator = gmat.Validator.Instance()
-vdator.SetSolarSystem(gmat.GetSolarSystem())
-vdator.SetObjectMap(mod.GetConfiguredObjectMap())
-
 print(f'Sat state before running: {sat.GetState()}')
 print(f"Epoch before running: {sat.GetField('Epoch')}")
 
-pgate = gpy.Propagate(prop=prop, sat=sat)
+pgate = gpy.Propagate('', prop, sat, 'Sat.Earth.Periapsis')
+
 # Mission Command Sequence
 mcs = [gpy.BeginMissionSequence(),
        pgate]
