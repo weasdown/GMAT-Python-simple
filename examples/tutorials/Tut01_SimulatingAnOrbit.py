@@ -7,8 +7,6 @@ log_path = os.path.normpath(f'{os.getcwd()}/GMAT-Log.txt')
 script_path = os.path.normpath(f'{os.getcwd()}/Tut01.script')
 gmat.UseLogFile(log_path)
 
-# TODO complete modelling the tutorial mission (inc. prop to Periapsis)
-
 sat_params = {
     'Name': 'Sat',
     'Orbit': {
@@ -34,13 +32,11 @@ prop = gpy.PropSetup('LowEarthProp', fm=fm, accuracy=9.999999999999999e-12,
 print(f'Sat state before running: {sat.GetState()}')
 print(f"Epoch before running: {sat.GetField('Epoch')}")
 
-pgate = gpy.Propagate('Propagate1', prop, sat, ('Sat.Earth.Apoapsis'))
+pgate = gpy.Propagate('Propagate1', prop, sat, 'Sat.Earth.Periapsis')
 
 # Mission Command Sequence
 mcs = [gpy.BeginMissionSequence(),
        pgate]
-
-pgate.GeneratingString()
 
 gpy.RunMission(mcs)  # Run the mission
 

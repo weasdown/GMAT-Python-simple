@@ -112,31 +112,27 @@ class Propagate(GmatCommand):
             self.goal = None
             if goal:
                 self.goal = str(goal)
-                # self.epoch_var: str = f"{self.sat.GetName()}.{self.sat.GetField('DateFormat')}"
                 self.epoch_var = epoch_var
                 self.epoch_param_type = self.epoch_var.split('.')[1]
             else:
                 self.epoch_var = ''
 
-            self.stop_var = stop_var
             self.is_apsis = False
-            if self.stop_var:
-                if not ('Apoapsis' in self.stop_var or 'Periapsis' in self.stop_var):
-                    self.stop_param_type = '.'.join(self.stop_var.split('.')[1:])  # remove sat name
-                else:
-                    self.is_apsis = True
-                    self.goal = self.stop_var
-                    if 'Apoapsis' in self.stop_var:
-                        self.stop_param_type = 'Apoapsis'
-                        self.stop_var = f'{sat_name}.Apoapsis'
-                    elif 'Periapsis' in self.stop_var:
-                        self.stop_param_type = 'Periapsis'
-                        self.stop_var = f'{sat_name}.Periapsis'
-                    chars = len(self.sat.GetName())+1
-                    # self.stop_var_no_sat = self.stop_var[chars:]
-                    self.goal_no_sat = self.goal[chars:]
+            self.stop_var = stop_var
+            if 'Apoapsis' in self.stop_var or 'Periapsis' in self.stop_var:
+                self.is_apsis = True
+            if not self.is_apsis:
+                self.stop_param_type = '.'.join(self.stop_var.split('.')[1:])  # remove sat name
             else:
-                self.stop_param_type = self.stop_var
+                self.goal = self.stop_var
+                if 'Apoapsis' in self.stop_var:
+                    self.stop_param_type = 'Apoapsis'
+                    self.stop_var = f'{sat_name}.Apoapsis'
+                elif 'Periapsis' in self.stop_var:
+                    self.stop_param_type = 'Periapsis'
+                    self.stop_var = f'{sat_name}.Periapsis'
+                chars = len(self.sat.GetName())+1
+                self.goal_no_sat = self.goal[chars:]
 
             self.description = description
             self.name = name if name else f'StopOn{self.stop_var}'
@@ -151,60 +147,14 @@ class Propagate(GmatCommand):
                 self.SetEpochParameter(self.epoch_param)
                 self.SetStringParameter('EpochVar', self.epoch_var)
 
-            # self.stop_param: gpy.Parameter = gpy.CreateParameter(self.stop_param_type, self.stop_var)
             self.stop_param = gpy.CreateParameter(self.stop_param_type, f'{sat_name}.Earth.Apoapsis')
             self.stop_param.SetRefObjectName(gmat.SPACECRAFT, sat_name)
             self.stop_param.SetRefObjectName(gmat.SPACE_POINT, 'Earth')
             self.stop_param.SetRefObjectName(gmat.CELESTIAL_BODY, 'Earth')
             coord_sys_name = self.sat.GetField('CoordinateSystem')
             self.stop_param.SetRefObjectName(gmat.COORDINATE_SYSTEM, coord_sys_name)
-            # self.stop_param.gmat_base.Initialize()
-
-            # if self.stop_param_type == 'Apoapsis' or self.stop_param_type == 'Periapsis':
-            #     # need to use the central body as reference instead of a spacecraft
-            #     planet = 'Earth' if 'Earth' in self.sat.GetField('CoordinateSystem') else None
-            #     # print(self.stop_param.gmat_base.GetRefObjectTypeArray())
-            #     # self.stop_param.gmat_base.SetRefObjectName(gmat.CELESTIAL_BODY, planet)
-            # else:
-            #     print('Setting sat as stop_param ref obj')
-
-            # print(f'stop_param type: {self.stop_param.GetTypeName()}')
-            # self.stop_param.gmat_base.SetRefObject(self.sat.gmat_obj, gmat.SPACECRAFT, self.sat.GetName())
-            # if not (self.stop_param_type == 'Apoapsis' or self.stop_param_type == 'Periapsis'):
-            # self.stop_param.gmat_base.SetRefObject(self.sat.gmat_obj, gmat.SPACECRAFT, sat_name)
-            # self.stop_param.gmat_base.SetRefObject(self.sat.gmat_obj, gmat.SPACE_POINT, 'Earth')
-
-            # stop_param = gmat.GetObject(self.stop_var)
-            # stop_param.SetRefObject(self.sat.gmat_obj, gmat.SPACECRAFT, sat_name)
-            # stop_param.SetRefObjectName(gmat.SPACECRAFT, sat_name)
-            # # stop_param.Help()
-            # self.stop_param = stop_param
-
-            # print('Setting ref object(s):')
-            # print('Spacecraft: ', self.stop_param.gmat_base.SetRefObjectName(gmat.SPACECRAFT, sat_name))
-
-            # if self.stop_param_type == 'Apoapsis' or self.stop_param_type == 'Periapsis':
-            #     self.sat.gmat_obj.SetRefObjectName(gmat.CELESTIAL_BODY, 'Earth')
-            #     print('Celestial body: ', self.stop_param.SetRefObjectName(gmat.CELESTIAL_BODY, 'Earth'))
-            #     coord_sys_name = self.sat.GetField('CoordinateSystem')
-            #     coord_sys = gmat.GetObject(coord_sys_name)
-            #     print('Coord sys: ', self.stop_param.SetRefObjectName(gmat.COORDINATE_SYSTEM, coord_sys_name))
-            #     self.stop_param.gmat_base.SetInternalCoordSystem(coord_sys)
-            #     CustomHelp(self.stop_param.gmat_base)
-            #     print('Space point: ', self.stop_param.SetRefObjectName(gmat.SPACE_POINT, 'Earth'))
 
             self.SetStringParameter('StopVar', self.stop_param.GetName())
-            # if not self.is_apsis:
-            #     self.SetStringParameter('StopVar', self.stop_var)
-            # else:
-            #     self.SetStringParameter('StopVar', 'Sat.Earth.Apoapsis')
-
-            # self.stop_param.SetRefObjectName(gmat.SPACE_POINT, 'Earth')
-
-            # print(self.GetAllParameters())
-            # self.stop_param.Help()
-            # self.stop_param.gmat_base.Initialize()
-            # print(self.stop_param.GetRefObjectName(gmat.SPACECRAFT))
 
             self.SetStopParameter(self.stop_param)
             self.stop_param.gmat_base.Validate()
@@ -218,9 +168,6 @@ class Propagate(GmatCommand):
                 else:
                     self.SetStringParameter('Goal', self.goal)
 
-            # self.Validate()
-            # self.Initialize()
-
         @classmethod
         def CreateDefault(cls):
             return gmat_py_simple.Moderator().CreateDefaultStopCondition()
@@ -230,8 +177,6 @@ class Propagate(GmatCommand):
                               stop_conds: tuple[str | int | float] | str) -> Propagate.StopCondition:
             if isinstance(stop_conds, tuple) and len(stop_conds) == 2:  # most likely, e.g. ('Sat.ElapsedSecs', 12000)
                 stop_var = stop_conds[0]
-                if sat.name in stop_var:
-                    print(sat.name)
                 goal = stop_conds[1]
 
             elif isinstance(stop_conds, str):  # e.g. ('Sat.Earth.Apoapsis')
@@ -244,9 +189,6 @@ class Propagate(GmatCommand):
             name = f'StopOn{stop_var}'
             stop_cond_obj = cls(sat, stop_var=stop_var, goal=goal, name=name)
 
-            print(stop_cond_obj.GetAllParameters())
-            stop_cond_obj.Help()
-            gmat.ShowObjects()
             return stop_cond_obj
 
         def SetStringParameter(self, param_name: str, value: str):
@@ -465,7 +407,7 @@ class Propagate(GmatCommand):
     #     print(f'Propagate Generating String: {self.GetGeneratingString()}')
 
     def __init__(self, name: str = None, prop: gpy.PropSetup = None, sat: gpy.Spacecraft = None,
-                 stop_cond: Propagate.StopCondition | tuple = None, synchronized: bool = False):
+                 stop_cond: Propagate.StopCondition | tuple | str = None, synchronized: bool = False):
         if not name:  # make sure the new Propagate has a unique name
             num_propagates: int = len(gmat.GetCommands('Propagate'))
             name = 'PropagateCommand' if num_propagates == 0 else f'PropagateCommand{num_propagates + 1}'
