@@ -121,18 +121,15 @@ class Propagate(GmatCommand):
             self.stop_var = stop_var
             if 'Apoapsis' in self.stop_var or 'Periapsis' in self.stop_var:
                 self.is_apsis = True
-            if not self.is_apsis:
-                self.stop_param_type = '.'.join(self.stop_var.split('.')[1:])  # remove sat name
-            else:
                 self.goal = self.stop_var
                 if 'Apoapsis' in self.stop_var:
                     self.stop_param_type = 'Apoapsis'
-                    self.stop_var = f'{sat_name}.Apoapsis'
                 elif 'Periapsis' in self.stop_var:
                     self.stop_param_type = 'Periapsis'
-                    self.stop_var = f'{sat_name}.Periapsis'
                 chars = len(self.sat.GetName())+1
                 self.goal_no_sat = self.goal[chars:]
+            else:
+                self.stop_param_type = '.'.join(self.stop_var.split('.')[1:])  # remove sat name
 
             self.description = description
             self.name = name if name else f'StopOn{self.stop_var}'
@@ -147,7 +144,7 @@ class Propagate(GmatCommand):
                 self.SetEpochParameter(self.epoch_param)
                 self.SetStringParameter('EpochVar', self.epoch_var)
 
-            self.stop_param = gpy.CreateParameter(self.stop_param_type, f'{sat_name}.Earth.Apoapsis')
+            self.stop_param = gpy.CreateParameter(self.stop_param_type, stop_var)
             self.stop_param.SetRefObjectName(gmat.SPACECRAFT, sat_name)
             self.stop_param.SetRefObjectName(gmat.SPACE_POINT, 'Earth')
             self.stop_param.SetRefObjectName(gmat.CELESTIAL_BODY, 'Earth')
@@ -410,7 +407,7 @@ class Propagate(GmatCommand):
                  stop_cond: Propagate.StopCondition | tuple | str = None, synchronized: bool = False):
         if not name:  # make sure the new Propagate has a unique name
             num_propagates: int = len(gmat.GetCommands('Propagate'))
-            name = 'PropagateCommand' if num_propagates == 0 else f'PropagateCommand{num_propagates + 1}'
+            name = '' if num_propagates == 0 else f'PropagateCommand{num_propagates + 1}'
         super().__init__('Propagate', name)  # sets self.command_type, self.name, self.gmat_obj
 
         mod = gpy.Moderator()

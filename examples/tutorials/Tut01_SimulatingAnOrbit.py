@@ -32,7 +32,7 @@ prop = gpy.PropSetup('LowEarthProp', fm=fm, accuracy=9.999999999999999e-12,
 print(f'Sat state before running: {sat.GetState()}')
 print(f"Epoch before running: {sat.GetField('Epoch')}")
 
-pgate = gpy.Propagate('Propagate1', prop, sat, 'Sat.Earth.Periapsis')
+pgate = gpy.Propagate('', prop, sat, 'Sat.Earth.Periapsis')
 
 # Mission Command Sequence
 mcs = [gpy.BeginMissionSequence(),
