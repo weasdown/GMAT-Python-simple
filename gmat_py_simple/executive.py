@@ -192,6 +192,7 @@ class Moderator:
                 command.TakeAction('PrepareToPropagate')
 
         print('\nMission Command Sequence setup complete. Running mission...')
+
         run_mission_return = self.gmat_obj.RunMission()
         if run_mission_return == 1:
             print(f'Mission run complete!\n')
