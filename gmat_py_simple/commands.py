@@ -575,13 +575,17 @@ class PropagateMulti(Propagate):
 
 
 class Target(GmatCommand):
-    def __init__(self, name: str, command_sequence: list[GmatCommand]):
+    def __init__(self, name: str, solver: str | gpy.DifferentialCorrector, solver_mode: str = 'Solve',
+                 exit_mode: str = 'SaveAndContinue', command_sequence: list[GmatCommand] = None):
         super().__init__('Target', name)
+        # 'Show Progress Window' argument not implemented (for now) - seems to be a GUI-only option
+
         raise NotImplementedError
 
+    def ApplyCorrections(self):
+        raise NotImplementedError
 
 class Vary(GmatCommand):
     def __init__(self, name: str):
         super().__init__('Vary', name)
         raise NotImplementedError
-
