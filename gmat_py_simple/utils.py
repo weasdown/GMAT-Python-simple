@@ -394,3 +394,7 @@ def extract_gmat_obj(obj):
         return obj
     else:
         raise TypeError(f'obj type not recognised in utils.extract_gmat_obj: {obj_type}')
+
+
+class APIException(Exception):
+    pass

@@ -4,6 +4,8 @@ import gmat_py_simple as gpy
 from load_gmat import gmat
 from gmat_py_simple import GmatCommand
 
+import sys
+
 
 def RunMission(mcs: list[GmatCommand]) -> int:
     return gpy.Moderator().RunMission(mcs)
@@ -67,7 +69,13 @@ class Moderator:
         return stop_cond
 
     def CreateParameter(self, param_type: str, name: str):
-        new_param = self.gmat_obj.CreateParameter(param_type, name)
+        try:
+            new_param = self.gmat_obj.CreateParameter(param_type, name)
+        except Exception as ex:
+            if type(ex).__name__ == 'APIException':
+                raise gpy.APIException(ex) from ex
+            else:
+                raise ex
         if new_param is not None:
             return new_param  # GMAT Swig Parameter type
         else:
@@ -175,21 +183,25 @@ class Moderator:
 
         propagate_commands: list[gpy.Propagate] = []  # start a list of Propagates so their sats can be updated later
         for command in mission_command_sequence:
-            command.SetSolarSystem(gmat.GetSolarSystem())
-            # command.SetObjectMap(sb.GetObjectMap())
-            command.SetObjectMap(mod.GetConfiguredObjectMap())
-            command.SetGlobalObjectMap(sb.GetGlobalObjectMap())
-            command.Initialize()
+            try:
+                command.SetSolarSystem(gmat.GetSolarSystem())
+                # command.SetObjectMap(sb.GetObjectMap())
+                command.SetObjectMap(mod.GetConfiguredObjectMap())
+                command.SetGlobalObjectMap(sb.GetGlobalObjectMap())
+                command.Initialize()
 
-            appended = mod.AppendCommand(command)
-            if not appended:
-                raise RuntimeError(f'Command {command.name} was not successfully appended to the Moderator in'
-                                   f' RunMission. Returned value: {appended}')
-            mod.ValidateCommand(command)
+                appended = mod.AppendCommand(command)
+                if not appended:
+                    raise RuntimeError(f'Command {command.name} was not successfully appended to the Moderator in'
+                                       f' RunMission. Returned value: {appended}')
+                mod.ValidateCommand(command)
 
-            if isinstance(command, gpy.Propagate):
-                propagate_commands.append(command)
-                command.TakeAction('PrepareToPropagate')
+                if isinstance(command, gpy.Propagate):
+                    propagate_commands.append(command)
+                    command.TakeAction('PrepareToPropagate')
+            except SystemExit as sys_exit:
+                raise RuntimeError(f'GMAT attempted to stop code execution while processing command {command} - '
+                                   f'{sys_exit}')
 
         print('\nMission Command Sequence setup complete. Running mission...')
 
