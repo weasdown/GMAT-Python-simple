@@ -1,5 +1,3 @@
-# Tutorial 01: Simulating an Orbit. # Propagate a spacecraft in Earth orbit to its periapsis
-
 from __future__ import annotations
 from load_gmat import gmat
 import gmat_py_simple as gpy
@@ -8,6 +6,8 @@ import os
 log_path = os.path.normpath(f'{os.getcwd()}/GMAT-Log.txt')
 script_path = os.path.normpath(f'{os.getcwd()}/Tut01.script')
 gmat.UseLogFile(log_path)
+
+# TODO: change parameters and commands from Tut01 to Tut02
 
 sat_params = {
     'Name': 'Sat',
