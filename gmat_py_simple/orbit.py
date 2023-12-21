@@ -3,8 +3,8 @@ from __future__ import annotations
 import gmat_py_simple
 from load_gmat import gmat
 
+import gmat_py_simple as gpy
 from gmat_py_simple.basics import GmatObject
-import gmat_py_simple.spacecraft as spc
 from gmat_py_simple.utils import *
 
 
@@ -93,7 +93,7 @@ class PhysicalModel(GmatObject):
 
 
 class ForceModel(GmatObject):
-    def __init__(self, name: str = 'FM', central_body: str = 'Earth', primary_bodies=None,
+    def __init__(self, name: str = 'DefaultProp_ForceModel', central_body: str = 'Earth', primary_bodies=None,
                  polyhedral_bodies: list = None, gravity_field: GravityField = None,
                  point_masses: str | list[str] | PointMassForce = None, drag: DragForce = None,
                  srp: bool | SolarRadiationPressure = False, relativistic_correction: bool = False,
@@ -421,7 +421,7 @@ class PropSetup(GmatObject):  # variable called prop in GMAT Python examples
 
         gmat.Initialize()
 
-    def AddPropObject(self, sc: spc.Spacecraft):
+    def AddPropObject(self, sc: gpy.Spacecraft):
         self.gmat_obj.AddPropObject(sc.gmat_obj)
 
     def PrepareInternals(self):
@@ -431,7 +431,7 @@ class PropSetup(GmatObject):  # variable called prop in GMAT Python examples
         return self.gmat_obj.GetPropagator()
 
     def GetState(self):
-        return self.gator.GetState()
+        return self.gator.gmat_obj.GetState()
 
     def GetPropStateManager(self):
         return self.gmat_obj.GetPropStateManager()
@@ -441,17 +441,25 @@ class PropSetup(GmatObject):  # variable called prop in GMAT Python examples
 
 
 class OrbitState:
-    class CoordinateSystem:
+    class CoordinateSystem(GmatObject):
         # TODO convert __init__ params to args with default values
 
         # TODO complete - will be able to create each type of Axes, for use in CoordinateSystem
-        class Axes:
-            pass
+        class Axes(GmatObject):
+            def __init__(self, axes_type: str, name: str):
+                super().__init__(axes_type, name)
 
-        def __init__(self, name: str, origin: str = 'Earth', central_body: str = 'Earth', axes: str = 'MJ2000Eq',
-                     **kwargs):
+        def __init__(self, name: str, origin: str = 'Earth', central_body: str = 'Earth',
+                     axes: str = 'MJ2000Eq', **kwargs):
+            # TODO: remove kwargs if possible, if not document as another 2do
             # TODO complete allowed values - see User Guide pages 335-339 (PDF pg 344-348)
             #  and src/base/coordsystem/CoordinateSystem.cpp/CreateLocalCoordinateSystem
+            self._name = name
+            super().__init__('CoordinateSystem', self._name)
+            self.origin = origin
+            self.axes = axes
+            self.gmat_obj = gmat.Construct('CoordinateSystem', self._name, self.origin, self.axes)
+
             self._allowed_values = {'Axes': ['MJ2000Eq', 'MJ2000Ec', 'ICRF',
                                              'MODEq', 'MODEc', 'TODEq', 'TODEc', 'MOEEq', 'MOEEc', 'TOEEq', 'TOEEc',
                                              'ObjectReferenced', 'Equator', 'BodyFixed', 'BodyInertial',
@@ -461,36 +469,32 @@ class OrbitState:
                                                GroundStations()],
                                     }
             self._allowed_values['Primary'] = self._allowed_values['Origin']
+            self.axes = OrbitState.CoordinateSystem.Axes(axes, axes)
 
-            self._name = name
-            self._origin = origin
-            self._axes = axes
-            self._central_body = central_body
+            self.central_body = central_body
 
-            defaults = {'axes': 'MJ2000Eq', 'central_body': 'Earth', 'origin': 'Earth'}
-            for attr in list(defaults.keys()):
-                try:  # assume attr is in kwargs
-                    val = kwargs[attr]
-                    valid_values = self._allowed_values[attr]
-                    if val in valid_values:
-                        setattr(self, f'_{attr}', val)
-                    else:
-                        raise AttributeError(f'Invalid {attr} parameter provided - {val}\n'
-                                             f'Must provide one of: {valid_values}')
-                except KeyError:  # not in kwargs
-                    setattr(self, f'_{attr}', defaults[attr])  # set attribute's default value
+            # defaults = {'axes': 'MJ2000Eq', 'central_body': 'Earth', 'origin': 'Earth'}
+            # for attr in list(defaults.keys()):
+            #     try:  # assume attr is in kwargs
+            #         val = kwargs[attr]
+            #         valid_values = self._allowed_values[attr]
+            #         if val in valid_values:
+            #             setattr(self, f'_{attr}', val)
+            #         else:
+            #             raise AttributeError(f'Invalid {attr} parameter provided - {val}\n'
+            #                                  f'Must provide one of: {valid_values}')
+            #     except KeyError:  # not in kwargs
+            #         setattr(self, f'_{attr}', defaults[attr])  # set attribute's default value
 
-            if 'no_gmat_object' not in kwargs:
-                print(f"Running gmat.Construct('CoordinateSystem', '{self._name}', '{self._central_body}', "
-                      f"'{self._axes}')")
-                gmat_obj = gmat.Construct('CoordinateSystem', self._name, self._central_body, self._axes)
-                self.gmat_obj = GmatObject.from_gmat_obj(gmat_obj)
+
 
             # TODO parse Origin parameter
             # print(f'Currently allowed Origin values:\n{self._allowed_values["Origin"]}')
+            self.gmat_obj.Help()
+            self.Initialize()
 
         def __repr__(self):
-            return f'A CoordinateSystem with origin {self._origin} and axes {self._axes}'
+            return f'A CoordinateSystem with origin {self.origin} and axes {self.axes}'
 
         @staticmethod
         def Construct(name: str, central_body: str, axes: str):
@@ -498,7 +502,7 @@ class OrbitState:
             return gmat.Construct('CoordinateSystem', name, central_body, axes)
 
         @classmethod
-        def from_sat(cls, sc: spc.Spacecraft) -> OrbitState.CoordinateSystem:
+        def from_sat(cls, sc: gpy.Spacecraft) -> OrbitState.CoordinateSystem:
             name = sc.gmat_obj.GetRefObjectName(gmat.COORDINATE_SYSTEM)
             sc_cs_gmat_obj = sc.gmat_obj.GetRefObject(150, name)
             origin = sc_cs_gmat_obj.GetField('Origin')
@@ -515,7 +519,6 @@ class OrbitState:
         def name(self, name):
             self._name = name
             self.gmat_obj.SetName(name)
-            print(f'New name in GMAT: {self.gmat_obj.GetName()}')
 
         def Help(self):
             return GmatObject.Help(self.gmat_obj)
@@ -594,7 +597,7 @@ class OrbitState:
             else:
                 setattr(self, f'_{param}', self._key_param_defaults[param])
 
-    def apply_to_spacecraft(self, sc: spc.Spacecraft):
+    def apply_to_spacecraft(self, sc: gpy.Spacecraft):
         """
         Apply the properties of this OrbitState to a spacecraft.
 
@@ -637,7 +640,7 @@ class OrbitState:
                 pass
 
     @classmethod
-    def from_dict(cls, orbit_dict: dict, sc: spc.Spacecraft = None) -> OrbitState:
+    def from_dict(cls, orbit_dict: dict, sc: gpy.Spacecraft = None) -> OrbitState:
         o_s: OrbitState = cls()  # create OrbitState object, with sc set as None by default
 
         try:

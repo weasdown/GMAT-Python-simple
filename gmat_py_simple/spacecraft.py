@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gmat_py_simple as gpy
 from load_gmat import gmat
 
 from gmat_py_simple.basics import GmatObject
@@ -287,6 +288,9 @@ class Spacecraft(GmatObject):
     def GetCartesianState(self):
         return rvector6_to_list(self.gmat_obj.GetCartesianState())
 
+    def GetCoordinateSystem(self) -> gpy.OrbitState.CoordinateSystem:
+        return gpy.OrbitState.CoordinateSystem.from_sat(self)
+
     # @property
     # def gmat_runtime(self):
     #     return self._gmat_runtime
@@ -330,7 +334,6 @@ class Spacecraft(GmatObject):
     @property
     def ElectricTanks(self):
         return self.Hardware.ElectricTanks
-
 
     def add_tanks(self, tanks: list[ChemicalTank | ElectricTank]):
         """

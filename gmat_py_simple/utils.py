@@ -398,3 +398,7 @@ def extract_gmat_obj(obj):
 
 class APIException(Exception):
     pass
+
+
+def Initialize() -> bool:
+    return gmat.Initialize()

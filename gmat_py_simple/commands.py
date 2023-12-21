@@ -72,6 +72,12 @@ class Achieve(GmatCommand):
         raise NotImplementedError
 
 
+class BeginFiniteBurn(GmatCommand):
+    def __init__(self, name: str):
+        super().__init__('BeginFiniteBurn', name)
+        raise NotImplementedError
+
+
 class BeginMissionSequence(GmatCommand):
     def __init__(self):
         super().__init__('BeginMissionSequence', 'BeginMissionSequenceCommand')
@@ -81,6 +87,12 @@ class BeginMissionSequence(GmatCommand):
         self.SetGlobalObjectMap(sb.GetGlobalObjectMap())
         self.SetSolarSystem(gmat.GetSolarSystem())
         self.Initialize()
+
+
+class EndFiniteBurn(GmatCommand):
+    def __init__(self, name: str):
+        super().__init__('EndFiniteBurn', name)
+        raise NotImplementedError
 
 
 class EndTarget(GmatCommand):
@@ -210,6 +222,7 @@ class Propagate(GmatCommand):
         @classmethod
         def parse_stop_params(cls, sat: gpy.Spacecraft,
                               stop_conds: tuple[str | int | float] | str) -> Propagate.StopCondition:
+            # TODO: handle parsing of all possible epoch_vars/stop_vars/goals
             if isinstance(stop_conds, tuple) and len(stop_conds) == 2:  # most likely, e.g. ('Sat.ElapsedSecs', 12000)
                 stop_var = stop_conds[0]
                 goal = stop_conds[1]
@@ -327,13 +340,6 @@ class Propagate(GmatCommand):
     #     self.params = ['AvailablePropModes', 'PropagateMode', 'InterruptFrequency', 'StopTolerance', 'Spacecraft',
     #                    'Propagator', 'StopCondition', 'PropForward', 'AllSTMs', 'AllAMatrices', 'AllCovariances']
     #
-    #     super().__init__('Propagate')
-    #
-    #     self.propagator = propagator if propagator else PropSetup('DefaultProp')
-    #     # self.gmat_obj.SetRefObject(self.propagator.gmat_obj, gmat.PROPAGATOR, self.propagator.name, 0)
-    #     # self.SetField('Propagator', self.propagator.name)
-    #     # self.gmat_obj.SetObject(self.propagator.gmat_obj.GetName(), gmat.PROPAGATOR)
-    #
     #     if mode:
     #         if mode != 'Synchronized':  # TODO: BackProp a valid option here, or handled separately?
     #             raise SyntaxError('Invalid mode was specified. If given, must be "Synchronized"')
@@ -352,69 +358,6 @@ class Propagate(GmatCommand):
     #     print(f'goal: {self.goal}')
     #     stop_cond_string = f'{self.stop_param} = {self.goal}'
     #
-    #     self.g_stop_cond = gmat.Construct('StopCondition', 'StopCond')
-    #     self.g_stop_cond.Help()
-    #     print(f'Stop condition fields: {gmat_obj_field_list(self.g_stop_cond)}')
-    #     self.g_stop_cond.SetField('StopVar', self.stop_param)
-    #     self.g_stop_cond.SetField('Goal', str(self.goal))
-    #     print(f'Newly set g_stop_cond StopVar: {self.g_stop_cond.GetField("StopVar")}')
-    #     print(f'Newly set g_stop_cond Goal: {self.g_stop_cond.GetField("Goal")}')
-    #     # self.g_stop_cond.SetStopParameter(gmat.Construct('Parameter', self.stop_param))
-    #     # self.gmat_obj.SetReference(self.g_stop_cond)
-    #     # print(f'StopCondition Generating String: {self.g_stop_cond.GetGeneratingString()}')
-    #
-    #     # g_stop_param = gmat.Construct('Parameter')
-    #     # g_stop_param.SetField('InitialValue', stop_cond_string)
-    #     # self.g_stop_cond.SetStopParameter(g_stop_param)
-    #
-    #     # print(f'Stop condition string: {stop_cond_string}')
-    #     # self.SetField('StopCondition', stop_cond_string)
-    #     # self.SetStopParameter(stop_cond_string)
-    #     # print(f'Newly set stop condition: {self.GetField("StopCondition")}')
-    #
-    #     if not isinstance(sc, Spacecraft):
-    #         raise TypeError('sc parameter must be a Spacecraft object')
-    #     else:
-    #         self.spacecraft = sc
-    #         self.spacecraft.name = sc.name
-    #         self.SetField('Spacecraft', self.spacecraft.name)  # complete
-    #
-    #     # TODO: if stop_value isn't needed because of selected stop_param (e.g. Earth.Apoapsis), set to None
-    #     #  assuming for now that stop_value is an int
-    #     self.stop = stop
-    #
-    #     # self.stop_param = self.stop[0]  # default stop_param is "DefaultSC.ElapsedSecs =" (pg 222 of GMAT Arch Spec)
-    #     # self.g_stop_cond.SetLhsString(f'{self.spacecraft.name}.{self.stop_param} =')
-    #     # print(f'New LHS String: {self.g_stop_cond.GetLhsString()}')
-    #
-    #     # self.stop_condition = self.stop[1]  # default is 8640 (pg 222 of GMAT Architectectural Specification)
-    #     # self.stop_condition = 8640.0  # TODO remove hardcoding once fixed
-    #     # self.g_stop_cond.SetRhsString(str(self.stop_condition))
-    #     # print(f'New RHS String: {self.g_stop_cond.GetRhsString()}')
-    #     # print(f'Whole stop param: {self.g_stop_cond.GetStopParameter()}')
-    #
-    #     # stop_param_string = f"{self.spacecraft.name}.{self.stop_param} = 8640.0"
-    #     # print(f'"{stop_param_string}"')
-    #     # self.g_stop_param = gmat.Construct('Parameter')
-    #     # self.g_stop_cond.SetStopParameter(self.g_stop_cond)
-    #
-    #     # print(f'StopParam: {self.g_stop_cond.GetStopParameter()}')
-    #
-    #     # if self.stop_param == 'ElapsedSecs':  # assuming stop_value is an ElapsedSecs value
-    #     #     self.dt = self.stop_condition
-    #     # elif self.stop_param == 'ElapsedDays':
-    #     #     # TODO bugfix: work for multiple ElapsedDays. ED = 1 works.
-    #     #     #  If beyond ~1.3, result Epoch capped to 23 Jul 2014 17:29:17.477. Currently using ED * 86400 then Step.
-    #     #     #  Also happens if using ElapsedSecs with e.g. 365*86400 to attempt one year.
-    #     #     raise NotImplementedError
-    #     #     # self.dt = self.stop_value * 86400
-    #     # else:
-    #     #     raise NotImplementedError
-    #
-    #     print(f'self fields: {gmat_obj_field_list(self)}')
-    #     self.propagator.SetReference(self.g_stop_cond)
-    #     # self.SetField('StopCondition', self.g_stop_cond.GetName())
-    #
     #     self.stop_tolerance = stop_tolerance
     #     self.SetField('StopTolerance', self.stop_tolerance)  # complete
     #
@@ -424,22 +367,6 @@ class Propagate(GmatCommand):
     #         self.gmat_obj.SetBooleanParameter('PropForward', self.prop_forward)  # complete
     #     else:
     #         raise SyntaxError('Invalid prop_forward given - accepts only True or False')
-    #
-    #     # TODO clarify: are both of these commands needed? Seems just one
-    #     propagator.SetObject(sc)  # from pg 61 of API Users Guide
-    #     # self.propagator.AddPropObject(sc)  # add the spacecraft to the PropSetup (and hence Propagator)
-    #
-    #     self.propagator.PrepareInternals()
-    #
-    #     self.propagator.gator = propagator.GetPropagator()
-    #     self.gator = propagator.gator
-    #
-    #     # self.gator.Step(self.dt)
-    #     # self.gator.UpdateSpaceObject()
-    #
-    #     # self.propagator.Help()
-    #
-    #     print(f'Propagate Generating String: {self.GetGeneratingString()}')
 
     def __init__(self, name: str = None, prop: gpy.PropSetup = None, sat: gpy.Spacecraft = None,
                  stop_cond: Propagate.StopCondition | tuple | str = None, synchronized: bool = False):

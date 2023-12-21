@@ -10,8 +10,8 @@ class GmatObject:
     #  properties/setters) to see if they should use gmat_runtime instead
     def __init__(self, obj_type: str, name: str):
         self.obj_type = obj_type
-        self.name = name
-        self.gmat_obj = gmat.Construct(self.obj_type, self.name)
+        self._name = name
+        self.gmat_obj = gmat.Construct(self.obj_type, self._name)
         self.was_propagated = False
 
     # @staticmethod
@@ -30,6 +30,31 @@ class GmatObject:
     def from_gmat_obj(cls, obj):
         return cls(type(obj).__name__, obj.GetName())
 
+    def GetField(self, field: str | int) -> str:
+        """
+        Get the value of a field in the Object's GMAT model.
+
+        :param field:
+        :return:
+        """
+        return self.gmat_obj.GetField(field)
+
+    def GetGeneratingString(self) -> str:
+        """
+        Return the GMAT script commands to form an object
+        :return:
+        """
+        return self.gmat_obj.GetGeneratingString()
+
+    def GetObject(self):
+        if not self.was_propagated:  # sat not yet propagated
+            return gmat.GetObject(self._name)
+        else:  # sat has been propagated so gmat.GetObject() would return incorrect (starting) values
+            return gmat.GetRuntimeObject(self._name)
+
+    def GetName(self):
+        return self._name
+
     @staticmethod
     def get_name_from_kwargs(obj_type: object, kwargs: dict) -> str:
         try:
@@ -38,24 +63,18 @@ class GmatObject:
             raise SyntaxError(f"Required field 'name' not provided when building {type(obj_type).__name__} object")
         return name
 
-    def Initialize(self):
-        self.gmat_obj.Initialize()
-
-    def IsInitialized(self):
-        self.gmat_obj.IsInitialized()
-
-    def GetName(self):
-        return self.name
-
-    def SetName(self, name: str):
-        self.gmat_obj.SetName(name)
-
     def Help(self):
         # TODO: upgrade to get list of fields with utils.gmat_obj_field_list then print all fields/values
 
         if not self.gmat_obj:
             raise AttributeError(f'No GMAT object found for object {self.__name__} of type {type(self.__name__)}')
         self.gmat_obj.Help()
+
+    def Initialize(self):
+        self.gmat_obj.Initialize()
+
+    def IsInitialized(self):
+        self.gmat_obj.IsInitialized()
 
     def SetField(self, field: str, val: Union[str, int, bool, list]):
         """
@@ -81,14 +100,8 @@ class GmatObject:
         for index, _ in enumerate(specs):
             self.SetField(fields[index], values[index])
 
-    def GetField(self, field: str | int) -> str:
-        """
-        Get the value of a field in the Object's GMAT model.
-
-        :param field:
-        :return:
-        """
-        return self.gmat_obj.GetField(field)
+    def SetName(self, name: str):
+        self.gmat_obj.SetName(name)
 
     def SetOnOffParameter(self, field: str, OnOff: str):
         if (OnOff == 'On') or (OnOff == 'Off'):
@@ -102,18 +115,8 @@ class GmatObject:
         else:  # native GMAT object
             self.gmat_obj.SetReference(ref)
 
-    def GetObject(self):
-        if not self.was_propagated:  # sat not yet propagated
-            return gmat.GetObject(self.name)
-        else:  # sat has been propagated so gmat.GetObject() would return incorrect (starting) values
-            return gmat.GetRuntimeObject(self.name)
-
-    def GetGeneratingString(self) -> str:
-        """
-        Return the GMAT script commands to form an object
-        :return:
-        """
-        return self.gmat_obj.GetGeneratingString()
+    def SetSolarSystem(self, ss: gmat.SolarSystem) -> bool:
+        return self.gmat_obj.SetSolarSystem(ss)
 
     def Validate(self) -> bool:
         return self.gmat_obj.Validate()
