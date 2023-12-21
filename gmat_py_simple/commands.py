@@ -66,6 +66,12 @@ class GmatCommand:
         return self.gmat_obj.Validate()
 
 
+class Achieve(GmatCommand):
+    def __init__(self, name: str):
+        super().__init__('Achieve', name)
+        raise NotImplementedError
+
+
 class BeginMissionSequence(GmatCommand):
     def __init__(self):
         super().__init__('BeginMissionSequence', 'BeginMissionSequenceCommand')
@@ -75,6 +81,18 @@ class BeginMissionSequence(GmatCommand):
         self.SetGlobalObjectMap(sb.GetGlobalObjectMap())
         self.SetSolarSystem(gmat.GetSolarSystem())
         self.Initialize()
+
+
+class EndTarget(GmatCommand):
+    def __init__(self, name: str):
+        super().__init__('EndTarget', name)
+        raise NotImplementedError
+
+
+class Maneuver(GmatCommand):
+    def __init__(self, name: str):
+        super().__init__('Maneuver', name)
+        raise NotImplementedError
 
 
 class Propagate(GmatCommand):
@@ -168,6 +186,8 @@ class Propagate(GmatCommand):
                 self.SetEpochParameter(self.epoch_param)
                 self.SetStringParameter('EpochVar', self.epoch_var)
 
+            # TODO: see parameter.StopParameter and subclasses (ElapsedSecs etc) for quick way to implement stop params
+
             self.stop_param = gpy.CreateParameter(self.stop_param_type, self.stop_var)
             self.stop_param.SetRefObjectName(gmat.SPACECRAFT, sat_name)
             if goalless:
@@ -182,7 +202,6 @@ class Propagate(GmatCommand):
 
             self.SetStringParameter('StopVar', self.stop_param.GetName())
             self.SetStopParameter(self.stop_param)
-
 
         @classmethod
         def CreateDefault(cls):
@@ -553,3 +572,16 @@ class PropagateMulti(Propagate):
             name = f'PropagateMulti{num_propagates + 1}'
 
         super().__init__(name, prop, sat, stop_cond, synchronized)
+
+
+class Target(GmatCommand):
+    def __init__(self, name: str, command_sequence: list[GmatCommand]):
+        super().__init__('Target', name)
+        raise NotImplementedError
+
+
+class Vary(GmatCommand):
+    def __init__(self, name: str):
+        super().__init__('Vary', name)
+        raise NotImplementedError
+

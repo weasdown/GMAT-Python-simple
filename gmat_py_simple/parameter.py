@@ -35,3 +35,21 @@ class Parameter:
 
     def Help(self):
         return self.gmat_base.Help()
+
+
+# TODO: make a class for each type of StopCondition, e.g. ElapsedSecs, Apoapsis etc, that generates a
+#  properly-formed StopCondition of that type. Will help with code completion.
+class StopParameter(Parameter):
+    def __init__(self, param_type: str, name: str):
+        super().__init__(param_type, name)
+        raise NotImplementedError
+
+
+class ElapsedSecs(StopParameter):
+    def __init__(self):
+        super().__init__()
+
+
+class ElapsedDays(StopParameter):
+    def __init__(self):
+        super().__init__()
