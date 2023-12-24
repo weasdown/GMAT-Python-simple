@@ -116,7 +116,7 @@ class Propagate(GmatCommand):
         # def __init__(self, name: str, base_epoch=None, epoch=None, epoch_var=None, stop_var=None,
         #              goal=None, repeat=None):
         def __init__(self, sat: gpy.Spacecraft, epoch_var: str = 'Sat.A1ModJulian', stop_var: str = 'Sat.ElapsedSecs',
-                     goal: int | float = 12000.0, name: str = 'StopOnSat.ElapsedSecs', description: str = ''):
+                     goal: int | float = None, name: str = 'StopOnSat.ElapsedSecs', description: str = ''):
             # TODO fill other possible args - see StopCondition.cpp
             # self.base_epoch = base_epoch
             # self.epoch = epoch
@@ -131,6 +131,8 @@ class Propagate(GmatCommand):
             #  Spacecraft to be on the LHS of stopping condition (propagating spacecraft not found) in Propagate
             #  'Prop One Day' DefaultProp(DefaultSC) {Sat.Earth.Apoapsis};"
 
+            # TODO: raise error if goal needed (e.g. number for ElapsedSecs) but not given
+
             """
             Create a StopCondition
 
@@ -141,7 +143,6 @@ class Propagate(GmatCommand):
             :param name:
             :param description:
             """
-            # NEW
             self.sat = sat
             sat_name = self.sat.GetName()
 
@@ -220,66 +221,6 @@ class Propagate(GmatCommand):
 
             self.SetStringParameter('StopVar', self.stop_param.GetName())
             self.SetStopParameter(self.stop_param)
-
-            # # OLD (Tut01 completion commit)
-            # self.sat = sat
-            # sat_name = self.sat.name
-            #
-            # self.goal = None
-            # if goal:
-            #     self.goal = str(goal)
-            #     self.epoch_var = epoch_var
-            #     self.epoch_param_type = self.epoch_var.split('.')[1]
-            # else:
-            #     self.epoch_var = ''
-            #
-            # self.is_apsis = False
-            # self.stop_var = stop_var
-            # if 'Apoapsis' in self.stop_var or 'Periapsis' in self.stop_var:
-            #     self.is_apsis = True
-            #     self.goal = self.stop_var
-            #     if 'Apoapsis' in self.stop_var:
-            #         self.stop_param_type = 'Apoapsis'
-            #     elif 'Periapsis' in self.stop_var:
-            #         self.stop_param_type = 'Periapsis'
-            #     chars = len(sat_name) + 1
-            #     self.goal_no_sat = self.goal[chars:]  # remove the sat name
-            # else:
-            #     self.stop_param_type = '.'.join(self.stop_var.split('.')[1:])  # remove sat name
-            #
-            # self.description = description
-            # self.name = name if name else f'StopOn{self.stop_var}'
-            #
-            # self.gmat_obj = gpy.Moderator().CreateStopCondition(self.name)
-            # self.gmat_obj.SetSolarSystem(gmat.GetSolarSystem())
-            #
-            # self.epoch_var = ''
-            # if self.epoch_var:
-            #     self.epoch_param: gpy.Parameter = gpy.CreateParameter(self.epoch_param_type, self.epoch_var)
-            #     self.epoch_param.SetRefObjectName(gmat.SPACECRAFT, sat_name)
-            #     self.SetEpochParameter(self.epoch_param)
-            #     self.SetStringParameter('EpochVar', self.epoch_var)
-            #
-            # self.stop_param = gpy.CreateParameter(self.stop_param_type, stop_var)
-            # self.stop_param.SetRefObjectName(gmat.SPACECRAFT, sat_name)
-            # self.stop_param.SetRefObjectName(gmat.SPACE_POINT, 'Earth')
-            # self.stop_param.SetRefObjectName(gmat.CELESTIAL_BODY, 'Earth')
-            # coord_sys_name = self.sat.GetField('CoordinateSystem')
-            # self.stop_param.SetRefObjectName(gmat.COORDINATE_SYSTEM, coord_sys_name)
-            #
-            # self.SetStringParameter('StopVar', self.stop_param.GetName())
-            #
-            # self.SetStopParameter(self.stop_param)
-            # self.stop_param.gmat_base.Validate()
-            #
-            # self.goal = None
-            # if self.goal:
-            #     self.goal_param = gpy.CreateParameter('Variable', self.goal)
-            #     self.SetGoalParameter(self.goal_param)
-            #     if not self.is_apsis:
-            #         self.SetStringParameter('Goal', self.goal)
-            #     else:
-            #         self.SetStringParameter('Goal', self.goal)
 
         @classmethod
         def CreateDefault(cls):

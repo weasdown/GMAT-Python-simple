@@ -40,7 +40,7 @@ print(f"Epoch before running: {sat.GetField('Epoch')}")
 
 # Mission Command Sequence
 mcs = [
-       gpy.Propagate('Prop One Day', prop, sat, ('Sat.ElapsedDays', 365)),
+       gpy.Propagate('Prop One Day', prop, sat, ('Sat.ElapsedSecs', 60)),
        ]
 
 gpy.RunMission(mcs)  # Run the mission

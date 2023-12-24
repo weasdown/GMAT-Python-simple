@@ -189,12 +189,10 @@ class Moderator:
         for command in mission_command_sequence:
             try:
                 command.SetSolarSystem(gmat.GetSolarSystem())
-                # command.SetObjectMap(sb.GetObjectMap())
                 command.SetObjectMap(mod.GetConfiguredObjectMap())
                 command.SetGlobalObjectMap(sb.GetGlobalObjectMap())
 
                 command.Initialize()
-                print(f'Command Initialize done in RunMission for loop: command {type(command).__name__}')
                 appended = mod.AppendCommand(command)
                 if not appended:
                     raise RuntimeError(f'Command {command.name} was not successfully appended to the Moderator in'
