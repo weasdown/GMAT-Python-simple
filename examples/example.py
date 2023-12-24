@@ -33,7 +33,7 @@ fm = gpy.ForceModel(name='LowEarthProp_ForceModel', point_masses=['Luna', 'Sun']
 prop = gpy.PropSetup('LowEarthProp', accuracy=9.999999999999999e-12,
                      gator=gpy.PropSetup.Propagator(name='LowEarthProp', integrator='RungeKutta89'))
 
-# toi = gpy.ImpulsiveBurn()
+toi = gpy.ImpulsiveBurn('IB1', sat.GetCoordinateSystem(), [0.2, 0, 0])
 
 print(f'Sat state before running: {sat.GetState()}')
 print(f"Epoch before running: {sat.GetField('Epoch')}")

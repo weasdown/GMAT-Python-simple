@@ -76,7 +76,7 @@ class GmatObject:
     def IsInitialized(self):
         self.gmat_obj.IsInitialized()
 
-    def SetField(self, field: str, val: Union[str, int, bool, list]):
+    def SetField(self, field: str, val: str | int | float | bool | list):
         """
         Set a field in the Object's GMAT model.
 

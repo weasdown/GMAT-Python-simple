@@ -37,14 +37,29 @@ class ImpulsiveBurn(GmatObject):
     def __init__(self, name, coord_sys: gpy.OrbitState.CoordinateSystem, delta_v: list[float | int],
                  decrement_mass: bool = False, tanks: gpy.Tank | list[gpy.Tank] = None, isp: int | float = 300,
                  gravitational_accel: float = 9.81):
-        super().__init__('FiniteBurn', name)
+        super().__init__('ImpulsiveBurn', name)
+
         self.coord_sys: gpy.OrbitState.CoordinateSystem = coord_sys
+        self.SetField('CoordinateSystem', self.coord_sys.name)
+
         self.delta_v: list[float | int] = delta_v
+        for index, element in enumerate(delta_v):
+            self.SetField(f'Element{index+1}', element)
+
         self.decrement_mass: bool = decrement_mass
-        self.tanks: gpy.Tank | list[gpy.Tank] = tanks
-        self.isp: int | float = 300
-        self.gravitational_accel: float = 9.81
+        self.SetField('DecrementMass', self.decrement_mass)
+
+        self.tanks: list[str] = [tank.name for tank in tanks] if tanks is not None else None
+        if self.tanks is not None:
+            self.SetField('Tanks', self.tanks)
+
+        self.isp: int | float = isp
+        self.SetField('Isp', self.isp)
+
+        self.gravitational_accel: float = gravitational_accel
+        self.SetField('GravitationalAccel', self.gravitational_accel)
 
         self.SetSolarSystem(gmat.GetSolarSystem())
 
-        self.Help()
+        self.Validate()
+        self.Initialize()

@@ -490,7 +490,6 @@ class OrbitState:
 
             # TODO parse Origin parameter
             # print(f'Currently allowed Origin values:\n{self._allowed_values["Origin"]}')
-            self.gmat_obj.Help()
             self.Initialize()
 
         def __repr__(self):
