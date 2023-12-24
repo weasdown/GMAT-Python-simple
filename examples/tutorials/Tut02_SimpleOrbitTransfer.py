@@ -14,8 +14,6 @@ gmat.UseLogFile(log_path)
 sat = gpy.Spacecraft('DefaultSC')
 prop = gpy.PropSetup('DefaultProp')
 
-toi = gpy.ImpulsiveBurn()
-
 print(f'Sat state before running: {sat.GetState()}')
 print(f"Epoch before running: {sat.GetField('Epoch')}")
 

@@ -121,6 +121,15 @@ class GmatObject:
     def Validate(self) -> bool:
         return self.gmat_obj.Validate()
 
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @name.setter
+    def name(self, new_name: str):
+        self._name = new_name
+        self.gmat_obj.SetName(new_name)
+
 
 class Parameter(GmatObject):
     # TODO: see src/base/parameter/Parameter.cpp

@@ -126,6 +126,11 @@ class Propagate(GmatCommand):
             # self.repeat = repeat
             # self.sat = sat
 
+            # TODO bugfix: handle case where sc has been created then overwritten with same Python name but different
+            #  GMAT name. Causes error: "Command Exception: *** Currently GMAT expects a Parameter of propagating
+            #  Spacecraft to be on the LHS of stopping condition (propagating spacecraft not found) in Propagate
+            #  'Prop One Day' DefaultProp(DefaultSC) {Sat.Earth.Apoapsis};"
+
             """
             Create a StopCondition
 
@@ -136,55 +141,111 @@ class Propagate(GmatCommand):
             :param name:
             :param description:
             """
+            # NEW
+            # self.sat = sat
+            # sat_name = self.sat.GetName()
+            #
+            # # TODO: move a lot of this to StopCondition.parse_stop_params. Only keep StopCond creation itself here
+            # goalless_params = ['Apoapsis', 'Periapsis']  # TODO: complete list
+            # if True in (param in stop_var for param in goalless_params):  # if stop_var includes a goalless param
+            #     self.goalless = True
+            #     goal = None
+            #     # self.stop_param_type = param
+            # else:
+            #     goalless = False
+            #     goal = str(goal)
+            #
+            # self.goal = goal  # assumes that parsing function will have set goal to None if required
+            #
+            # self.body = None
+            # bodies = CelestialBodies()
+            # if self.goalless:
+            #     self.epoch_var = ''
+            #     for param in goalless_params:  # TODO: find a way to combine this into if True in... above
+            #         if param in stop_var:
+            #             self.stop_param_type = param
+            #     for body in bodies:
+            #         if body in stop_var:
+            #             self.body = body
+            #             continue  # use the first body we find in self.stop_var
+            # else:
+            #     self.epoch_var = epoch_var
+            #     self.epoch_param_type = self.epoch_var.split('.')[1]
+            #
+            # if self.goalless and not self.body:
+            #     raise AttributeError('No body found for StopCondition')
+            #
+            # self.stop_var = stop_var
+            #
+            # # currently using the goalless check to tell whether Earth or similar is needed in stop_param_type
+            # if not self.goalless:
+            #     # self.stop_var isn't body-based, so need to remove any bodies
+            #     elements = self.stop_var.split('.')
+            #     stop_var_elements = []
+            #     stop_param_type_elements = []
+            #     for ele in elements:
+            #         if ele not in bodies:
+            #             stop_var_elements.append(ele)
+            #             if ele != sat_name:
+            #                 stop_param_type_elements.append(ele)
+            #
+            #     self.stop_var = '.'.join(stop_var_elements)
+            #     self.stop_param_type = '.'.join(stop_param_type_elements)
+            #
+            # self.description = description
+            # self.name = name if name else f'StopOn{self.stop_var}'
+            #
+            # self.gmat_obj = gpy.Moderator().CreateStopCondition(self.name)
+            # self.gmat_obj.SetSolarSystem(gmat.GetSolarSystem())
+            #
+            # # if self.epoch_var:
+            # self.epoch_param: gpy.Parameter = gpy.CreateParameter(self.epoch_param_type, self.epoch_var)
+            # self.epoch_param.SetRefObjectName(gmat.SPACECRAFT, sat_name)
+            # self.SetEpochParameter(self.epoch_param)
+            # self.SetStringParameter('EpochVar', self.epoch_var)
+            #
+            # # TODO: see parameter.StopParameter and subclasses (ElapsedSecs etc) for quick way to implement stop params
+            #
+            # self.stop_param = gpy.CreateParameter(self.stop_param_type, self.stop_var)
+            # self.stop_param.SetRefObjectName(gmat.SPACECRAFT, sat_name)
+            # if self.goalless:
+            #     self.stop_param.SetRefObjectName(gmat.SPACE_POINT, self.body)
+            #     self.stop_param.SetRefObjectName(gmat.CELESTIAL_BODY, self.body)
+            #     coord_sys_name = self.sat.GetField('CoordinateSystem')
+            #     self.stop_param.SetRefObjectName(gmat.COORDINATE_SYSTEM, coord_sys_name)
+            # else:
+            #     self.goal_param = gpy.CreateParameter('Variable', self.goal)
+            #     self.SetGoalParameter(self.goal_param)
+            #     self.SetStringParameter('Goal', self.goal)
+            #
+            # self.SetStringParameter('StopVar', self.stop_param.GetName())
+            # self.SetStopParameter(self.stop_param)
+
+            # OLD (Tut01 completion commit)
             self.sat = sat
-            sat_name = self.sat.GetName()
+            sat_name = self.sat.name
 
-            # TODO: move a lot of this to StopCondition.parse_stop_params. Only keep StopCond creation itself here
-            goalless_params = ['Apoapsis', 'Periapsis']  # TODO: complete list
-            if True in (param in stop_var for param in goalless_params):  # if stop_var includes a goalless param
-                goalless = True
-                goal = None
-                # self.stop_param_type = param
-            else:
-                goalless = False
-                goal = str(goal)
-
-            self.goal = goal  # assumes that parsing function will have set goal to None if required
-
-            self.body = None
-            bodies = CelestialBodies()
-            if goalless:
-                for param in goalless_params:  # TODO: find a way to combine this into if True in... above
-                    if param in stop_var:
-                        self.stop_param_type = param
-                self.epoch_var = None
-                for body in bodies:
-                    if body in stop_var:
-                        self.body = body
-                        continue  # use the first body we find in self.stop_var
-            else:
+            self.goal = None
+            if goal:
+                self.goal = str(goal)
                 self.epoch_var = epoch_var
                 self.epoch_param_type = self.epoch_var.split('.')[1]
+            else:
+                self.epoch_var = ''
 
-            if goalless and not self.body:
-                raise AttributeError('No body found for StopCondition')
-
+            self.is_apsis = False
             self.stop_var = stop_var
-
-            # currently using the goalless check to tell whether Earth or similar is needed in stop_param_type
-            if not goalless:
-                # self.stop_var isn't body-based, so need to remove any bodies
-                elements = self.stop_var.split('.')
-                stop_var_elements = []
-                stop_param_type_elements = []
-                for ele in elements:
-                    if ele not in bodies:
-                        stop_var_elements.append(ele)
-                        if ele != sat_name:
-                            stop_param_type_elements.append(ele)
-
-                self.stop_var = '.'.join(stop_var_elements)
-                self.stop_param_type = '.'.join(stop_param_type_elements)
+            if 'Apoapsis' in self.stop_var or 'Periapsis' in self.stop_var:
+                self.is_apsis = True
+                self.goal = self.stop_var
+                if 'Apoapsis' in self.stop_var:
+                    self.stop_param_type = 'Apoapsis'
+                elif 'Periapsis' in self.stop_var:
+                    self.stop_param_type = 'Periapsis'
+                chars = len(sat_name) + 1
+                self.goal_no_sat = self.goal[chars:]  # remove the sat name
+            else:
+                self.stop_param_type = '.'.join(self.stop_var.split('.')[1:])  # remove sat name
 
             self.description = description
             self.name = name if name else f'StopOn{self.stop_var}'
@@ -192,28 +253,33 @@ class Propagate(GmatCommand):
             self.gmat_obj = gpy.Moderator().CreateStopCondition(self.name)
             self.gmat_obj.SetSolarSystem(gmat.GetSolarSystem())
 
+            self.epoch_var = ''
             if self.epoch_var:
                 self.epoch_param: gpy.Parameter = gpy.CreateParameter(self.epoch_param_type, self.epoch_var)
                 self.epoch_param.SetRefObjectName(gmat.SPACECRAFT, sat_name)
                 self.SetEpochParameter(self.epoch_param)
                 self.SetStringParameter('EpochVar', self.epoch_var)
 
-            # TODO: see parameter.StopParameter and subclasses (ElapsedSecs etc) for quick way to implement stop params
-
-            self.stop_param = gpy.CreateParameter(self.stop_param_type, self.stop_var)
+            self.stop_param = gpy.CreateParameter(self.stop_param_type, stop_var)
             self.stop_param.SetRefObjectName(gmat.SPACECRAFT, sat_name)
-            if goalless:
-                self.stop_param.SetRefObjectName(gmat.SPACE_POINT, self.body)
-                self.stop_param.SetRefObjectName(gmat.CELESTIAL_BODY, self.body)
-                coord_sys_name = self.sat.GetField('CoordinateSystem')
-                self.stop_param.SetRefObjectName(gmat.COORDINATE_SYSTEM, coord_sys_name)
-            else:
-                self.goal_param = gpy.CreateParameter('Variable', self.goal)
-                self.SetGoalParameter(self.goal_param)
-                self.SetStringParameter('Goal', self.goal)
+            self.stop_param.SetRefObjectName(gmat.SPACE_POINT, 'Earth')
+            self.stop_param.SetRefObjectName(gmat.CELESTIAL_BODY, 'Earth')
+            coord_sys_name = self.sat.GetField('CoordinateSystem')
+            self.stop_param.SetRefObjectName(gmat.COORDINATE_SYSTEM, coord_sys_name)
 
             self.SetStringParameter('StopVar', self.stop_param.GetName())
+
             self.SetStopParameter(self.stop_param)
+            self.stop_param.gmat_base.Validate()
+
+            self.goal = None
+            if self.goal:
+                self.goal_param = gpy.CreateParameter('Variable', self.goal)
+                self.SetGoalParameter(self.goal_param)
+                if not self.is_apsis:
+                    self.SetStringParameter('Goal', self.goal)
+                else:
+                    self.SetStringParameter('Goal', self.goal)
 
         @classmethod
         def CreateDefault(cls):
@@ -233,6 +299,11 @@ class Propagate(GmatCommand):
 
             else:
                 raise RuntimeError(f'stop_conds is invalid. Must be a 2-element tuple or a string')
+
+            sat_name_in_stop_cond = ''  # TODO
+            if sat.name != sat_name_in_stop_cond:  # TODO: change condition to doesn't match any s/c names?
+                raise SyntaxError('Spacecraft name given in StopCondition is different from the name of the specified'
+                                  ' spacecraft')
 
             name = f'StopOn{stop_var}'
             stop_cond_obj = cls(sat, stop_var=stop_var, goal=goal, name=name)
@@ -376,7 +447,7 @@ class Propagate(GmatCommand):
         super().__init__('Propagate', name)  # sets self.command_type, self.name, self.gmat_obj
 
         mod = gpy.Moderator()
-        sb = mod.gmat_obj.GetSandbox()
+        sb = gpy.Sandbox()
         sb.AddSolarSystem(gmat.GetSolarSystem())
 
         if sat:
@@ -430,7 +501,7 @@ class Propagate(GmatCommand):
         coord_sys = gmat.GetObject(coord_sys_name)
         sb.SetInternalCoordSystem(coord_sys)
 
-        gmat.Initialize()
+        # gmat.Initialize()
         sb.AddObject(self.sat)
         gmat.Initialize()
 
@@ -447,6 +518,9 @@ class Propagate(GmatCommand):
         self.SetGlobalObjectMap(sb.GetGlobalObjectMap())
 
         self.Validate()
+        # TODO: remove this lines once Propagate/StopCond fixed
+        # self.Initialize()
+        # print(self.GetGeneratingString())
 
     @classmethod
     def CreateDefault(cls, name: str = 'DefaultPropagateCommand'):
@@ -511,6 +585,7 @@ class Target(GmatCommand):
 
     def ApplyCorrections(self):
         raise NotImplementedError
+
 
 class Vary(GmatCommand):
     def __init__(self, name: str):

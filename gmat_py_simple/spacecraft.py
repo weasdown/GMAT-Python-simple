@@ -146,8 +146,8 @@ class Spacecraft(GmatObject):
         self.was_propagated = False  # determines whether to use GetObject() or GetRuntimeObject()
 
         # TODO: add elements for non-Cartesian orbit states (e.g. 'SMA', 'ECC' for Kep) - get OrbitState allowed fields
-        _AllowedFields = set()
-        _GmatAllowedFields = ['NAIFId', 'NAIFIdReferenceFrame', 'SpiceFrameId', 'OrbitSpiceKernelName',
+        _allowed_fields = set()
+        _gmat_allowed_fields = ['NAIFId', 'NAIFIdReferenceFrame', 'SpiceFrameId', 'OrbitSpiceKernelName',
                               'AttitudeSpiceKernelName',
                               'SCClockSpiceKernelName', 'FrameSpiceKernelName', 'OrbitColor', 'TargetColor',
                               'Epoch', 'X', 'Y', 'Z', 'VX',
@@ -168,12 +168,12 @@ class Spacecraft(GmatObject):
                               'ModelRotationZ', 'ModelScale', 'Attitude']
 
         # TODO: get string attr names for non-GMAT attrs
-        _AllowedFields.update(_GmatAllowedFields,
+        _allowed_fields.update(_gmat_allowed_fields,
                               ['Name', 'Orbit', 'Hardware'])
 
-        self.Hardware: Spacecraft.SpacecraftHardware | None = None
-        self._Tanks: Spacecraft.SpacecraftHardware.PropList | None = None
-        self._Thrusters: Spacecraft.SpacecraftHardware.PropList | None = None
+        self.hardware: Spacecraft.SpacecraftHardware | None = None
+        self._tanks: Spacecraft.SpacecraftHardware.PropList | None = None
+        self._thrusters: Spacecraft.SpacecraftHardware.PropList | None = None
 
         self._orbit = None
         self._dry_mass = self.GetField('DryMass')
@@ -181,8 +181,11 @@ class Spacecraft(GmatObject):
         self.Validate()
         gmat.Initialize()
 
+        # self.gmat_obj.Validate()
+        # gmat.Initialize()
+
     def __repr__(self):
-        return f'Spacecraft with name {self.name}'
+        return f'Spacecraft with name {self._name}'
 
     @classmethod
     def from_dict(cls, specs_dict: dict):
@@ -207,7 +210,7 @@ class Spacecraft(GmatObject):
             hardware = {}
 
         hardware_obj = Spacecraft.SpacecraftHardware.from_dict(hardware, sc)
-        sc.Hardware = sc.update_hardware(hardware_obj)
+        sc.hardware = sc.update_hardware(hardware_obj)
 
         # represent sc's orbit with an OrbitState, with Cartesian as the default state_type
         try:
@@ -236,14 +239,14 @@ class Spacecraft(GmatObject):
         return sc
 
     def update_from_runtime_object(self):
-        self.gmat_obj = gmat.GetRuntimeObject(self.name)
+        self.gmat_obj = gmat.GetRuntimeObject(self._name)
         self.was_propagated = True
 
     def update_hardware(self, hardware: SpacecraftHardware):
-        self.Hardware = hardware
+        self.hardware = hardware
 
         # Attach thrusters and tanks to the Spacecraft
-        for thruster in self.Hardware.Thrusters.Chemical:
+        for thruster in self.hardware.Thrusters.Chemical:
             if not thruster:
                 print(f'No chemical thrusters found, chemical thruster list is: {self.Thrusters.Chemical}')
                 raise SyntaxError
@@ -251,7 +254,7 @@ class Spacecraft(GmatObject):
             thruster.attach_to_sat(self)
             thruster.attach_to_tanks(thruster.tanks)
 
-        for thruster in self.Hardware.Thrusters.Electric:
+        for thruster in self.hardware.Thrusters.Electric:
             if not thruster:
                 print(f'No electric thrusters found, electric thruster list is: {self.Thrusters.Chemical}')
                 break
@@ -259,13 +262,13 @@ class Spacecraft(GmatObject):
             thruster.attach_to_sat(self)
             thruster.attach_to_tanks(thruster.tanks)
 
-        for tank in self.Hardware.Tanks.Chemical:
+        for tank in self.hardware.Tanks.Chemical:
             tank.attach_to_sat(self)
 
-        for tank in self.Hardware.Tanks.Electric:
+        for tank in self.hardware.Tanks.Electric:
             tank.attach_to_sat(self)
 
-        return self.Hardware
+        return self.hardware
 
     def update_orbit(self, orbit: OrbitState):
         self._orbit = orbit
@@ -305,35 +308,35 @@ class Spacecraft(GmatObject):
 
     @property
     def Thrusters(self):
-        return self.Hardware.Thrusters
+        return self.hardware.Thrusters
 
     @Thrusters.setter
     def Thrusters(self, thrusters: Spacecraft.SpacecraftHardware.PropList):
-        self._Thrusters = thrusters
+        self._thrusters = thrusters
 
     @property
     def ChemicalThrusters(self):
-        return self.Hardware.ChemicalThrusters
+        return self.hardware.ChemicalThrusters
 
     @property
     def ElectricThrusters(self):
-        return self.Hardware.ElectricThrusters
+        return self.hardware.ElectricThrusters
 
     @property
     def Tanks(self):
-        return self.Hardware.Tanks
+        return self.hardware.Tanks
 
     @Tanks.setter
     def Tanks(self, tanks: Spacecraft.SpacecraftHardware.PropList):
-        self._Tanks = tanks
+        self._tanks = tanks
 
     @property
     def ChemicalTanks(self):
-        return self.Hardware.ChemicalTanks
+        return self.hardware.ChemicalTanks
 
     @property
     def ElectricTanks(self):
-        return self.Hardware.ElectricTanks
+        return self.hardware.ElectricTanks
 
     def add_tanks(self, tanks: list[ChemicalTank | ElectricTank]):
         """

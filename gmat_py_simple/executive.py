@@ -173,6 +173,10 @@ class Moderator:
             raise TypeError('mission_command_sequence must be a list of GmatCommand objects'
                             ' (e.g. BeginMissionSequence, Propagate)')
 
+        # if mcs empty, or the first command is not a BeginMissionSequence command, add a BMS to the sequence
+        if not mission_command_sequence or not isinstance(mission_command_sequence[0], gpy.BeginMissionSequence):
+            mission_command_sequence.insert(0, gpy.BeginMissionSequence())
+
         # gmat.Initialize()
         mod = gpy.Moderator()
         sb = mod.GetSandbox()
@@ -188,8 +192,9 @@ class Moderator:
                 # command.SetObjectMap(sb.GetObjectMap())
                 command.SetObjectMap(mod.GetConfiguredObjectMap())
                 command.SetGlobalObjectMap(sb.GetGlobalObjectMap())
-                command.Initialize()
 
+                command.Initialize()
+                print(f'Command Initialize done in RunMission for loop: command {type(command).__name__}')
                 appended = mod.AppendCommand(command)
                 if not appended:
                     raise RuntimeError(f'Command {command.name} was not successfully appended to the Moderator in'
@@ -236,11 +241,20 @@ class Sandbox:
     def __init__(self):
         self.gmat_obj = gmat.Moderator.Instance().GetSandbox()
 
-    def AddCommand(self, command: gpy.GmatCommand | gmat.GmatCommand):
+    def AddCommand(self, command: gpy.GmatCommand | gmat.GmatCommand) -> bool:
         return self.gmat_obj.AddCommand(gpy.extract_gmat_obj(command))
+
+    def AddObject(self, obj: gpy.GmatObject) -> bool:
+        return self.gmat_obj.AddObject(gpy.extract_gmat_obj(obj))
+
+    def AddSolarSystem(self, ss: gmat.SolarSystem) -> bool:
+        return self.gmat_obj.AddSolarSystem(ss)
 
     def GetObjectMap(self) -> gmat.ObjectMap:
         return self.gmat_obj.GetObjectMap()
 
     def GetGlobalObjectMap(self) -> gmat.ObjectMap:
         return self.gmat_obj.GetGlobalObjectMap()
+
+    def SetInternalCoordSystem(self, cs: gpy.OrbitState.CoordinateSystem) -> bool:
+        return self.gmat_obj.SetInternalCoordSystem(gpy.extract_gmat_obj(cs))
