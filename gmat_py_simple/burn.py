@@ -7,15 +7,12 @@ from load_gmat import gmat
 
 
 class FiniteBurn(GmatObject):
-    def __init__(self, name, thrusters: list[gpy.Thruster] | gpy.Thruster):
+    def __init__(self, name, thrusters: gpy.Thruster | list[gpy.Thruster]):
         # TODO generic: convert thruster type to Thruster once class created
         super().__init__('FiniteBurn', name)
-        self.gmat_obj.SetSolarSystem(gmat.GetSolarSystem())
-        self.thrusters = thrusters
-        if isinstance(self.thrusters, gpy.Thruster):
-            self.SetField('Thrusters', self.thrusters.GetName())
-        else:
-            self.SetField('Thrusters', [thruster.GetName() for thruster in self.thrusters])
+
+        self.thrusters: list[str] = [thruster.name for thruster in thrusters]
+        self.SetField('Thrusters', self.thrusters)
 
 
 class FiniteThrust(GmatObject):  # TODO tidy: consider making subclass of FiniteBurn

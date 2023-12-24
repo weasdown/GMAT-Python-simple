@@ -11,7 +11,9 @@ class GmatObject:
     def __init__(self, obj_type: str, name: str):
         self.obj_type = obj_type
         self._name = name
+
         self.gmat_obj = gmat.Construct(self.obj_type, self._name)
+        self.gmat_obj.SetSolarSystem(gmat.GetSolarSystem())
         self.was_propagated = False
 
     # @staticmethod

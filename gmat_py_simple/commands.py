@@ -102,9 +102,25 @@ class EndTarget(GmatCommand):
 
 
 class Maneuver(GmatCommand):
-    def __init__(self, name: str):
+    def __init__(self, name: str, burn: gpy.ImpulsiveBurn | gpy.FiniteBurn, spacecraft: gpy.Spacecraft,
+                 backprop: bool = False):
         super().__init__('Maneuver', name)
-        raise NotImplementedError
+
+        self.burn = burn
+        self.SetField('Burn', burn.name)
+
+        self.spacecraft = spacecraft
+        self.SetField('Spacecraft', self.spacecraft.name)
+
+        self.backprop = backprop
+        self.SetField('BackProp', self.backprop)
+
+        self.Help()
+
+        self.SetSolarSystem(gmat.GetSolarSystem())
+        self.SetObjectMap(gpy.Moderator().GetConfiguredObjectMap())
+        self.SetGlobalObjectMap(gpy.Sandbox().GetGlobalObjectMap())
+        self.Validate()
 
 
 class Propagate(GmatCommand):

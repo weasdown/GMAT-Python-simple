@@ -33,15 +33,18 @@ fm = gpy.ForceModel(name='LowEarthProp_ForceModel', point_masses=['Luna', 'Sun']
 prop = gpy.PropSetup('LowEarthProp', accuracy=9.999999999999999e-12,
                      gator=gpy.PropSetup.Propagator(name='LowEarthProp', integrator='RungeKutta89'))
 
-toi = gpy.ImpulsiveBurn('IB1', sat.GetCoordinateSystem(), [0.2, 0, 0])
+# toi = gpy.ImpulsiveBurn('IB1', sat.GetCoordinateSystem(), [0.2, 0, 0])
 
 print(f'Sat state before running: {sat.GetState()}')
 print(f"Epoch before running: {sat.GetField('Epoch')}")
 
 # Mission Command Sequence
 mcs = [
-       gpy.Propagate('Prop One Day', prop, sat, ('Sat.ElapsedSecs', 60)),
-       ]
+    gpy.Propagate('Prop One Day', prop, sat, ('Sat.ElapsedSecs', 60)),
+    # gpy.Maneuver('Maneuver1', toi, sat),  # TODO bugfix: Maneuver command causing infinite run
+    # TODO bugfix: crash with second Propagate - StopCondition name being double-used?
+    # gpy.Propagate('Prop Another Day', prop, sat, ('Sat.ElapsedSecs', 120))
+]
 
 gpy.RunMission(mcs)  # Run the mission
 
