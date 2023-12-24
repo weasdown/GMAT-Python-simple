@@ -26,33 +26,21 @@ sat_params = {
     },
 }
 
-sat = gpy.Spacecraft('NotSat')
-# sat = gpy.Spacecraft.from_dict(sat_params)
-prop = gpy.PropSetup('DefaultProp')
+sat = gpy.Spacecraft.from_dict(sat_params)
 
-# fm = gpy.ForceModel(name='LowEarthProp_ForceModel', point_masses=['Luna', 'Sun'], drag=gpy.ForceModel.DragForce(),
-#                     srp=True, gravity_field=gpy.ForceModel.GravityField(degree=10, order=10))
-# prop = gpy.PropSetup('LowEarthProp', accuracy=9.999999999999999e-12,
-#                      gator=gpy.PropSetup.Propagator(name='LowEarthProp', integrator='RungeKutta89'))
-
-# sat.Help()
-# prop.Help()
-
-# gmat.Initialize()
+fm = gpy.ForceModel(name='LowEarthProp_ForceModel', point_masses=['Luna', 'Sun'], drag=gpy.ForceModel.DragForce(),
+                    srp=True, gravity_field=gpy.ForceModel.GravityField(degree=10, order=10))
+prop = gpy.PropSetup('LowEarthProp', accuracy=9.999999999999999e-12,
+                     gator=gpy.PropSetup.Propagator(name='LowEarthProp', integrator='RungeKutta89'))
 
 # toi = gpy.ImpulsiveBurn()
-
-# print(prop.gmat_obj.GetRefObjectNameArray(gmat.SPACECRAFT))
 
 print(f'Sat state before running: {sat.GetState()}')
 print(f"Epoch before running: {sat.GetField('Epoch')}")
 
-# gmat.ShowObjects()
-# gmat.Initialize()
-
 # Mission Command Sequence
 mcs = [
-       gpy.Propagate('Prop One Day', prop, sat, 'NotSat.Earth.Apoapsis'),
+       gpy.Propagate('Prop One Day', prop, sat, ('Sat.ElapsedDays', 365)),
        ]
 
 gpy.RunMission(mcs)  # Run the mission
