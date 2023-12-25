@@ -39,35 +39,51 @@ toi = gpy.ImpulsiveBurn('IB1', sat.GetCoordinateSystem(), [0.2, 0, 0])
 print(f'Sat state before running: {sat.GetState()}')
 print(f"Epoch before running: {sat.GetField('Epoch')}")
 
+prop1 = gpy.Propagate('Prop One Day', prop, sat, ('Sat.ElapsedSecs', 60))
+
+# gmat.ShowObjects()
+# es = gpy.GetObject('Sat.ElapsedSecs')
+# es.Help()
+
+# g60 = gpy.GetObject('Goal=60')
+# g60.Help()
+
+# TODO bugfix: Maneuver command causing crash in RunMission/for loop/mod.AppendCommand()
+man1 = gpy.Maneuver('Maneuver1', toi, sat)
+
+# TODO bugfix: crash with second Propagate - StopCondition name being double-used?
+#  Note: LoadScript shows single Sat.ElapsedSecs even if multiple ElapsedSecs Propagate commands in script
+prop2 = gpy.Propagate('Prop Another Day', prop, sat, ('Sat.ElapsedSecs', 120))
+
 # Mission Command Sequence
 mcs = [
-    # gpy.Propagate('Prop One Day', prop, sat, ('Sat.ElapsedSecs', 60)),
-    # gpy.Maneuver('Maneuver1', toi, sat),  # TODO bugfix: Maneuver command causing infinite run
-    # TODO bugfix: crash with second Propagate - StopCondition name being double-used?
-    # gpy.Propagate('Prop Another Day', prop, sat, ('Sat.ElapsedSecs', 120))
+    prop1,
+    man1,
+    prop2
 ]
 
-stop_cond = gpy.Moderator().CreateDefaultStopCondition()
-stop_cond.Help()
 gmat.ShowObjects()
 
-mj = gpy.GetObject('Sat.A1ModJulian')
-es = gpy.GetObject('Sat.ElapsedSecs')
+# mj = gpy.GetObject('Sat.A1ModJulian')
+# es = gpy.GetObject('Sat.ElapsedSecs')
+#
+# print(f'Types - A1ModJulian: {mj.GetTypeName()}, ElapsedSecs: {es.GetTypeName()}')
+#
+# mj.Help()
+# es.Help()
 
-mod = gpy.Moderator()
-sb = gpy.Sandbox()
-sb.AddObject(mj)
-sb.AddObject(es)
+# mod = gpy.Moderator()
+# sb = gpy.Sandbox()
+# sb.AddObject(mj)
+# sb.AddObject(es)
+#
+# # gmat.Initialize()
+#
+# mj.Help()
+# es.Help()
 
-print(gpy.GetTypeNameFromID(116))
-
-gmat.Initialize()
-
-mj.Help()
-es.Help()
-
-sc60 = gpy.GetObject('Goal=60')
-sc60.Help()
+# sc60 = gpy.GetObject('Goal=60')
+# sc60.Help()
 
 gpy.RunMission(mcs)  # Run the mission
 

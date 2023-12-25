@@ -46,21 +46,27 @@ class GmatCommand:
     def Help(self):
         self.gmat_obj.Help()
 
+    def SetBooleanParameter(self, param_name: str, value: bool):
+        return self.gmat_obj.SetBooleanParameter(param_name, value)
+
     def SetField(self, field: str, val: str | list | int | float):
         self.gmat_obj.SetField(field, val)
+
+    def SetGlobalObjectMap(self, gom: gmat.ObjectMap):
+        self.gmat_obj.SetGlobalObjectMap(gom)
 
     def SetName(self, name: str):
         self.name = name
         self.gmat_obj.SetName(name)
 
-    def SetSolarSystem(self, ss: gmat.SolarSystem):
-        self.gmat_obj.SetSolarSystem(ss)
-
     def SetObjectMap(self, om: gmat.ObjectMap):
         self.gmat_obj.SetObjectMap(om)
 
-    def SetGlobalObjectMap(self, gom: gmat.ObjectMap):
-        self.gmat_obj.SetGlobalObjectMap(gom)
+    def SetSolarSystem(self, ss: gmat.SolarSystem):
+        self.gmat_obj.SetSolarSystem(ss)
+
+    def SetStringParameter(self, param_name: str, value: str):
+        return self.gmat_obj.SetStringParameter(param_name, value)
 
     def Validate(self) -> bool:
         return self.gmat_obj.Validate()
@@ -104,22 +110,44 @@ class EndTarget(GmatCommand):
 class Maneuver(GmatCommand):
     def __init__(self, name: str, burn: gpy.ImpulsiveBurn | gpy.FiniteBurn, spacecraft: gpy.Spacecraft,
                  backprop: bool = False):
+        """
+        Create a Maneuver command.
+
+        :param name:
+        :param burn:
+        :param spacecraft:
+        :param backprop:
+        """
+
+        # TODO: remove below docstring when no longer needed
+        """
+        In Moderator.cpp/CreateDefaultCommand/try...
+            else if (type == "Maneuver")
+          {
+             // set burn
+             id = cmd->GetParameterID("Burn");
+             cmd->SetStringParameter(id, GetDefaultBurn("ImpulsiveBurn")->GetName());
+             
+             // set spacecraft
+             id = cmd->GetParameterID("Spacecraft");
+             cmd->SetStringParameter(id, GetDefaultSpacecraft()->GetName());
+         """
+
         super().__init__('Maneuver', name)
 
         self.burn = burn
-        self.SetField('Burn', burn.name)
+        self.SetStringParameter(self.gmat_obj.GetParameterID('Burn'), self.burn.name)
 
         self.spacecraft = spacecraft
-        self.SetField('Spacecraft', self.spacecraft.name)
+        self.SetStringParameter(self.gmat_obj.GetParameterID('Spacecraft'), self.spacecraft.name)
 
         self.backprop = backprop
-        self.SetField('BackProp', self.backprop)
-
-        self.Help()
+        self.SetBooleanParameter(self.gmat_obj.GetParameterID('BackProp'), self.backprop)
 
         self.SetSolarSystem(gmat.GetSolarSystem())
         self.SetObjectMap(gpy.Moderator().GetConfiguredObjectMap())
         self.SetGlobalObjectMap(gpy.Sandbox().GetGlobalObjectMap())
+
         self.Validate()
 
 
@@ -181,13 +209,14 @@ class Propagate(GmatCommand):
                 for param in goalless_params:  # TODO: find a way to combine this into if True in... above
                     if param in stop_var:
                         self.stop_param_type = param
-                for body in bodies:
-                    if body in stop_var:
-                        self.body = body
-                        continue  # use the first body we find in self.stop_var
             else:
                 self.epoch_var = epoch_var
                 self.epoch_param_type = self.epoch_var.split('.')[1]
+
+            for body in bodies:
+                if body in stop_var:
+                    self.body = body
+                    continue  # use the first body we find in self.stop_var
 
             if self.goalless and not self.body:
                 raise AttributeError('No body found for StopCondition')
@@ -212,10 +241,6 @@ class Propagate(GmatCommand):
             self.description = description
             self.name = name if name else f'StopOn{self.stop_var}'
 
-            # TODO remove once StopCond crash debugged
-            print('\nGMAT objects directly before creating StopCondition:')
-            gmat.ShowObjects()
-
             self.gmat_obj = gpy.Moderator().CreateStopCondition(self.name)
             self.gmat_obj.SetSolarSystem(gmat.GetSolarSystem())
 
@@ -229,23 +254,24 @@ class Propagate(GmatCommand):
 
             self.stop_param = gpy.CreateParameter(self.stop_param_type, self.stop_var)
             self.stop_param.SetRefObjectName(gmat.SPACECRAFT, sat_name)
+            if not self.body:  # TODO: work out how to get the body more reliably to avoid needing this fallback clause
+                self.body = 'Earth'  # if we've not set self.body yet, use Earth as a fallback
+            self.stop_param.SetRefObjectName(gmat.SPACE_POINT, self.body)
             if self.goalless:
-                self.stop_param.SetRefObjectName(gmat.SPACE_POINT, self.body)
+                # self.stop_param.SetRefObjectName(gmat.SPACE_POINT, self.body)
                 self.stop_param.SetRefObjectName(gmat.CELESTIAL_BODY, self.body)
                 coord_sys_name = self.sat.GetField('CoordinateSystem')
                 self.stop_param.SetRefObjectName(gmat.COORDINATE_SYSTEM, coord_sys_name)
-            else:
-                self.goal_param = gpy.CreateParameter('Variable', f'Goal={self.goal}')
-                self.SetGoalParameter(self.goal_param)
-                self.SetStringParameter('Goal', self.goal)
+            # else:
+            #     self.goal_param = gpy.CreateParameter('Variable', f'Goal={self.goal}')
+            #     self.SetGoalParameter(self.goal_param)
+            #     self.SetStringParameter('Goal', self.goal)
+            #     self.goal_param.SetRefObjectName(gmat.SPACECRAFT, sat_name)
 
             self.SetStringParameter('StopVar', self.stop_param.GetName())
             self.SetStopParameter(self.stop_param)
 
-            # TODO remove once StopCond crash debugged
-            print('\nGMAT objects at end of StopCondition init:')
-            gmat.ShowObjects()
-            pass
+            self.Validate()
 
         @classmethod
         def CreateDefault(cls):
@@ -482,8 +508,6 @@ class Propagate(GmatCommand):
         self.SetSolarSystem(gmat.GetSolarSystem())
         self.SetObjectMap(mod.GetConfiguredObjectMap())
         self.SetGlobalObjectMap(sb.GetGlobalObjectMap())
-
-        gmat.ShowObjects()
 
         self.Validate()
 

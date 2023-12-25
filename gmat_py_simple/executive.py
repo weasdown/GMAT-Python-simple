@@ -181,6 +181,8 @@ class Moderator:
         if not mission_command_sequence or not isinstance(mission_command_sequence[0], gpy.BeginMissionSequence):
             mission_command_sequence.insert(0, gpy.BeginMissionSequence())
 
+        print(f'Mission Command Sequence in RunMission: {mission_command_sequence}')
+
         # gmat.Initialize()
         mod = gpy.Moderator()
         sb = mod.GetSandbox()
@@ -191,24 +193,40 @@ class Moderator:
 
         propagate_commands: list[gpy.Propagate] = []  # start a list of Propagates so their sats can be updated later
         for command in mission_command_sequence:
+            print(f'Command: {command}')
+            print(f'type: {type(command).__name__}')
+            print(f'GMAT type: {command.gmat_obj.GetTypeName()}')
+            if not isinstance(command, gpy.GmatCommand):
+                raise TypeError('command in RunMission for loop must be a gpy.GmatCommand')
+
             try:
                 command.SetSolarSystem(gmat.GetSolarSystem())
                 command.SetObjectMap(mod.GetConfiguredObjectMap())
                 command.SetGlobalObjectMap(sb.GetGlobalObjectMap())
 
                 command.Initialize()
+                print(f'In RunMission, initialized command {type(command).__name__}')
                 appended = mod.AppendCommand(command)
+                print(f'In RunMission, appended command {type(command).__name__}')
                 if not appended:
                     raise RuntimeError(f'Command {command.name} was not successfully appended to the Moderator in'
                                        f' RunMission. Returned value: {appended}')
                 mod.ValidateCommand(command)
+                print(f'In RunMission, validated command {type(command).__name__}')
 
                 if isinstance(command, gpy.Propagate):
                     propagate_commands.append(command)
                     command.TakeAction('PrepareToPropagate')
+                    print('PrepareToPropagate complete in RunMission')
+
+                print(f'In RunMission, completed processing for command {type(command).__name__}\n')
+
             except SystemExit as sys_exit:
                 raise RuntimeError(f'GMAT attempted to stop code execution while processing command {command} - '
                                    f'{sys_exit}')
+            except Exception as ex:
+                print(f'Failed command: {command}')
+                raise ex
 
         print('\nMission Command Sequence setup complete. Running mission...')
 
