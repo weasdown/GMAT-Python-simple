@@ -125,7 +125,11 @@ class Moderator:
 
     @staticmethod
     def GetParameter(name: str):
-        obj = gmat.Validator.Instance().FindObject(name)
+        vdator = gmat.Validator.Instance()
+        vdator.SetSolarSystem(gmat.GetSolarSystem())
+        vdator.SetObjectMap(gpy.Moderator().GetConfiguredObjectMap())
+
+        obj = vdator.FindObject(name)
         # instead of Validator, could use ElementWrapper or Moderator
         if obj and obj.IsOfType(gmat.PARAMETER):
             if type(obj).__name__ == 'GmatBase':

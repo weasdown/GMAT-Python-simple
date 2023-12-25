@@ -212,6 +212,10 @@ class Propagate(GmatCommand):
             self.description = description
             self.name = name if name else f'StopOn{self.stop_var}'
 
+            # TODO remove once StopCond crash debugged
+            print('\nGMAT objects directly before creating StopCondition:')
+            gmat.ShowObjects()
+
             self.gmat_obj = gpy.Moderator().CreateStopCondition(self.name)
             self.gmat_obj.SetSolarSystem(gmat.GetSolarSystem())
 
@@ -231,12 +235,17 @@ class Propagate(GmatCommand):
                 coord_sys_name = self.sat.GetField('CoordinateSystem')
                 self.stop_param.SetRefObjectName(gmat.COORDINATE_SYSTEM, coord_sys_name)
             else:
-                self.goal_param = gpy.CreateParameter('Variable', self.goal)
+                self.goal_param = gpy.CreateParameter('Variable', f'Goal={self.goal}')
                 self.SetGoalParameter(self.goal_param)
                 self.SetStringParameter('Goal', self.goal)
 
             self.SetStringParameter('StopVar', self.stop_param.GetName())
             self.SetStopParameter(self.stop_param)
+
+            # TODO remove once StopCond crash debugged
+            print('\nGMAT objects at end of StopCondition init:')
+            gmat.ShowObjects()
+            pass
 
         @classmethod
         def CreateDefault(cls):
@@ -473,6 +482,8 @@ class Propagate(GmatCommand):
         self.SetSolarSystem(gmat.GetSolarSystem())
         self.SetObjectMap(mod.GetConfiguredObjectMap())
         self.SetGlobalObjectMap(sb.GetGlobalObjectMap())
+
+        gmat.ShowObjects()
 
         self.Validate()
 

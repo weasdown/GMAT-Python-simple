@@ -28,23 +28,46 @@ sat_params = {
 
 sat = gpy.Spacecraft.from_dict(sat_params)
 
-fm = gpy.ForceModel(name='LowEarthProp_ForceModel', point_masses=['Luna', 'Sun'], drag=gpy.ForceModel.DragForce(),
-                    srp=True, gravity_field=gpy.ForceModel.GravityField(degree=10, order=10))
-prop = gpy.PropSetup('LowEarthProp', accuracy=9.999999999999999e-12,
-                     gator=gpy.PropSetup.Propagator(name='LowEarthProp', integrator='RungeKutta89'))
+# fm = gpy.ForceModel(name='LowEarthProp_ForceModel', point_masses=['Luna', 'Sun'], drag=gpy.ForceModel.DragForce(),
+#                     srp=True, gravity_field=gpy.ForceModel.GravityField(degree=10, order=10))
+# prop = gpy.PropSetup('LowEarthProp', accuracy=9.999999999999999e-12,
+#                      gator=gpy.PropSetup.Propagator(name='LowEarthProp', integrator='RungeKutta89'))
+prop = gpy.PropSetup('LowEarthProp')
 
-# toi = gpy.ImpulsiveBurn('IB1', sat.GetCoordinateSystem(), [0.2, 0, 0])
+toi = gpy.ImpulsiveBurn('IB1', sat.GetCoordinateSystem(), [0.2, 0, 0])
 
 print(f'Sat state before running: {sat.GetState()}')
 print(f"Epoch before running: {sat.GetField('Epoch')}")
 
 # Mission Command Sequence
 mcs = [
-    gpy.Propagate('Prop One Day', prop, sat, ('Sat.ElapsedSecs', 60)),
+    # gpy.Propagate('Prop One Day', prop, sat, ('Sat.ElapsedSecs', 60)),
     # gpy.Maneuver('Maneuver1', toi, sat),  # TODO bugfix: Maneuver command causing infinite run
     # TODO bugfix: crash with second Propagate - StopCondition name being double-used?
     # gpy.Propagate('Prop Another Day', prop, sat, ('Sat.ElapsedSecs', 120))
 ]
+
+stop_cond = gpy.Moderator().CreateDefaultStopCondition()
+stop_cond.Help()
+gmat.ShowObjects()
+
+mj = gpy.GetObject('Sat.A1ModJulian')
+es = gpy.GetObject('Sat.ElapsedSecs')
+
+mod = gpy.Moderator()
+sb = gpy.Sandbox()
+sb.AddObject(mj)
+sb.AddObject(es)
+
+print(gpy.GetTypeNameFromID(116))
+
+gmat.Initialize()
+
+mj.Help()
+es.Help()
+
+sc60 = gpy.GetObject('Goal=60')
+sc60.Help()
 
 gpy.RunMission(mcs)  # Run the mission
 
