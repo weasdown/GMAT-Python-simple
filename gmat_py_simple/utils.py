@@ -357,7 +357,7 @@ def get_sat_objects() -> list[gmat.Spacecraft]:
 
 def CustomHelp(obj):
     print(obj)
-    print(f'CustomHelp for {obj.GetName()}:')
+    print(f'\nCustomHelp for {obj.GetName()}:')
     obj = extract_gmat_obj(obj)
     param_count = obj.GetParameterCount()
 
@@ -376,6 +376,8 @@ def CustomHelp(obj):
                 val = obj.GetRealParameter(i)
             elif param_type == 'Rmatrix':
                 val = obj.GetRmatrixParameter(i)
+            elif param_type == 'Boolean':
+                val = obj.GetBooleanParameter(i)
             else:
                 raise TypeError(f'Unrecognised type: {param_type}')
 

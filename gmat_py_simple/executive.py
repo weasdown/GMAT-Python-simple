@@ -15,11 +15,18 @@ class Moderator:
     def __init__(self):
         self.gmat_obj = gmat.Moderator.Instance()
 
-    def Initialize(self):
-        self.gmat_obj.Initialize()
+    def AppendCommand(self, command: gpy.GmatCommand) -> bool:
+        print('Entered Moderator.AppendCommand()')
+        try:
+            resp: bool = self.gmat_obj.AppendCommand(command.gmat_obj)
+            return resp
+        except SystemExit as se:
+            print('SystemExit detected in Moderator.AppendCommand()!!')
+            raise RuntimeError('Moderator.AppendCommand() attempted to raise a SystemExit:\nse') from se
 
-    def AppendCommand(self, command: GmatCommand) -> bool:
-        return self.gmat_obj.AppendCommand(command.gmat_obj)
+        except Exception as ex:
+            print('Exception detected in Moderator.AppendCommand()!!')
+            raise RuntimeError('Moderator.AppendCommand() attempted to raise an Exception:\nse') from ex
 
     def CreateCommand(self, command_type: str, name: str) -> gmat.GmatCommand:
         # True (retFlag) isn't actually used in source, but still required
@@ -161,6 +168,9 @@ class Moderator:
     def GetFirstCommand(self):
         return self.gmat_obj.GetFirstCommand()
 
+    def Initialize(self):
+        self.gmat_obj.Initialize()
+
     def InsertCommand(self, command_to_insert: GmatCommand, preceding_command: GmatCommand):
         return self.gmat_obj.InsertCommand(command_to_insert, preceding_command)
 
@@ -204,8 +214,11 @@ class Moderator:
                 command.SetObjectMap(mod.GetConfiguredObjectMap())
                 command.SetGlobalObjectMap(sb.GetGlobalObjectMap())
 
+                command.Validate()
+                mod.ValidateCommand(command)
                 command.Initialize()
                 print(f'In RunMission, initialized command {type(command).__name__}')
+                command.Help()
                 appended = mod.AppendCommand(command)
                 print(f'In RunMission, appended command {type(command).__name__}')
                 if not appended:

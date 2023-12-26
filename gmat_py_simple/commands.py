@@ -28,6 +28,9 @@ class GmatCommand:
         # TODO bugfix: switch to CreateCommand (uncomment below) when issue GMT-8100 fixed
         # self.gmat_obj: gmat.GmatCommand = gpy.Moderator().CreateCommand(self.command_type, self.name)
 
+    def AddToMCS(self) -> bool:
+        return gpy.Moderator().AppendCommand(self)
+
     def Initialize(self):
         self.gmat_obj.Initialize()
 
