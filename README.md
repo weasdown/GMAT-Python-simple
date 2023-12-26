@@ -5,3 +5,6 @@ Due to the wrapper's extensive use of classes and methods rather than strings, i
 
 ## Examples
 To demonstrate the wrapper, tutorials will be added to the [examples](https://github.com/weasdown/GMAT-Python-simple/tree/main/examples)/[tutorials](https://github.com/weasdown/GMAT-Python-simple/tree/main/examples/tutorials) directory as the required feature level is reached. These tutorials will match those distributed with GMAT by default (in the \[GMAT root]/samples folder) and will demonstrate the power of the wrapper to create missions using very little code.
+
+## Components implemented so far
+TBC
