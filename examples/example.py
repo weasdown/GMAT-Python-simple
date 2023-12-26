@@ -50,7 +50,9 @@ prop1 = gpy.Propagate('Prop One Day', prop, sat, ('Sat.ElapsedSecs', 60))
 
 # TODO bugfix: Maneuver command causing crash in RunMission/for loop/mod.AppendCommand()
 man1 = gpy.Maneuver('Maneuver1', toi, sat)
-gpy.CustomHelp(man1)
+# print(f'man1 init: {man1.Initialize()}')
+# print(f'gmat init: {gmat.Initialize()}')
+# print(f'Appended man1: {gpy.Moderator().AppendCommand(man1)}')
 
 # TODO bugfix: crash with second Propagate - StopCondition name being double-used?
 #  Note: LoadScript shows single Sat.ElapsedSecs even if multiple ElapsedSecs Propagate commands in script
@@ -63,7 +65,7 @@ mcs = [
     prop2
 ]
 
-gmat.ShowObjects()
+# gmat.ShowObjects()
 
 # mj = gpy.GetObject('Sat.A1ModJulian')
 # es = gpy.GetObject('Sat.ElapsedSecs')

@@ -18,11 +18,11 @@ class GmatCommand:
         self.gmat_obj: gmat.GmatCommand = gpy.Moderator().CreateDefaultCommand(self.command_type, self.name)
         self.gmat_obj.SetName(self.name)
 
-        if self.command_type == 'Propagate':
-            # TODO: find name of mission's spacecraft rather than assuming default
-            sat_name = gpy.Moderator().GetDefaultSpacecraft().GetName()
-            gmat.Clear(f'{sat_name}.ElapsedSecs')  # stop condition parameter
-            gmat.Clear(f'{sat_name}.A1ModJulian')  # stop condition parameter
+        # if self.command_type == 'Propagate':
+        #     # TODO: find name of mission's spacecraft rather than assuming default
+        #     sat_name = gpy.Moderator().GetDefaultSpacecraft().GetName()
+        #     gmat.Clear(f'{sat_name}.ElapsedSecs')  # stop condition parameter
+        #     gmat.Clear(f'{sat_name}.A1ModJulian')  # stop condition parameter
 
         self.Validate()
         # TODO bugfix: switch to CreateCommand (uncomment below) when issue GMT-8100 fixed
@@ -152,6 +152,7 @@ class Maneuver(GmatCommand):
         self.SetGlobalObjectMap(gpy.Sandbox().GetGlobalObjectMap())
 
         self.Validate()
+        self.Initialize()
 
 
 class Propagate(GmatCommand):
@@ -513,6 +514,10 @@ class Propagate(GmatCommand):
         self.SetGlobalObjectMap(sb.GetGlobalObjectMap())
 
         self.Validate()
+
+        print(f'Pgate GenString: {self.GetGeneratingString()}')
+
+        pass  # TODO remove
 
     @classmethod
     def CreateDefault(cls, name: str = 'DefaultPropagateCommand'):

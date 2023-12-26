@@ -18,9 +18,11 @@ class Moderator:
     def AppendCommand(self, command: gpy.GmatCommand) -> bool:
         print('Entered Moderator.AppendCommand()')
         try:
-            resp: bool = self.gmat_obj.AppendCommand(command.gmat_obj)
+            print(f'Command type in mod.AppendCommand: {type(command)}')
+            print(f'GenString in AppComm: {command.GetGeneratingString()}')
+            resp: bool = self.gmat_obj.AppendCommand(gpy.extract_gmat_obj(command))
             return resp
-        except SystemExit as se:
+        except SystemExit as se:  # TODO bugfix: doesn't prevent hang
             print('SystemExit detected in Moderator.AppendCommand()!!')
             raise RuntimeError('Moderator.AppendCommand() attempted to raise a SystemExit:\nse') from se
 
@@ -217,13 +219,21 @@ class Moderator:
                 command.Validate()
                 mod.ValidateCommand(command)
                 command.Initialize()
-                print(f'In RunMission, initialized command {type(command).__name__}')
-                command.Help()
-                appended = mod.AppendCommand(command)
+                # print(f'In RunMission, initialized command {type(command).__name__}')
+                # command.Help()
+                # print(f'Exit code from Moderator: {mod.gmat_obj.GetExitCode()}')
+
+                # print('Last command:')
+                # print(mod.gmat_obj.GetLastCommand())
+
+                # mod.Initialize()
+                mod.AppendCommand(command)
+                print(f'List of all: {gmat.ConfigManager.Instance().GetListOfAllItems()}')
+                # print(f'New MCS: {gpy.Moderator()}')
                 print(f'In RunMission, appended command {type(command).__name__}')
-                if not appended:
-                    raise RuntimeError(f'Command {command.name} was not successfully appended to the Moderator in'
-                                       f' RunMission. Returned value: {appended}')
+                # if not appended:
+                #     raise RuntimeError(f'Command {command.name} was not successfully appended to the Moderator in'
+                #                        f' RunMission. Returned value: {appended}')
                 mod.ValidateCommand(command)
                 print(f'In RunMission, validated command {type(command).__name__}')
 
@@ -238,7 +248,7 @@ class Moderator:
                 raise RuntimeError(f'GMAT attempted to stop code execution while processing command {command} - '
                                    f'{sys_exit}')
             except Exception as ex:
-                print(f'Failed command: {command}')
+                print(f'Failed command in RunMission: {command}')
                 raise ex
 
         print('\nMission Command Sequence setup complete. Running mission...')
