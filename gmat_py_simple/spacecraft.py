@@ -541,21 +541,21 @@ class ElectricThruster(Thruster):
         ep_thr.Validate()
         return ep_thr
 
-    @property
-    def mix_ratio(self):
-        return self._mix_ratio
+    # @property
+    # def mix_ratio(self):
+    #     return self._mix_ratio
 
-    @mix_ratio.setter
-    def mix_ratio(self, mix_ratio: list[int]):
-        if all(isinstance(ratio, int) for ratio in mix_ratio):  # check that all mix_ratio elements are of type int
-            # convert GMAT's Tanks field (with curly braces) to a Python list of strings
-            tanks_list = [item.strip("'") for item in self.gmat_obj.GetField('Tank')[1:-1].split(', ')]
-            if len(mix_ratio) != len(tanks_list):
-                raise SyntaxError('Number of mix ratios provided does not equal existing number of tanks')
-            else:
-                if tanks_list and any(ratio == -1 for ratio in mix_ratio):  # tank(s) assigned but a -1 ratio given
-                    raise SyntaxError('Cannot have -1 mix ratio if tank(s) assigned to thruster')
-                else:
-                    self._mix_ratio = mix_ratio
-        else:
-            raise SyntaxError('All elements of mix_ratio must be of type int')
+    # @mix_ratio.setter
+    # def mix_ratio(self, mix_ratio: list[int]):
+    #     if all(isinstance(ratio, int) for ratio in mix_ratio):  # check that all mix_ratio elements are of type int
+    #         # convert GMAT's Tanks field (with curly braces) to a Python list of strings
+    #         tanks_list = [item.strip("'") for item in self.gmat_obj.GetField('Tank')[1:-1].split(', ')]
+    #         if len(mix_ratio) != len(tanks_list):
+    #             raise SyntaxError('Number of mix ratios provided does not equal existing number of tanks')
+    #         else:
+    #             if tanks_list and any(ratio == -1 for ratio in mix_ratio):  # tank(s) assigned but a -1 ratio given
+    #                 raise SyntaxError('Cannot have -1 mix ratio if tank(s) assigned to thruster')
+    #             else:
+    #                 self._mix_ratio = mix_ratio
+    #     else:
+    #         raise SyntaxError('All elements of mix_ratio must be of type int')

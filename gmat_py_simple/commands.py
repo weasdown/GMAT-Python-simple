@@ -18,11 +18,11 @@ class GmatCommand:
         self.gmat_obj: gmat.GmatCommand = gpy.Moderator().CreateDefaultCommand(self.command_type, self.name)
         self.gmat_obj.SetName(self.name)
 
-        # if self.command_type == 'Propagate':
-        #     # TODO: find name of mission's spacecraft rather than assuming default
-        #     sat_name = gpy.Moderator().GetDefaultSpacecraft().GetName()
-        #     gmat.Clear(f'{sat_name}.ElapsedSecs')  # stop condition parameter
-        #     gmat.Clear(f'{sat_name}.A1ModJulian')  # stop condition parameter
+        if self.command_type == 'Propagate':
+            # TODO: find name of mission's spacecraft rather than assuming default
+            sat_name = gpy.Moderator().GetDefaultSpacecraft().GetName()
+            gmat.Clear(f'{sat_name}.ElapsedSecs')  # stop condition parameter
+            gmat.Clear(f'{sat_name}.A1ModJulian')  # stop condition parameter
 
         self.Validate()
         # TODO bugfix: switch to CreateCommand (uncomment below) when issue GMT-8100 fixed
@@ -303,10 +303,50 @@ class Propagate(GmatCommand):
             # epoch_var = f'{sat_name}.{stop_param}'
 
             mod = gpy.Moderator()
-            def_stop_cond = mod.CreateDefaultStopCondition()
-            def_stop_cond.Help()
+            self.gmat_obj = mod.CreateStopCondition('StopCond1')
+            self.gmat_obj.Help()
+
+            # TODO: parse variables
+            stop_var = ''  # TODO: first part of tuple, or whole string
+            epoch_var = 'A1ModJulian'  # TODO: determine other epoch_var options and when to use them
+            goal = ''  # TODO: second part of tuple, or None (in which case don't use goal param)
+
+            stop_param = self.create_stop_param(stop_var)
+            gmat.Moderator.Instance().SetParameterRefObject(stop_param, 'Spacecraft', sat_name, '', '', 0)
+
+            epoch_param = self.create_epoch_param(epoch_var)
+            # TODO: epoch_param always needed, or sometimes not so "if epoch_var" or similar?
+            gmat.Moderator.Instance().SetParameterRefObject(epoch_param, 'Spacecraft', sat_name, '', '', 0)
+
+            goal_param = self.create_goal_param(goal)  # TODO: should this param be used somewhere?
+            if goal:
+                gmat.Moderator.Instance().SetParameterRefObject(goal_param, 'Spacecraft', sat_name, '', '', 0)
+
+            self.gmat_obj.SetStringParameter('EpochVar', epoch_var)  # EpochVar is mEpochParamName in StopCondition source
+            self.gmat_obj.SetStringParameter('StopVar', stop_var)  # StopVar is mStopParamName in StopCondition source
+            self.gmat_obj.SetStringParameter('Goal', goal)  # SetRhsString() called with goal value in source
 
             self.Validate()
+
+        def create_epoch_param(self, epoch_var: str):
+            raise NotImplementedError
+
+        def create_stop_param(self, stop_var: str):
+            raise NotImplementedError
+
+        def create_goal_param(self, goal: str):
+            raise NotImplementedError
+
+        def parse_stop_cond(self, stop_cond: str | tuple) -> tuple:
+            stop_var = 'TODO'
+            epoch_var = 'TODO'
+            goal = 'TODO'
+
+            stop_param = self.create_stop_param(stop_var)
+            epoch_param = self.create_epoch_param(epoch_var)
+            goal_param = self.create_goal_param(goal)
+
+            return stop_param, epoch_param, goal_param
 
         @classmethod
         def CreateDefault(cls):

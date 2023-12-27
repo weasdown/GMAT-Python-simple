@@ -56,6 +56,7 @@ class Moderator:
         mod = Moderator()
         if not mod.GetParameter(epoch_var):
             epoch_param = gmat.Moderator.Instance().CreateParameter('A1ModJulian', epoch_var)
+            # TODO: write SetParameterRefObject() for gpy.Moderator()
             gmat.Moderator.Instance().SetParameterRefObject(epoch_param, 'Spacecraft', sc_name, '', '', 0)
             # epoch_param = gmat.GetObject(epoch_var)
             # epoch_param.Initialize()
