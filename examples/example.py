@@ -61,8 +61,8 @@ prop2 = gpy.Propagate('Prop Another Day', prop, sat, ('Sat.ElapsedSecs', 120))
 # Mission Command Sequence
 mcs = [
     prop1,
-    man1,
-    prop2
+    # man1,
+    # prop2
 ]
 
 # gmat.ShowObjects()

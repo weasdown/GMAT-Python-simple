@@ -78,7 +78,7 @@ class Moderator:
 
         return stop_cond
 
-    def CreateParameter(self, param_type: str, name: str):
+    def CreateParameter(self, param_type: str, name: str) -> gmat.Parameter:
         try:
             new_param = self.gmat_obj.CreateParameter(param_type, name)
         except Exception as ex:
