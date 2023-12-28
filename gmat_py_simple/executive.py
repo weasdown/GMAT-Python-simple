@@ -16,10 +16,10 @@ class Moderator:
         self.gmat_obj = gmat.Moderator.Instance()
 
     def AppendCommand(self, command: gpy.GmatCommand) -> bool:
-        print('Entered Moderator.AppendCommand()')
+        # print('\nEntered Moderator.AppendCommand()')
         try:
-            print(f'Command type in mod.AppendCommand: {type(command)}')
-            print(f'GenString in AppComm: {command.GetGeneratingString()}')
+            # print(f'Command type in mod.AppendCommand: {type(command)}')
+            # print(f'GenString in AppComm: {command.GetGeneratingString()}')
             resp: bool = self.gmat_obj.AppendCommand(gpy.extract_gmat_obj(command))
             return resp
         except SystemExit as se:  # TODO bugfix: doesn't prevent hang
@@ -36,6 +36,10 @@ class Moderator:
         return self.gmat_obj.CreateCommand(command_type, name, True)
 
     def CreateDefaultCommand(self, command_type: str = 'Propagate', name: str = ''):
+        vdator = gmat.Validator.Instance()
+        vdator.SetSolarSystem(gmat.GetSolarSystem())
+        vdator.SetObjectMap(self.GetConfiguredObjectMap())
+
         return self.gmat_obj.CreateDefaultCommand(command_type, name)
 
     def CreateDefaultMission(self):
@@ -78,7 +82,7 @@ class Moderator:
 
         return stop_cond
 
-    def CreateParameter(self, param_type: str, name: str) -> gmat.Parameter:
+    def CreateParameter(self, param_type: str, name: str):
         try:
             new_param = self.gmat_obj.CreateParameter(param_type, name)
         except Exception as ex:
@@ -194,7 +198,7 @@ class Moderator:
         if not mission_command_sequence or not isinstance(mission_command_sequence[0], gpy.BeginMissionSequence):
             mission_command_sequence.insert(0, gpy.BeginMissionSequence())
 
-        print(f'Mission Command Sequence in RunMission: {mission_command_sequence}')
+        # print(f'Mission Command Sequence in RunMission: {mission_command_sequence}')
 
         # gmat.Initialize()
         mod = gpy.Moderator()
@@ -206,9 +210,9 @@ class Moderator:
 
         propagate_commands: list[gpy.Propagate] = []  # start a list of Propagates so their sats can be updated later
         for command in mission_command_sequence:
-            print(f'Command: {command}')
-            print(f'type: {type(command).__name__}')
-            print(f'GMAT type: {command.gmat_obj.GetTypeName()}')
+            # print(f'Command: {command}')
+            # print(f'type: {type(command).__name__}')
+            # print(f'GMAT type: {command.gmat_obj.GetTypeName()}')
             if not isinstance(command, gpy.GmatCommand):
                 raise TypeError('command in RunMission for loop must be a gpy.GmatCommand')
 
@@ -217,9 +221,10 @@ class Moderator:
                 command.SetObjectMap(mod.GetConfiguredObjectMap())
                 command.SetGlobalObjectMap(sb.GetGlobalObjectMap())
 
-                command.Validate()
+                # command.Validate()
+                # command.Initialize()
                 mod.ValidateCommand(command)
-                command.Initialize()
+                # command.Initialize()
                 # print(f'In RunMission, initialized command {type(command).__name__}')
                 # command.Help()
                 # print(f'Exit code from Moderator: {mod.gmat_obj.GetExitCode()}')
@@ -228,31 +233,32 @@ class Moderator:
                 # print(mod.gmat_obj.GetLastCommand())
 
                 # mod.Initialize()
+
                 mod.AppendCommand(command)
-                print(f'List of all: {gmat.ConfigManager.Instance().GetListOfAllItems()}')
+                # print(f'List of all: {gmat.ConfigManager.Instance().GetListOfAllItems()}')
                 # print(f'New MCS: {gpy.Moderator()}')
-                print(f'In RunMission, appended command {type(command).__name__}')
+                # print(f'In RunMission, appended command {type(command).__name__}')
                 # if not appended:
                 #     raise RuntimeError(f'Command {command.name} was not successfully appended to the Moderator in'
                 #                        f' RunMission. Returned value: {appended}')
-                mod.ValidateCommand(command)
-                print(f'In RunMission, validated command {type(command).__name__}')
+                # mod.ValidateCommand(command)
+                # print(f'In RunMission, validated command {type(command).__name__}')
 
                 if isinstance(command, gpy.Propagate):
                     propagate_commands.append(command)
-                    command.TakeAction('PrepareToPropagate')
-                    print('PrepareToPropagate complete in RunMission')
+                    # command.TakeAction('PrepareToPropagate')
+                    # print('PrepareToPropagate complete in RunMission')
 
-                print(f'In RunMission, completed processing for command {type(command).__name__}\n')
+                # print(f'In RunMission, completed processing for command {type(command).__name__}\n')
 
             except SystemExit as sys_exit:
                 raise RuntimeError(f'GMAT attempted to stop code execution while processing command {command} - '
                                    f'{sys_exit}')
             except Exception as ex:
-                print(f'Failed command in RunMission: {command}')
+                print(f'Failed command in RunMission: "{command.name}" of type {command.gmat_obj.GetTypeName()}')
                 raise ex
 
-        print('\nMission Command Sequence setup complete. Running mission...')
+        # print('\nMission Command Sequence setup complete. Running mission...')
 
         run_mission_return = self.gmat_obj.RunMission()
         if run_mission_return == 1:

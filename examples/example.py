@@ -27,6 +27,9 @@ sat_params = {
 }
 
 sat = gpy.Spacecraft.from_dict(sat_params)
+# sat = gpy.Spacecraft('Sat')
+# sat.SetField('DateFormat', 'A1Gregorian')
+# sat.SetField('Epoch', '01 Jan 2000 12:00:00.000')
 
 # fm = gpy.ForceModel(name='LowEarthProp_ForceModel', point_masses=['Luna', 'Sun'], drag=gpy.ForceModel.DragForce(),
 #                     srp=True, gravity_field=gpy.ForceModel.GravityField(degree=10, order=10))
@@ -39,7 +42,7 @@ toi = gpy.ImpulsiveBurn('IB1', sat.GetCoordinateSystem(), [0.2, 0, 0])
 print(f'Sat state before running: {sat.GetState()}')
 print(f"Epoch before running: {sat.GetField('Epoch')}")
 
-prop1 = gpy.Propagate('Prop One Day', prop, sat, ('Sat.ElapsedSecs', 60))
+# prop1 = gpy.Propagate('Prop One Day', prop, sat, ('Sat.ElapsedSecs', 60))
 
 # gmat.ShowObjects()
 # es = gpy.GetObject('Sat.ElapsedSecs')
@@ -49,7 +52,7 @@ prop1 = gpy.Propagate('Prop One Day', prop, sat, ('Sat.ElapsedSecs', 60))
 # g60.Help()
 
 # TODO bugfix: Maneuver command causing crash in RunMission/for loop/mod.AppendCommand()
-man1 = gpy.Maneuver('Maneuver1', toi, sat)
+# man1 = gpy.Maneuver('Maneuver1', toi, sat)
 # print(f'man1 init: {man1.Initialize()}')
 # print(f'gmat init: {gmat.Initialize()}')
 # print(f'Appended man1: {gpy.Moderator().AppendCommand(man1)}')
@@ -60,35 +63,15 @@ prop2 = gpy.Propagate('Prop Another Day', prop, sat, ('Sat.ElapsedSecs', 120))
 
 # Mission Command Sequence
 mcs = [
-    prop1,
+    # prop1,
     # man1,
-    # prop2
+    prop2
 ]
 
-# gmat.ShowObjects()
-
-# mj = gpy.GetObject('Sat.A1ModJulian')
-# es = gpy.GetObject('Sat.ElapsedSecs')
-#
-# print(f'Types - A1ModJulian: {mj.GetTypeName()}, ElapsedSecs: {es.GetTypeName()}')
-#
-# mj.Help()
-# es.Help()
-
-# mod = gpy.Moderator()
-# sb = gpy.Sandbox()
-# sb.AddObject(mj)
-# sb.AddObject(es)
-#
-# # gmat.Initialize()
-#
-# mj.Help()
-# es.Help()
-
-# sc60 = gpy.GetObject('Goal=60')
-# sc60.Help()
-
 gpy.RunMission(mcs)  # Run the mission
+
+# TODO bugfix: goal param not being set, so propagating for longer than should
+print(f'prop2 goal parameter: {prop2.stop_cond.gmat_obj.GetGoalParameter()}\n')
 
 print(f'Sat state after running: {sat.GetState()}')
 print(f'Epoch after running: {sat.GetField("Epoch")}')

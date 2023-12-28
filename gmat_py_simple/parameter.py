@@ -4,8 +4,8 @@ import gmat_py_simple as gpy
 from load_gmat import gmat
 
 
-def CreateParameter(param_type: str, name: str) -> Parameter:
-    return Parameter(param_type, name)
+# def CreateParameter(param_type: str, name: str) -> Parameter:
+#     return Parameter(param_type, name)
 
 
 def GmatBase_to_Parameter(gb: gmat.GmatBase) -> gmat.Parameter:
@@ -32,7 +32,7 @@ class Parameter:
     def SetRefObjectName(self, type_int: int, name: str) -> bool:
         # GMAT's SetRefObjectName cannot be called on a Swig Parameter object, only a GmatBase (or subclass thereof)
         # self_obj = gmat.GetObject(self.GetName())
-        return self.gmat_obj.SetRefObjectName(type_int, name)
+        return self.gmat_base.SetRefObjectName(type_int, name)
 
     def Help(self):
         return self.gmat_base.Help()
