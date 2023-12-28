@@ -304,49 +304,63 @@ class Propagate(GmatCommand):
 
             mod = gpy.Moderator()
             self.gmat_obj = mod.CreateStopCondition('StopCond1')
-            self.gmat_obj.Help()
 
-            # TODO: parse variables
-            stop_var = ''  # TODO: first part of tuple, or whole string
-            epoch_var = 'A1ModJulian'  # TODO: determine other epoch_var options and when to use them
-            goal = ''  # TODO: second part of tuple, or None (in which case don't use goal param)
+            (self.stop_param_type,
+             self.stop_var,
+             self.epoch_param_type,
+             self.epoch_var,
+             self.goal) = self.parse_stop_cond(stop_cond)
 
-            stop_param = self.create_stop_param(stop_var)
-            gmat.Moderator.Instance().SetParameterRefObject(stop_param, 'Spacecraft', sat_name, '', '', 0)
+            self.stop_param = self.create_stop_param(self.stop_param_type, self.stop_var)
+            gmat.Moderator.Instance().SetParameterRefObject(self.stop_param, 'Spacecraft', sat_name, '', '', 0)
 
-            epoch_param = self.create_epoch_param(epoch_var)
+            self.epoch_param = self.create_epoch_param(self.epoch_param_type, self.epoch_var)
             # TODO: epoch_param always needed, or sometimes not so "if epoch_var" or similar?
-            gmat.Moderator.Instance().SetParameterRefObject(epoch_param, 'Spacecraft', sat_name, '', '', 0)
+            gmat.Moderator.Instance().SetParameterRefObject(self.epoch_param, 'Spacecraft', sat_name, '', '', 0)
 
-            goal_param = self.create_goal_param(goal)  # TODO: should this param be used somewhere?
-            if goal:
-                gmat.Moderator.Instance().SetParameterRefObject(goal_param, 'Spacecraft', sat_name, '', '', 0)
+            if self.goal:
+                self.goal_param = self.create_goal_param(self.goal)  # TODO: should this param be used somewhere?
+                gmat.Moderator.Instance().SetParameterRefObject(self.goal_param, 'Spacecraft', sat_name, '', '', 0)
 
-            self.gmat_obj.SetStringParameter('EpochVar', epoch_var)  # EpochVar is mEpochParamName in StopCondition source
-            self.gmat_obj.SetStringParameter('StopVar', stop_var)  # StopVar is mStopParamName in StopCondition source
-            self.gmat_obj.SetStringParameter('Goal', goal)  # SetRhsString() called with goal value in source
+            self.gmat_obj.SetStringParameter('EpochVar',
+                                             self.epoch_var)  # EpochVar is mEpochParamName in StopCondition source
+            self.gmat_obj.SetStringParameter('StopVar',
+                                             self.stop_var)  # StopVar is mStopParamName in StopCondition source
+            self.gmat_obj.SetStringParameter('Goal', self.goal)  # SetRhsString() called with goal value in source
 
             self.Validate()
 
-        def create_epoch_param(self, epoch_var: str):
-            raise NotImplementedError
+        @staticmethod
+        def create_epoch_param(epoch_param_type: str, epoch_var: str):
+            return gpy.Moderator().CreateParameter(epoch_param_type, epoch_var)
 
-        def create_stop_param(self, stop_var: str):
-            raise NotImplementedError
+        @staticmethod
+        def create_stop_param(stop_param_type: str, stop_var: str):
+            return gpy.Moderator().CreateParameter(stop_param_type, stop_var)
 
-        def create_goal_param(self, goal: str):
-            raise NotImplementedError
+        @staticmethod
+        def create_goal_param(goal: str):
+            goal = str(goal)
+            return gpy.Moderator().CreateParameter('Variable', str(goal))
 
         def parse_stop_cond(self, stop_cond: str | tuple) -> tuple:
-            stop_var = 'TODO'
-            epoch_var = 'TODO'
-            goal = 'TODO'
+            if isinstance(stop_cond, tuple) and len(stop_cond) == 2:  # most likely. E.g. ('Sat.ElapsedSecs', 12000)
+                stop_var = stop_cond[0]
+                goal = str(stop_cond[1])
 
-            stop_param = self.create_stop_param(stop_var)
-            epoch_param = self.create_epoch_param(epoch_var)
-            goal_param = self.create_goal_param(goal)
+            elif isinstance(stop_cond, str):  # e.g. 'Sat.Earth.Apoapsis'
+                stop_var = stop_cond
+                goal = str(stop_var)
 
-            return stop_param, epoch_param, goal_param
+            else:
+                # TODO: definitely max of 2 elements?
+                raise RuntimeError(f'stop_conds is invalid. Must be a 2-element tuple or a string')
+
+            stop_param_type = stop_var[len(self.sat.name) + 1:]  # remove sat name and . from stop_var
+            epoch_param_type = 'A1ModJulian'  # TODO: determine other epoch_var options and when to use them
+            epoch_var = f'{self.sat.name}.{epoch_param_type}'
+
+            return stop_param_type, stop_var, epoch_param_type, epoch_var, goal
 
         @classmethod
         def CreateDefault(cls):

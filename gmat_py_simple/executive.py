@@ -83,7 +83,7 @@ class Moderator:
             new_param = self.gmat_obj.CreateParameter(param_type, name)
         except Exception as ex:
             if type(ex).__name__ == 'APIException':
-                raise gpy.APIException(ex) from ex
+                raise gpy.APIException(ex)
             else:
                 raise ex
         if new_param is not None:
