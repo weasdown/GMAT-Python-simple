@@ -134,7 +134,7 @@ class Moderator:
         return self.gmat_obj.GetListOfObjects(obj_type, exclude_defaults, type_max)
 
     @staticmethod
-    def GetParameter(name: str):
+    def GetParameter(name: str) -> gmat.Parameter:
         vdator = gmat.Validator.Instance()
         vdator.SetSolarSystem(gmat.GetSolarSystem())
         vdator.SetObjectMap(gpy.Moderator().GetConfiguredObjectMap())
