@@ -69,18 +69,10 @@ class Moderator:
 
         if not self.GetParameter(epoch_var):
             epoch_param = gpy.Parameter('A1ModJulian', epoch_var)
-            # TODO: write SetParameterRefObject() for gpy.Moderator()
-            # gmat.Moderator.Instance().SetParameterRefObject(epoch_param, 'Spacecraft', sc_name, '', '', 0)
             epoch_param.SetRefObjectName(gmat.SPACECRAFT, sat_name)
-            # epoch_param = gmat.GetObject(epoch_var)
-            # epoch_param.Initialize()
 
         if not self.GetParameter(stop_var):
             stop_param: gmat.Parameter = gpy.Parameter('ElapsedSecs', stop_var)
-            # stop_param.SetRefObjectName(gmat.SPACECRAFT, sc_name)
-            # stop_param = gmat.GetObject(epoch_var)
-            # stop_param.Initialize()
-            # gmat.Moderator.Instance().SetParameterRefObject(stop_param, 'Spacecraft', sc_name, '', '', 0)
             stop_param.SetRefObjectName(gmat.SPACECRAFT, sat_name)
 
         stop_cond_name = f'StopOn{stop_var}'

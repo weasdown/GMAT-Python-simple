@@ -29,57 +29,36 @@ sat_params = {
     },
 }
 
-sat = gpy.Spacecraft.from_dict(sat_params)
-# sat = gpy.Spacecraft('Sat')
-# sat.SetField('DateFormat', 'A1Gregorian')
-# sat.SetField('Epoch', '01 Jan 2000 12:00:00.000')
+# sat = gpy.Spacecraft.from_dict(sat_params)
+sat = gpy.Spacecraft('Sat')
+sat.SetField('DateFormat', 'A1Gregorian')
+sat.SetField('Epoch', '01 Jan 2000 12:00:00.000')
 
-# fm = gpy.ForceModel(name='LowEarthProp_ForceModel', point_masses=['Luna', 'Sun'], drag=gpy.ForceModel.DragForce(),
-#                     srp=True, gravity_field=gpy.ForceModel.GravityField(degree=10, order=10))
-# prop = gpy.PropSetup('LowEarthProp', accuracy=9.999999999999999e-12,
-#                      gator=gpy.PropSetup.Propagator(name='LowEarthProp', integrator='RungeKutta89'))
-prop = gpy.PropSetup('LowEarthProp')
-
+fm = gpy.ForceModel(name='LowEarthProp_ForceModel', point_masses=['Luna', 'Sun'], drag=gpy.ForceModel.DragForce(),
+                    srp=True, gravity_field=gpy.ForceModel.GravityField(degree=10, order=10))
+prop = gpy.PropSetup('LowEarthProp', accuracy=9.999999999999999e-12,
+                     gator=gpy.PropSetup.Propagator(name='LowEarthProp', integrator='RungeKutta89'))
+# prop = gpy.PropSetup('LowEarthProp')
 toi = gpy.ImpulsiveBurn('IB1', sat.GetCoordinateSystem(), [0.2, 0, 0])
 
-print(f'Sat state before running: {sat.GetState()}')
-
-start_epoch = sat.GetEpoch()
-print(f'Epoch before running: {start_epoch}')
-start_epoch_datetime = sat.GetEpoch(as_datetime=True)
-
+# Mission commands
 prop1 = gpy.Propagate('Prop One Day', prop, sat, ('Sat.ElapsedSecs', 60))
-
-# TODO bugfix: Maneuver command causing crash in RunMission/for loop/mod.AppendCommand()
-# man1 = gpy.Maneuver('Maneuver1', toi, sat)
-
-# TODO bugfix: crash with second Propagate - StopCondition name being double-used?
-#  Note: LoadScript shows single Sat.ElapsedSecs even if multiple ElapsedSecs Propagate commands in script
+man1 = gpy.Maneuver('Maneuver1', toi, sat)
 prop2 = gpy.Propagate('Prop Another Day', prop, sat, ('Sat.ElapsedSecs', 120))
+
+print(f'Sat state before running: {sat.GetState()}')
+print(f'Epoch before running: {sat.GetEpoch()}')
 
 # Mission Command Sequence
 mcs = [
-    prop1,
-    # man1,
-    prop2
+    prop1,  # propagate by 60 s
+    man1,  # 0.2 km/s maneuver
+    prop2  # propagate by 120 s
 ]
 
 gpy.RunMission(mcs)  # Run the mission
 
 print(f'Sat state after running: {sat.GetState()}')
-end_epoch = sat.GetEpoch()
-print(f'Epoch after running: {end_epoch}')
-end_epoch_datetime = sat.GetEpoch(as_datetime=True)
-
-prop1_stop_goal = prop1.stop_cond.GetStopGoal()
-prop2_stop_goal = prop2.stop_cond.GetStopGoal()
-print(f'prop1 stop goal: {prop1_stop_goal}s')
-print(f'prop2 stop goal: {prop2_stop_goal}s')
-
-epoch_delta = end_epoch_datetime - start_epoch_datetime
-print(f'Epoch difference: {epoch_delta}')
-stop_goal_total = prop1_stop_goal + prop2_stop_goal
-
-print(f'Match? {epoch_delta.total_seconds()} epoch_delta vs {stop_goal_total} stop_goal_total')
+print(f'Epoch after running: {sat.GetEpoch()}')
 
 gmat.SaveScript(script_path)

@@ -46,6 +46,9 @@ class GmatCommand:
     def GetField(self, field: str) -> str:
         return self.gmat_obj.GetField(field)
 
+    def GetMissionSummary(self):
+        return self.gmat_obj.GetStringParameter('MissionSummary')
+
     def GetName(self) -> str:
         return self.gmat_obj.GetName()
 
@@ -633,14 +636,6 @@ class Propagate(GmatCommand):
 
     def TakeAction(self, action: str):
         return self.gmat_obj.TakeAction(action)
-
-    # def Validate(self):
-    #     """
-    #     Return True if valid, False otherwise.
-    #
-    #     :return:
-    #     """
-    #     return self.gmat_obj.Validate()
 
 
 class PropagateMulti(Propagate):
