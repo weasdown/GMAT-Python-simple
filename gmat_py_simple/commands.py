@@ -360,12 +360,15 @@ class Propagate(GmatCommand):
 
             if self.goal:
                 # TODO: should this param be used somewhere?
-                self.goal_param = mod.CreateParameter('SystemParameter', 'Goal')
+                self.goal_param: gpy.Parameter = gpy.Parameter('Variable', self.goal)
                 # self.goal_param: gpy.Parameter = gpy.CreateParameter('Variable', self.goal)
                 # self.goal_param.SetRefObjectName(gmat.SPACECRAFT, sat_name)
                 # self.goal_param.SetRefObjectName(gmat.SPACE_POINT, 'Earth')  # TODO: remove hard-coding
                 self.gmat_obj.SetStringParameter('Goal', self.goal)  # SetRhsString() called with goal value in source
                 # mod.gmat_obj.SetParameterRefObject(self.goal_param, 'Spacecraft', sat_name, '', '', 0)
+                self.gmat_obj.SetRefObject(self.goal_param.gmat_base, gmat.PARAMETER, self.goal)
+
+                # StopCond.SetRefObject calls StopCond.SetGoalParameter calls ElementWrapper.SetRefObject
                 # self.gmat_obj.SetGoalParameter(self.goal_param)
 
             if not self.Validate():

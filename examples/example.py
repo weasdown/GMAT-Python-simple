@@ -42,7 +42,7 @@ toi = gpy.ImpulsiveBurn('IB1', sat.GetCoordinateSystem(), [0.2, 0, 0])
 print(f'Sat state before running: {sat.GetState()}')
 print(f"Epoch before running: {sat.GetField('Epoch')}")
 
-# prop1 = gpy.Propagate('Prop One Day', prop, sat, ('Sat.ElapsedSecs', 60))
+prop1 = gpy.Propagate('Prop One Day', prop, sat, ('Sat.ElapsedSecs', 60))
 
 # gmat.ShowObjects()
 # es = gpy.GetObject('Sat.ElapsedSecs')
@@ -52,7 +52,7 @@ print(f"Epoch before running: {sat.GetField('Epoch')}")
 # g60.Help()
 
 # TODO bugfix: Maneuver command causing crash in RunMission/for loop/mod.AppendCommand()
-# man1 = gpy.Maneuver('Maneuver1', toi, sat)
+man1 = gpy.Maneuver('Maneuver1', toi, sat)
 # print(f'man1 init: {man1.Initialize()}')
 # print(f'gmat init: {gmat.Initialize()}')
 # print(f'Appended man1: {gpy.Moderator().AppendCommand(man1)}')
@@ -63,8 +63,8 @@ prop2 = gpy.Propagate('Prop Another Day', prop, sat, ('Sat.ElapsedSecs', 120))
 
 # Mission Command Sequence
 mcs = [
-    # prop1,
-    # man1,
+    prop1,
+    man1,
     prop2
 ]
 
