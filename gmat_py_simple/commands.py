@@ -58,8 +58,8 @@ class GmatCommand:
     def SetBooleanParameter(self, param_name: str, value: bool) -> bool:
         return self.gmat_obj.SetBooleanParameter(param_name, value)
 
-    def SetField(self, field: str, val: str | list | int | float) -> bool:
-        return self.gmat_obj.SetField(field, val)
+    def SetField(self, field: str, value) -> bool:
+        return self.gmat_obj.SetField(field, value)
 
     def SetGlobalObjectMap(self, gom: gmat.ObjectMap) -> bool:
         return self.gmat_obj.SetGlobalObjectMap(gom)
@@ -82,9 +82,24 @@ class GmatCommand:
 
 
 class Achieve(GmatCommand):
-    def __init__(self, name: str):
+    def __init__(self, name: str, solver: str | gpy.DifferentialCorrector, goal: str, value: int | float,
+                 tolerance: float | int = 0.1):
         super().__init__('Achieve', name)
-        raise NotImplementedError
+
+        if isinstance(solver, gpy.DifferentialCorrector):
+            self.solver = solver.name
+        else:
+            self.solver = solver
+        self.SetField('TargeterName', self.solver)
+
+        self.goal = goal
+        self.SetField('Goal', self.goal)
+
+        self.value = value
+        self.SetField('GoalValue', str(self.value))
+
+        self.tolerance = tolerance
+        self.SetField('Tolerance', str(self.tolerance))
 
 
 class BeginFiniteBurn(GmatCommand):
@@ -671,4 +686,9 @@ class Target(GmatCommand):
 class Vary(GmatCommand):
     def __init__(self, name: str):
         super().__init__('Vary', name)
-        raise NotImplementedError
+
+        self.SetSolarSystem(gmat.GetSolarSystem())
+        self.SetObjectMap(gpy.Moderator().GetConfiguredObjectMap())
+        self.SetGlobalObjectMap(gpy.Sandbox().GetGlobalObjectMap())
+
+        self.Validate()

@@ -13,6 +13,8 @@ gmat.UseLogFile(log_path)
 
 sat = gpy.Spacecraft('DefaultSC')
 prop = gpy.PropSetup('DefaultProp')
+toi = gpy.ImpulsiveBurn('IB1', sat.GetCoordinateSystem(), [0.2, 0, 0])
+dc1 = gpy.DifferentialCorrector('DC1')
 
 print(f'Sat state before running: {sat.GetState()}')
 print(f"Epoch before running: {sat.GetField('Epoch')}")
@@ -22,10 +24,10 @@ mcs = [gpy.BeginMissionSequence(),
        gpy.Propagate('Prop To Periapsis', prop, sat, 'Sat.Earth.Periapsis'),
        gpy.Target('', 'DC1', command_sequence=[
            gpy.Vary('Vary TOI'),
-           gpy.Maneuver('Perform TOI'),
+           gpy.Maneuver('Perform TOI', toi, sat),
            gpy.Propagate('Prop To Apoapsis', prop, sat, 'Sat.Earth.Apoapsis'),
-           gpy.Achieve('Achieve RMAG = 42165'),
-           gpy.Vary('Vary GOI'),
+           gpy.Achieve('Achieve RMAG = 42165', dc1, 'Sat.Earth.RMAG', 42165),
+           gpy.Vary('Vary GOI'),  # TODO
            gpy.Maneuver('Perform GOI'),
            gpy.Achieve('Achieve ECC = 0.05'),
            gpy.EndTarget('End Hohmann Transfer')

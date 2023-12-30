@@ -9,7 +9,7 @@ import gmat_py_simple as gpy
 import os
 
 log_path = os.path.normpath(f'{os.getcwd()}/GMAT-Log.txt')
-script_path = os.path.normpath(f'{os.getcwd()}/Tut01.script')
+script_path = os.path.normpath(f'{os.getcwd()}/example.script')
 gmat.UseLogFile(log_path)
 
 # TODO: change parameters and commands from Tut01 to Tut02
@@ -33,6 +33,8 @@ sat_params = {
 sat = gpy.Spacecraft('Sat')
 sat.SetField('DateFormat', 'A1Gregorian')
 sat.SetField('Epoch', '01 Jan 2000 12:00:00.000')
+
+sat.Help()
 
 fm = gpy.ForceModel(name='LowEarthProp_ForceModel', point_masses=['Luna', 'Sun'], drag=gpy.ForceModel.DragForce(),
                     srp=True, gravity_field=gpy.ForceModel.GravityField(degree=10, order=10))
