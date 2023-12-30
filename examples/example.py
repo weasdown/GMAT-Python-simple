@@ -68,10 +68,12 @@ mcs = [
     prop2
 ]
 
-gpy.RunMission(mcs)  # Run the mission
-
 # TODO bugfix: goal param not being set, so propagating for longer than should
+print(f'\nprop2 stop parameter: {prop2.stop_cond.gmat_obj.GetStopParameter()}')
+print(f'prop2 epoch parameter: {prop2.stop_cond.gmat_obj.GetEpochParameter()}')
 print(f'prop2 goal parameter: {prop2.stop_cond.gmat_obj.GetGoalParameter()}\n')
+
+gpy.RunMission(mcs)  # Run the mission
 
 print(f'Sat state after running: {sat.GetState()}')
 print(f'Epoch after running: {sat.GetField("Epoch")}')

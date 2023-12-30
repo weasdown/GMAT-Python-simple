@@ -355,6 +355,19 @@ def get_sat_objects() -> list[gmat.Spacecraft]:
     return sat_objs
 
 
+def Construct(obj_type: str, name: str, *args):
+    try:
+        if args:
+            return gmat.Construct(obj_type, name, args)
+        else:
+            return gmat.Construct(obj_type, name)
+    except Exception as ex:
+        if isinstance(ex, AttributeError) and str(ex) == "'NoneType' object has no attribute 'GetTypeName'":
+            raise TypeError(f'GMAT does not recognize the given type: {obj_type}')
+        else:
+            raise ex
+
+
 def CustomHelp(obj):
     print(f'\nCustomHelp for {obj.GetName()}:')
     obj = extract_gmat_obj(obj)

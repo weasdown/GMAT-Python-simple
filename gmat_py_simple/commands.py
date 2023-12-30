@@ -21,8 +21,11 @@ class GmatCommand:
         if self.command_type == 'Propagate':
             # TODO: find name of mission's spacecraft rather than assuming default
             sat_name = gpy.Moderator().GetDefaultSpacecraft().GetName()
-            gmat.Clear(f'{sat_name}.ElapsedSecs')  # stop condition parameter
-            gmat.Clear(f'{sat_name}.A1ModJulian')  # stop condition parameter
+            # remove default stop condition parameters
+            # gmat.Clear(f'{sat_name}.ElapsedSecs')  # stop condition parameter
+            # gmat.Clear(f'{sat_name}.A1ModJulian')  # stop condition parameter
+            gpy.Moderator().RemoveObject(gmat.PARAMETER, f'{sat_name}.ElapsedSecs')
+            gpy.Moderator().RemoveObject(gmat.PARAMETER, f'{sat_name}.A1ModJulian')
 
         self.Validate()
         # TODO bugfix: switch to CreateCommand (uncomment below) when issue GMT-8100 fixed
@@ -31,8 +34,8 @@ class GmatCommand:
     def AddToMCS(self) -> bool:
         return gpy.Moderator().AppendCommand(self)
 
-    def Initialize(self):
-        self.gmat_obj.Initialize()
+    def Initialize(self) -> bool:
+        return self.gmat_obj.Initialize()
 
     def GeneratingString(self):
         print(self.GetGeneratingString())
@@ -40,8 +43,8 @@ class GmatCommand:
     def GetGeneratingString(self) -> str:
         return self.gmat_obj.GetGeneratingString()
 
-    def GetField(self, field: str):
-        self.gmat_obj.GetField(field)
+    def GetField(self, field: str) -> str:
+        return self.gmat_obj.GetField(field)
 
     def GetName(self) -> str:
         return self.gmat_obj.GetName()
@@ -49,26 +52,26 @@ class GmatCommand:
     def Help(self):
         self.gmat_obj.Help()
 
-    def SetBooleanParameter(self, param_name: str, value: bool):
+    def SetBooleanParameter(self, param_name: str, value: bool) -> bool:
         return self.gmat_obj.SetBooleanParameter(param_name, value)
 
-    def SetField(self, field: str, val: str | list | int | float):
-        self.gmat_obj.SetField(field, val)
+    def SetField(self, field: str, val: str | list | int | float) -> bool:
+        return self.gmat_obj.SetField(field, val)
 
-    def SetGlobalObjectMap(self, gom: gmat.ObjectMap):
-        self.gmat_obj.SetGlobalObjectMap(gom)
+    def SetGlobalObjectMap(self, gom: gmat.ObjectMap) -> bool:
+        return self.gmat_obj.SetGlobalObjectMap(gom)
 
-    def SetName(self, name: str):
+    def SetName(self, name: str) -> bool:
         self.name = name
-        self.gmat_obj.SetName(name)
+        return self.gmat_obj.SetName(name)
 
-    def SetObjectMap(self, om: gmat.ObjectMap):
-        self.gmat_obj.SetObjectMap(om)
+    def SetObjectMap(self, om: gmat.ObjectMap) -> bool:
+        return self.gmat_obj.SetObjectMap(om)
 
-    def SetSolarSystem(self, ss: gmat.SolarSystem):
-        self.gmat_obj.SetSolarSystem(ss)
+    def SetSolarSystem(self, ss: gmat.SolarSystem) -> bool:
+        return self.gmat_obj.SetSolarSystem(ss)
 
-    def SetStringParameter(self, param_name: str, value: str):
+    def SetStringParameter(self, param_name: str, value: str) -> bool:
         return self.gmat_obj.SetStringParameter(param_name, value)
 
     def Validate(self) -> bool:
@@ -357,6 +360,7 @@ class Propagate(GmatCommand):
 
             if self.goal:
                 # TODO: should this param be used somewhere?
+                self.goal_param = mod.CreateParameter('SystemParameter', 'Goal')
                 # self.goal_param: gpy.Parameter = gpy.CreateParameter('Variable', self.goal)
                 # self.goal_param.SetRefObjectName(gmat.SPACECRAFT, sat_name)
                 # self.goal_param.SetRefObjectName(gmat.SPACE_POINT, 'Earth')  # TODO: remove hard-coding
@@ -395,7 +399,13 @@ class Propagate(GmatCommand):
                 raise RuntimeError(f'stop_conds is invalid. Must be a 2-element tuple or a string')
 
             stop_param_type = stop_var[len(self.sat.name) + 1:]  # remove sat name and . from stop_var
-            epoch_param_type = 'A1ModJulian'  # TODO: determine other epoch_var options and when to use them
+            # following types taken from src/Moderator.CreateDefaultParameters() Time parameters section
+            allowed_epoch_param_types = ['ElapsedSecs', 'ElapsedDays', 'A1ModJulian', 'A1Gregorian',
+                                         'TAIModJulian', 'TAIGregorian', 'TTModJulian', 'TTGregorian',
+                                         'TDBModJulian', 'TDBGregorian', 'UTCModJulian', 'UTCGregorian']
+            # TODO: remove hard-coding of epoch_param_type
+            # TODO: decide when to use other epoch_param_types
+            epoch_param_type = 'A1ModJulian'
             epoch_var = f'{self.sat.name}.{epoch_param_type}'
 
             return stop_param_type, stop_var, epoch_param_type, epoch_var, goal
@@ -459,6 +469,9 @@ class Propagate(GmatCommand):
 
         def Initialize(self):
             return self.gmat_obj.Initialize()
+
+        def IsTimeCondition(self) -> bool:
+            return self.gmat_obj.IsTimeCondition()
 
         def SetDescription(self, description: str) -> bool:
             self.description = description
@@ -592,7 +605,7 @@ class Propagate(GmatCommand):
 
         sb.AddObject(self.prop)  # add prop to Sandbox
 
-        # vdator = gmat.Validator.Instance()
+        # vdator = gpy.Validator()
         # vdator.SetSolarSystem(gmat.GetSolarSystem())
         # vdator.SetObjectMap(mod.GetConfiguredObjectMap())
 

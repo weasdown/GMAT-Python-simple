@@ -36,7 +36,7 @@ class Moderator:
         return self.gmat_obj.CreateCommand(command_type, name, True)
 
     def CreateDefaultCommand(self, command_type: str = 'Propagate', name: str = ''):
-        vdator = gmat.Validator.Instance()
+        vdator = gpy.Validator()
         vdator.SetSolarSystem(gmat.GetSolarSystem())
         vdator.SetObjectMap(self.GetConfiguredObjectMap())
 
@@ -139,7 +139,7 @@ class Moderator:
 
     @staticmethod
     def GetParameter(name: str) -> gmat.Parameter:
-        vdator = gmat.Validator.Instance()
+        vdator = gpy.Validator()
         vdator.SetSolarSystem(gmat.GetSolarSystem())
         vdator.SetObjectMap(gpy.Moderator().GetConfiguredObjectMap())
 
@@ -181,6 +181,9 @@ class Moderator:
     def InsertCommand(self, command_to_insert: GmatCommand, preceding_command: GmatCommand):
         return self.gmat_obj.InsertCommand(command_to_insert, preceding_command)
 
+    def RemoveObject(self, obj_type: int, name: str, del_only_if_not_used: bool = True) -> bool:
+        return self.gmat_obj.RemoveObject(obj_type, name, del_only_if_not_used)
+
     def RunMission(self, mission_command_sequence: list[GmatCommand]) -> int:
         """
         Run the mission command sequence
@@ -204,7 +207,7 @@ class Moderator:
         mod = gpy.Moderator()
         sb = mod.GetSandbox()
 
-        vdator = gmat.Validator.Instance()
+        vdator = gpy.Validator()
         vdator.SetSolarSystem(gmat.GetSolarSystem())
         vdator.SetObjectMap(mod.GetConfiguredObjectMap())
 
