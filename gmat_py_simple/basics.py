@@ -3,6 +3,7 @@ from __future__ import annotations
 from load_gmat import gmat
 
 from typing import Union
+from datetime import datetime
 
 
 class GmatObject:
@@ -28,9 +29,21 @@ class GmatObject:
     #     print(f"Running gmat.Construct({obj_type}, {name}, *{args})")
     #     # return gmat.Construct(obj_type, name, *args)
 
+    @staticmethod
+    def epoch_to_datetime(epoch: str) -> datetime:
+        return datetime.strptime(epoch, '%d %b %Y %H:%M:%S.%f')
+
     @classmethod
     def from_gmat_obj(cls, obj):
         return cls(type(obj).__name__, obj.GetName())
+
+    def GetEpoch(self, as_datetime: bool = False) -> str | datetime:
+        epoch_str: str = self.GetField('Epoch')
+        if not as_datetime:
+            return epoch_str
+        else:
+            epoch_datetime: datetime = self.epoch_to_datetime(epoch_str)
+            return epoch_datetime
 
     def GetField(self, field: str | int) -> str:
         """

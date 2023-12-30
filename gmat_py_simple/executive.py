@@ -52,33 +52,44 @@ class Moderator:
         return self.gmat_obj.CreateSpacecraft('Spacecraft', 'DefaultSC', True)
 
     def CreateDefaultStopCondition(self) -> gmat.StopCondition:
-        sc: gmat.Spacecraft = self.GetDefaultSpacecraft()
-        sc_name: str = sc.GetName()
-        epoch_var = f'{sc_name}.A1ModJulian'  # EpochVar is mEpochParamName in StopCondition source
-        stop_var = f'{sc_name}.ElapsedSecs'  # StopVar is mStopParamName in StopCondition source
+        """
+        Create a default StopCondition.
+        Based on src/Moderator.CreateDefaultStopCondition().
 
-        mod = Moderator()
-        if not mod.GetParameter(epoch_var):
-            epoch_param = gmat.Moderator.Instance().CreateParameter('A1ModJulian', epoch_var)
+        :return:
+        """
+
+        # TODO: remove print warning (used for debugging)
+        print('\n** WARNING: USING DEFAULT STOP CONDITION **')
+
+        sat: gmat.Spacecraft = self.GetDefaultSpacecraft()
+        sat_name: str = sat.GetName()
+        epoch_var = f'{sat_name}.A1ModJulian'  # EpochVar is mEpochParamName in StopCondition source
+        stop_var = f'{sat_name}.ElapsedSecs'  # StopVar is mStopParamName in StopCondition source
+
+        if not self.GetParameter(epoch_var):
+            epoch_param = gpy.Parameter('A1ModJulian', epoch_var)
             # TODO: write SetParameterRefObject() for gpy.Moderator()
-            gmat.Moderator.Instance().SetParameterRefObject(epoch_param, 'Spacecraft', sc_name, '', '', 0)
+            # gmat.Moderator.Instance().SetParameterRefObject(epoch_param, 'Spacecraft', sc_name, '', '', 0)
+            epoch_param.SetRefObjectName(gmat.SPACECRAFT, sat_name)
             # epoch_param = gmat.GetObject(epoch_var)
             # epoch_param.Initialize()
 
-        if not mod.GetParameter(stop_var):
-            stop_param: gmat.Parameter = mod.gmat_obj.CreateParameter('ElapsedSecs', stop_var)
+        if not self.GetParameter(stop_var):
+            stop_param: gmat.Parameter = gpy.Parameter('ElapsedSecs', stop_var)
             # stop_param.SetRefObjectName(gmat.SPACECRAFT, sc_name)
             # stop_param = gmat.GetObject(epoch_var)
             # stop_param.Initialize()
-            gmat.Moderator.Instance().SetParameterRefObject(stop_param, 'Spacecraft', sc_name, '', '', 0)
+            # gmat.Moderator.Instance().SetParameterRefObject(stop_param, 'Spacecraft', sc_name, '', '', 0)
+            stop_param.SetRefObjectName(gmat.SPACECRAFT, sat_name)
 
         stop_cond_name = f'StopOn{stop_var}'
-        stop_cond: gmat.StopCondition = mod.CreateStopCondition(stop_cond_name)
+        stop_cond: gmat.StopCondition = self.CreateStopCondition(stop_cond_name)
         stop_cond.SetStringParameter('EpochVar', epoch_var)  # EpochVar is mEpochParamName in StopCondition source
         stop_cond.SetStringParameter('StopVar', stop_var)  # StopVar is mStopParamName in StopCondition source
-        stop_cond.SetStringParameter('Goal', '12000.0')  # SetRhsString() called with goal value in source
-
-        # gmat.Initialize()
+        # stop_cond.SetStringParameter('Goal', '12000.0')  # SetRhsString() called with goal value in source
+        # TODO: remove test line below, uncomment actual default above
+        stop_cond.SetStringParameter('Goal', '120')  # SetRhsString() called with goal value in source
 
         return stop_cond
 
@@ -201,9 +212,6 @@ class Moderator:
         if not mission_command_sequence or not isinstance(mission_command_sequence[0], gpy.BeginMissionSequence):
             mission_command_sequence.insert(0, gpy.BeginMissionSequence())
 
-        # print(f'Mission Command Sequence in RunMission: {mission_command_sequence}')
-
-        # gmat.Initialize()
         mod = gpy.Moderator()
         sb = mod.GetSandbox()
 
@@ -213,9 +221,6 @@ class Moderator:
 
         propagate_commands: list[gpy.Propagate] = []  # start a list of Propagates so their sats can be updated later
         for command in mission_command_sequence:
-            # print(f'Command: {command}')
-            # print(f'type: {type(command).__name__}')
-            # print(f'GMAT type: {command.gmat_obj.GetTypeName()}')
             if not isinstance(command, gpy.GmatCommand):
                 raise TypeError('command in RunMission for loop must be a gpy.GmatCommand')
 
@@ -224,35 +229,13 @@ class Moderator:
                 command.SetObjectMap(mod.GetConfiguredObjectMap())
                 command.SetGlobalObjectMap(sb.GetGlobalObjectMap())
 
-                # command.Validate()
-                # command.Initialize()
+                command.Validate()
+                command.Initialize()
                 mod.ValidateCommand(command)
-                # command.Initialize()
-                # print(f'In RunMission, initialized command {type(command).__name__}')
-                # command.Help()
-                # print(f'Exit code from Moderator: {mod.gmat_obj.GetExitCode()}')
-
-                # print('Last command:')
-                # print(mod.gmat_obj.GetLastCommand())
-
-                # mod.Initialize()
-
                 mod.AppendCommand(command)
-                # print(f'List of all: {gmat.ConfigManager.Instance().GetListOfAllItems()}')
-                # print(f'New MCS: {gpy.Moderator()}')
-                # print(f'In RunMission, appended command {type(command).__name__}')
-                # if not appended:
-                #     raise RuntimeError(f'Command {command.name} was not successfully appended to the Moderator in'
-                #                        f' RunMission. Returned value: {appended}')
-                # mod.ValidateCommand(command)
-                # print(f'In RunMission, validated command {type(command).__name__}')
 
                 if isinstance(command, gpy.Propagate):
                     propagate_commands.append(command)
-                    # command.TakeAction('PrepareToPropagate')
-                    # print('PrepareToPropagate complete in RunMission')
-
-                # print(f'In RunMission, completed processing for command {type(command).__name__}\n')
 
             except SystemExit as sys_exit:
                 raise RuntimeError(f'GMAT attempted to stop code execution while processing command {command} - '
@@ -261,13 +244,11 @@ class Moderator:
                 print(f'Failed command in RunMission: "{command.name}" of type {command.gmat_obj.GetTypeName()}')
                 raise ex
 
-        # print('\nMission Command Sequence setup complete. Running mission...')
-
         run_mission_return = self.gmat_obj.RunMission()
         if run_mission_return == 1:
-            print(f'Mission run complete!\n')
+            print(f'\nMission run complete!\n')
             for propagate in propagate_commands:
-                propagate.wrapper_sat.was_propagated = True  # mark sat as propagated so GetState uses runtime values
+                propagate.sat.was_propagated = True  # mark sat as propagated so GetState uses runtime values
             return run_mission_return
         elif run_mission_return == -1:
             raise RuntimeError('Sandbox number given to gmat.Moderator.RunMission() was invalid')

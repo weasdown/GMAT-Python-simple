@@ -1,6 +1,9 @@
 # Tutorial 02: Simple Orbit Transfer. Perform a Hohmann Transfer from Low Earth Orbit (LEO) to Geostationary orbit (GEO)
 
 from __future__ import annotations
+
+from datetime import datetime
+
 from load_gmat import gmat
 import gmat_py_simple as gpy
 import os
@@ -40,22 +43,15 @@ prop = gpy.PropSetup('LowEarthProp')
 toi = gpy.ImpulsiveBurn('IB1', sat.GetCoordinateSystem(), [0.2, 0, 0])
 
 print(f'Sat state before running: {sat.GetState()}')
-print(f"Epoch before running: {sat.GetField('Epoch')}")
+
+start_epoch = sat.GetEpoch()
+print(f'Epoch before running: {start_epoch}')
+start_epoch_datetime = sat.GetEpoch(as_datetime=True)
 
 prop1 = gpy.Propagate('Prop One Day', prop, sat, ('Sat.ElapsedSecs', 60))
 
-# gmat.ShowObjects()
-# es = gpy.GetObject('Sat.ElapsedSecs')
-# es.Help()
-
-# g60 = gpy.GetObject('Goal=60')
-# g60.Help()
-
 # TODO bugfix: Maneuver command causing crash in RunMission/for loop/mod.AppendCommand()
-man1 = gpy.Maneuver('Maneuver1', toi, sat)
-# print(f'man1 init: {man1.Initialize()}')
-# print(f'gmat init: {gmat.Initialize()}')
-# print(f'Appended man1: {gpy.Moderator().AppendCommand(man1)}')
+# man1 = gpy.Maneuver('Maneuver1', toi, sat)
 
 # TODO bugfix: crash with second Propagate - StopCondition name being double-used?
 #  Note: LoadScript shows single Sat.ElapsedSecs even if multiple ElapsedSecs Propagate commands in script
@@ -64,18 +60,26 @@ prop2 = gpy.Propagate('Prop Another Day', prop, sat, ('Sat.ElapsedSecs', 120))
 # Mission Command Sequence
 mcs = [
     prop1,
-    man1,
+    # man1,
     prop2
 ]
-
-# TODO bugfix: goal param not being set, so propagating for longer than should
-print(f'\nprop2 stop parameter: {prop2.stop_cond.gmat_obj.GetStopParameter()}')
-print(f'prop2 epoch parameter: {prop2.stop_cond.gmat_obj.GetEpochParameter()}')
-print(f'prop2 goal parameter: {prop2.stop_cond.gmat_obj.GetGoalParameter()}\n')
 
 gpy.RunMission(mcs)  # Run the mission
 
 print(f'Sat state after running: {sat.GetState()}')
-print(f'Epoch after running: {sat.GetField("Epoch")}')
+end_epoch = sat.GetEpoch()
+print(f'Epoch after running: {end_epoch}')
+end_epoch_datetime = sat.GetEpoch(as_datetime=True)
+
+prop1_stop_goal = prop1.stop_cond.GetStopGoal()
+prop2_stop_goal = prop2.stop_cond.GetStopGoal()
+print(f'prop1 stop goal: {prop1_stop_goal}s')
+print(f'prop2 stop goal: {prop2_stop_goal}s')
+
+epoch_delta = end_epoch_datetime - start_epoch_datetime
+print(f'Epoch difference: {epoch_delta}')
+stop_goal_total = prop1_stop_goal + prop2_stop_goal
+
+print(f'Match? {epoch_delta.total_seconds()} epoch_delta vs {stop_goal_total} stop_goal_total')
 
 gmat.SaveScript(script_path)
