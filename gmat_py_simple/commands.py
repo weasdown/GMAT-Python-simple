@@ -700,6 +700,21 @@ class Vary(GmatCommand):
             self.solver_name = solver
         self.SetField('SolverName', self.solver_name)
 
+        self.variable = variable
+        self.SetField('Variable', self.variable)
+
+        self.initial_value = initial_value
+        self.SetField('InitialValue', self.initial_value)
+
+        self.perturbation = perturbation
+        self.SetField('Perturbation', self.perturbation)
+
+        self.lower = lower
+        self.SetField('Lower', self.lower)
+
+        self.upper = upper
+        self.SetField('Upper', self.upper)
+
         raise NotImplementedError  # TODO: finish setting other fields
 
         self.SetSolarSystem(gmat.GetSolarSystem())
