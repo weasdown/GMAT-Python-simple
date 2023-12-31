@@ -5,6 +5,8 @@ from load_gmat import gmat
 import gmat_py_simple as gpy
 from gmat_py_simple.utils import *
 
+from math import pi
+
 
 class GmatCommand:
     def __init__(self, command_type: str, name: str):
@@ -684,8 +686,21 @@ class Target(GmatCommand):
 
 
 class Vary(GmatCommand):
-    def __init__(self, name: str):
+    def __init__(self, name: str, solver: str | gpy.DifferentialCorrector, variable: str,
+                 initial_value: float | int = 1, perturbation: float | int = 0.0001, lower: float | int = 0.0,
+                 upper: float | int = pi, max_step: float | int = 0.5, additive_scale_factor: float | int = 0.0,
+                 multiplicative_scale_factor: float | int = 1.0):
         super().__init__('Vary', name)
+
+        self.Help()
+
+        if isinstance(solver, gpy.DifferentialCorrector):
+            self.solver_name = solver.name
+        else:
+            self.solver_name = solver
+        self.SetField('SolverName', self.solver_name)
+
+        raise NotImplementedError  # TODO: finish setting other fields
 
         self.SetSolarSystem(gmat.GetSolarSystem())
         self.SetObjectMap(gpy.Moderator().GetConfiguredObjectMap())
