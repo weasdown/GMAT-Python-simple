@@ -369,7 +369,7 @@ def Construct(obj_type: str, name: str, *args):
 
 
 def CustomHelp(obj):
-    print(f'\nCustomHelp for {obj.GetName()}:')
+    # print(f'\nCustomHelp for {obj.GetName()}:')
     obj = extract_gmat_obj(obj)
     param_count = obj.GetParameterCount()
 
@@ -382,6 +382,10 @@ def CustomHelp(obj):
             print(f'- Type: {param_type}')
             if param_type == 'String':
                 val = obj.GetStringParameter(i)
+            elif param_type == 'StringArray':
+                val = obj.GetStringArrayParameter(i)
+            elif param_type == 'Integer':
+                val = obj.GetIntegerParameter(i)
             elif param_type == 'Object':
                 val = obj.GetName()
             elif (param_type == 'Real') or (param_type == 'UnsignedInt') or (param_name == 'InitialEpoch'):

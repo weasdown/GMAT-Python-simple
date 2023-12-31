@@ -83,16 +83,18 @@ class GmatCommand:
         return self.gmat_obj.Validate()
 
 
+# class BranchCommand(GmatCommand):
+#     def __init__(self, command_type: str, name: str):
+#         super().__init__(command_type, name)
+
+
 class Achieve(GmatCommand):
-    def __init__(self, name: str, solver: str | gpy.DifferentialCorrector, goal: str, value: int | float,
+    def __init__(self, name: str, solver: gpy.DifferentialCorrector, goal: str, value: int | float,
                  tolerance: float | int = 0.1):
         super().__init__('Achieve', name)
 
-        if isinstance(solver, gpy.DifferentialCorrector):
-            self.solver = solver.name
-        else:
-            self.solver = solver
-        self.SetField('TargeterName', self.solver)
+        self.solver = solver
+        self.SetField('TargeterName', self.solver.name)
 
         self.goal = goal
         self.SetField('Goal', self.goal)
@@ -103,6 +105,23 @@ class Achieve(GmatCommand):
         self.tolerance = tolerance
         self.SetField('Tolerance', str(self.tolerance))
 
+        gpy.CustomHelp(self)
+
+        # TODO: try the following:
+        self.solver.gmat_obj.UpdateSolverGoal(0, self.value)
+
+        # TODO bugfix: Exception thrown during self.solver.Initialize(): gmat_py.APIException: Solver subsystem
+        #  exception: Targeter cannot initialize: No goals or variables are set.
+        self.solver.Initialize()
+
+        self.SetSolarSystem(gmat.GetSolarSystem())
+        self.SetObjectMap(gpy.Moderator().GetConfiguredObjectMap())
+        self.SetGlobalObjectMap(gpy.Sandbox().GetGlobalObjectMap())
+
+        # TODO bugfix: Exception thrown during initialize: gmat_py.APIException: Command Exception: Targeter not
+        #  initialized for Achieve command "Achieve DC1(DefaultSC.Earth.RMAG = 42165.0, {Tolerance = 0.1});"
+        self.Initialize()
+
 
 class BeginFiniteBurn(GmatCommand):
     def __init__(self, name: str):
@@ -112,12 +131,15 @@ class BeginFiniteBurn(GmatCommand):
 
 class BeginMissionSequence(GmatCommand):
     def __init__(self):
+        # TODO: uncomment to get all items initialized (handling in Tut02 for now)
+        # gmat.Initialize()  # initialize GMAT so objects are in place for use in command sequence
+
         super().__init__('BeginMissionSequence', 'BeginMissionSequenceCommand')
-        # gpy.Moderator().ValidateCommand(self)
-        sb = gpy.Sandbox()
-        self.SetObjectMap(sb.GetObjectMap())
-        self.SetGlobalObjectMap(sb.GetGlobalObjectMap())
+
         self.SetSolarSystem(gmat.GetSolarSystem())
+        self.SetObjectMap(gpy.Moderator().GetConfiguredObjectMap())
+        self.SetGlobalObjectMap(gpy.Sandbox().GetGlobalObjectMap())
+
         self.Initialize()
 
 
@@ -130,7 +152,6 @@ class EndFiniteBurn(GmatCommand):
 class EndTarget(GmatCommand):
     def __init__(self, name: str):
         super().__init__('EndTarget', name)
-        raise NotImplementedError
 
 
 class Maneuver(GmatCommand):
@@ -673,11 +694,38 @@ class PropagateMulti(Propagate):
         super().__init__(name, prop, sat, stop_cond, synchronized)
 
 
+class SolverBranchCommand:
+    def __init__(self):
+        pass
+
+
 class Target(GmatCommand):
     def __init__(self, name: str, solver: str | gpy.DifferentialCorrector, solver_mode: str = 'Solve',
                  exit_mode: str = 'SaveAndContinue', command_sequence: list[GmatCommand] = None):
         super().__init__('Target', name)
         # 'Show Progress Window' argument not implemented (for now) - seems to be a GUI-only option
+
+        """
+        Parameters:
+            Covariance: Rmatrix
+            Comment: String
+            Summary: String
+            MissionSummary: String
+            Targeter: String
+        """
+
+        print(self.GetGeneratingString())
+
+        for i in range(5):
+            print(f'{self.gmat_obj.GetParameterText(i)}: {self.gmat_obj.GetParameterTypeString(i)}')
+
+        if isinstance(solver, gpy.DifferentialCorrector):
+            self.solver = solver.name
+        else:
+            self.solver = solver
+        self.SetStringParameter('Targeter', self.solver)
+
+        self.Initialize()
 
         raise NotImplementedError
 

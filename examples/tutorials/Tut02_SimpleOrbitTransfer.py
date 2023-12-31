@@ -17,6 +17,8 @@ toi = gpy.ImpulsiveBurn('TOI', sat.GetCoordinateSystem(), [0, 0, 0])
 dc1 = gpy.DifferentialCorrector('DC1')
 goi = gpy.ImpulsiveBurn('GOI', sat.GetCoordinateSystem(), [0, 0, 0])
 
+# gmat.Initialize()  # initialize GMAT so objects are in place for use in command sequence
+
 print(f'Sat state before running: {sat.GetState()}')
 print(f"Epoch before running: {sat.GetField('Epoch')}")
 
