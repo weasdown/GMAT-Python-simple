@@ -692,8 +692,6 @@ class Vary(GmatCommand):
                  multiplicative_scale_factor: float | int = 1.0):
         super().__init__('Vary', name)
 
-        self.Help()
-
         if isinstance(solver, gpy.DifferentialCorrector):
             self.solver_name = solver.name
         else:
