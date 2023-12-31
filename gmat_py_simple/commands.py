@@ -704,18 +704,25 @@ class Vary(GmatCommand):
         self.SetField('Variable', self.variable)
 
         self.initial_value = initial_value
-        self.SetField('InitialValue', self.initial_value)
+        self.SetField('InitialValue', str(self.initial_value))
 
         self.perturbation = perturbation
-        self.SetField('Perturbation', self.perturbation)
+        self.SetField('Perturbation', str(self.perturbation))
 
         self.lower = lower
-        self.SetField('Lower', self.lower)
+        self.SetField('Lower', str(self.lower))
 
         self.upper = upper
-        self.SetField('Upper', self.upper)
+        self.SetField('Upper', str(self.upper))
 
-        raise NotImplementedError  # TODO: finish setting other fields
+        self.max_step = max_step
+        self.SetField('MaxStep', str(self.max_step))
+
+        self.additive_scale_factor = additive_scale_factor
+        self.SetField('AdditiveScaleFactor', str(self.additive_scale_factor))
+
+        self.multiplicative_scale_factor = multiplicative_scale_factor
+        self.SetField('MultiplicativeScaleFactor', str(self.multiplicative_scale_factor))
 
         self.SetSolarSystem(gmat.GetSolarSystem())
         self.SetObjectMap(gpy.Moderator().GetConfiguredObjectMap())
