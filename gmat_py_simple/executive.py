@@ -59,8 +59,7 @@ class Moderator:
         :return:
         """
 
-        # TODO: remove print warning (used for debugging)
-        print('\n** WARNING: USING DEFAULT STOP CONDITION **')
+        print('\n** WARNING: USING DEFAULT STOP CONDITION **')  # warning used for debugging
 
         sat: gmat.Spacecraft = self.GetDefaultSpacecraft()
         sat_name: str = sat.GetName()
