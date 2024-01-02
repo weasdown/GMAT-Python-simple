@@ -60,3 +60,4 @@ class ImpulsiveBurn(GmatObject):
 
         self.Validate()
         self.Initialize()
+        # gpy.Initialize()  # TODO: uncomment once DiffCorr fixed

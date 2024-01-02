@@ -8,6 +8,7 @@ import os
 log_path = os.path.normpath(f'{os.getcwd()}/GMAT-Log.txt')
 script_path = os.path.normpath(f'{os.getcwd()}/Tut01.script')
 gmat.UseLogFile(log_path)
+gmat.EchoLogFile()
 
 sat_params = {
     'Name': 'Sat',
@@ -36,7 +37,7 @@ print(f"Epoch before running: {sat.GetField('Epoch')}")
 
 # Mission Command Sequence
 mcs = [gpy.BeginMissionSequence(),
-       gpy.Propagate('', prop, sat, 'Sat.Earth.Periapsis')]
+       gpy.Propagate('Prop To Periapsis', prop, sat, 'Sat.Earth.Periapsis')]
 
 gpy.RunMission(mcs)  # Run the mission
 

@@ -49,9 +49,14 @@ class DifferentialCorrector:
         self.SetField('ReportFile', self.report_file)
 
         # TODO: how to set Goals (string array) field in Help?
-        self.Help()
+        # self.Help()
 
         # gpy.CustomHelp(self)
+
+        # for i in range(19):
+        #     print(f'{i}: {self.gmat_obj.GetParameterText(i)}: {self.gmat_obj.GetParameterTypeString(i)}')
+
+        # print(f'Variables: {self.gmat_obj.GetStringArrayParameter(4)}')
 
         # TODO bugfix: DifferentialCorrector Initialize throwing error: "Solver subsystem exception: Targeter cannot
         #  initialize: No goals or variables are set."

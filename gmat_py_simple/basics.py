@@ -86,7 +86,11 @@ class GmatObject:
         self.gmat_obj.Help()
 
     def Initialize(self):
-        self.gmat_obj.Initialize()
+        try:
+            return self.gmat_obj.Initialize()
+        except Exception as ex:
+            raise RuntimeError(f'{type(self).__name__} named "{self.name}" failed to Initialize - see GMAT exception '
+                               f'above') from ex
 
     def IsInitialized(self):
         self.gmat_obj.IsInitialized()
@@ -134,7 +138,11 @@ class GmatObject:
         return self.gmat_obj.SetSolarSystem(ss)
 
     def Validate(self) -> bool:
-        return self.gmat_obj.Validate()
+        try:
+            return self.gmat_obj.Validate()
+        except Exception as ex:
+            raise RuntimeError(f'{type(self).__name__} named "{self.name}" failed to Validate - see GMAT exception above') \
+                from ex
 
     @property
     def name(self) -> str:

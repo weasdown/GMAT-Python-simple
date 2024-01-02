@@ -369,7 +369,8 @@ def Construct(obj_type: str, name: str, *args):
 
 
 def CustomHelp(obj):
-    # print(f'\nCustomHelp for {obj.GetName()}:')
+    print(f'\nCustomHelp for {type(obj).__name__} named "{obj.GetName()}":')
+    # print('\nCustomHelp:')
     obj = extract_gmat_obj(obj)
     param_count = obj.GetParameterCount()
 
@@ -378,8 +379,8 @@ def CustomHelp(obj):
         try:
             param_name = obj.GetParameterText(i)
             param_type = obj.GetParameterTypeString(i)
-            print(f'Parameter: {param_name}')
-            print(f'- Type: {param_type}')
+            print(f'    Parameter: {param_name}')
+            print(f'    - Type: {param_type}')
             if param_type == 'String':
                 val = obj.GetStringParameter(i)
             elif param_type == 'StringArray':
@@ -395,12 +396,12 @@ def CustomHelp(obj):
             elif param_type == 'Boolean':
                 val = obj.GetBooleanParameter(i)
             else:
-                raise TypeError(f'Unrecognised type: {param_type}')
+                raise TypeError(f'  Unrecognised type: {param_type}')
 
-            print(f'- Value: {val}\n')
+            print(f'    - Value: {val}\n')
 
         except Exception as exc:
-            print(exc, '\n')
+            print(f'    {exc}\n')
             # raise
 
 
@@ -424,7 +425,11 @@ class GMATNameError(Exception):
 
 
 def Initialize() -> bool:
-    return gmat.Initialize()
+    try:
+        return gmat.Initialize()
+    except Exception as ex:
+        ex_str = str(ex).replace('\n', '')
+        raise RuntimeError(f'Initialize failed - GMAT error: "{ex_str}"') from None
 
 
 def GetTypeNameFromID(type_id: int) -> str:

@@ -148,28 +148,28 @@ class Spacecraft(GmatObject):
         # TODO: add elements for non-Cartesian orbit states (e.g. 'SMA', 'ECC' for Kep) - get OrbitState allowed fields
         _allowed_fields = set()
         _gmat_allowed_fields = ['NAIFId', 'NAIFIdReferenceFrame', 'SpiceFrameId', 'OrbitSpiceKernelName',
-                              'AttitudeSpiceKernelName',
-                              'SCClockSpiceKernelName', 'FrameSpiceKernelName', 'OrbitColor', 'TargetColor',
-                              'Epoch', 'X', 'Y', 'Z', 'VX',
-                              'VY', 'VZ', 'StateType', 'DisplayStateType', 'AnomalyType', 'CoordinateSystem',
-                              'DryMass', 'DateFormat',
-                              'OrbitErrorCovariance', 'ProcessNoiseModel', 'Cd', 'Cr', 'CdSigma', 'CrSigma',
-                              'DragArea', 'SRPArea', 'Tanks',
-                              'Thrusters', 'PowerSystem', 'ExtendedMassPropertiesModel', 'Id', 'SPADSRPFile',
-                              'SPADSRPScaleFactor',
-                              'SPADSRPInterpolationMethod', 'SPADSRPScaleFactorSigma', 'SPADDragFile',
-                              'SPADDragScaleFactor',
-                              'SPADDragInterpolationMethod', 'SPADDragScaleFactorSigma',
-                              'AtmosDensityScaleFactor',
-                              'AtmosDensityScaleFactorSigma', 'AddPlates', 'AddHardware', 'SolveFors',
-                              'NPlateSRPEquateAreaCoefficients',
-                              'ModelFile', 'ModelOffsetX', 'ModelOffsetY', 'ModelOffsetZ', 'ModelRotationX',
-                              'ModelRotationY',
-                              'ModelRotationZ', 'ModelScale', 'Attitude']
+                                'AttitudeSpiceKernelName',
+                                'SCClockSpiceKernelName', 'FrameSpiceKernelName', 'OrbitColor', 'TargetColor',
+                                'Epoch', 'X', 'Y', 'Z', 'VX',
+                                'VY', 'VZ', 'StateType', 'DisplayStateType', 'AnomalyType', 'CoordinateSystem',
+                                'DryMass', 'DateFormat',
+                                'OrbitErrorCovariance', 'ProcessNoiseModel', 'Cd', 'Cr', 'CdSigma', 'CrSigma',
+                                'DragArea', 'SRPArea', 'Tanks',
+                                'Thrusters', 'PowerSystem', 'ExtendedMassPropertiesModel', 'Id', 'SPADSRPFile',
+                                'SPADSRPScaleFactor',
+                                'SPADSRPInterpolationMethod', 'SPADSRPScaleFactorSigma', 'SPADDragFile',
+                                'SPADDragScaleFactor',
+                                'SPADDragInterpolationMethod', 'SPADDragScaleFactorSigma',
+                                'AtmosDensityScaleFactor',
+                                'AtmosDensityScaleFactorSigma', 'AddPlates', 'AddHardware', 'SolveFors',
+                                'NPlateSRPEquateAreaCoefficients',
+                                'ModelFile', 'ModelOffsetX', 'ModelOffsetY', 'ModelOffsetZ', 'ModelRotationX',
+                                'ModelRotationY',
+                                'ModelRotationZ', 'ModelScale', 'Attitude']
 
         # TODO: get string attr names for non-GMAT attrs
         _allowed_fields.update(_gmat_allowed_fields,
-                              ['Name', 'Orbit', 'Hardware'])
+                               ['Name', 'Orbit', 'Hardware'])
 
         self.hardware: Spacecraft.SpacecraftHardware | None = None
         self._tanks: Spacecraft.SpacecraftHardware.PropList | None = None
@@ -179,10 +179,7 @@ class Spacecraft(GmatObject):
         self._dry_mass = self.GetField('DryMass')
 
         self.Validate()
-        gmat.Initialize()
-
-        # self.gmat_obj.Validate()
-        # gmat.Initialize()
+        gpy.Initialize()
 
     def __repr__(self):
         return f'Spacecraft with name {self._name}'
@@ -234,7 +231,7 @@ class Spacecraft(GmatObject):
 
         sc.Validate()
 
-        gmat.Initialize()
+        gpy.Initialize()
 
         return sc
 

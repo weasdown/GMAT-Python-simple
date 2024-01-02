@@ -152,7 +152,6 @@ class Moderator:
             if type(obj).__name__ == 'GmatBase':
                 # Convert to Swig Parameter (the type required for a Parameter function argument)
                 obj: gmat.Parameter = gpy.GmatBase_to_Parameter(obj)
-                print(type(obj))
             return obj  # obj is a Swig Parameter
         else:
             return None  # Parameter not found
@@ -196,6 +195,44 @@ class Moderator:
         :param mission_command_sequence:
         :return:
         """
+
+        def configure_command(comm: GmatCommand):
+            try:
+                print(f'    Attempting to configure {type(command).__name__} named "{command.GetName()}"')
+                if isinstance(command, gpy.Target):
+                    gmat.EchoLogFile(True)
+
+                command.SetSolarSystem(gmat.GetSolarSystem())
+                command.SetObjectMap(mod.GetConfiguredObjectMap())
+                command.SetGlobalObjectMap(sb.GetGlobalObjectMap())
+
+                print('    Object mapping complete')
+
+                command.Validate()
+                print('    Validate complete')
+                command.Initialize()
+                print('    Initialize complete')
+                mod.ValidateCommand(command)
+                print('    ValidateCommand complete')
+                mod.AppendCommand(command)
+                print('    AppendCommand complete')
+
+                if isinstance(command, gpy.Target):
+                    command.run_mission_configured = True
+                    gmat.EchoLogFile(False)
+
+                print(f'    Done for {type(command).__name__} named "{command.GetName()}"\n')
+
+            except SystemExit as sys_exit:
+                raise RuntimeError(f'GMAT attempted to stop code execution while processing command {command} - '
+                                   f'{sys_exit}')
+
+            except Exception as ex:
+                print(f'Failed command in RunMission: "{command.name}" of type {command.gmat_obj.GetTypeName()}')
+                raise ex
+
+        print('\nEntered Moderator.RunMission()')
+        print(f'mission_command_sequence: {mission_command_sequence}')
         if not isinstance(mission_command_sequence, list):
             raise TypeError('mission_command_sequence must be a list of GmatCommand objects'
                             ' (e.g. BeginMissionSequence, Propagate)')
@@ -216,25 +253,17 @@ class Moderator:
             if not isinstance(command, gpy.GmatCommand):
                 raise TypeError('command in RunMission for loop must be a gpy.GmatCommand')
 
-            try:
-                command.SetSolarSystem(gmat.GetSolarSystem())
-                command.SetObjectMap(mod.GetConfiguredObjectMap())
-                command.SetGlobalObjectMap(sb.GetGlobalObjectMap())
+            if isinstance(command, gpy.Propagate):
+                propagate_commands.append(command)
 
-                command.Validate()
-                command.Initialize()
-                mod.ValidateCommand(command)
-                mod.AppendCommand(command)
+            if isinstance(command, gpy.Target) and not command.run_mission_configured:
+                # Commands within Target branch need to be configured, then the Target command
+                configure_command(command)
+                for com in command.command_sequence:
+                    configure_command(com)
 
-                if isinstance(command, gpy.Propagate):
-                    propagate_commands.append(command)
-
-            except SystemExit as sys_exit:
-                raise RuntimeError(f'GMAT attempted to stop code execution while processing command {command} - '
-                                   f'{sys_exit}')
-            except Exception as ex:
-                print(f'Failed command in RunMission: "{command.name}" of type {command.gmat_obj.GetTypeName()}')
-                raise ex
+            else:
+                configure_command(command)
 
         run_mission_return = self.gmat_obj.RunMission()
         if run_mission_return == 1:
