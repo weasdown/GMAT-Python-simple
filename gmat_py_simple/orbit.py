@@ -134,7 +134,7 @@ class ForceModel(GmatObject):
                 # point_masses is a valid list of celestial body name strings
                 pmf_list = []
                 for body in point_masses:
-                    pmf_list.append(ForceModel.PointMassForce(name=f'PMF_{body}', body=body))
+                    pmf_list.append(ForceModel.PointMassForce(name=f'PointMassForce_{body}', body=body))
                 return pmf_list
 
             else:  # point_masses is not of a valid type

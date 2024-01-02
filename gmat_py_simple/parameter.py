@@ -18,9 +18,18 @@ class Parameter:
     def __init__(self, param_type: str, name: str):
         self.param_type = param_type
         self.name = name
-        self.gmat_obj = gpy.Moderator().CreateParameter(self.param_type, self.name)  # SwigPyObject instance
+
+        # See if Parameter already exists. If not, create a new one
+        self.gmat_obj = gpy.Moderator().GetParameter(self.name)
+        if not self.gmat_obj:
+            self.gmat_obj = gpy.Moderator().CreateParameter(self.param_type, self.name)  # SwigPyObject instance
+
         self.swig_param = self.gmat_obj  # SwigPyObject instance
         self.gmat_base = gmat.Validator.Instance().FindObject(self.name)  # GmatBase instance
+
+    # def AddRefObject(self, obj: gpy.GmatObject) -> bool:
+    #     obj = gpy.extract_gmat_obj(obj)
+    #     return self.swig_param.AddRefObject(obj)
 
     def GetName(self) -> str:
         self.name: str = self.gmat_base.GetName()
@@ -37,6 +46,18 @@ class Parameter:
     def Help(self):
         return self.gmat_base.Help()
 
+    def Initialize(self):
+        return self.gmat_base.Initialize()
+
+    def Validate(self) -> bool:
+        try:
+            resp = self.gmat_base.Validate()
+            if not resp:
+                raise RuntimeError('Parameter Validate() returned False')
+            return resp
+        except Exception as ex:
+            raise RuntimeError(f'{type(self).__name__} named "{self.name}" failed to Validate - see exception above')\
+                from ex
 
 # TODO: make a class for each type of StopCondition, e.g. ElapsedSecs, Apoapsis etc, that generates a
 #  properly-formed StopCondition of that type. Will help with code completion.

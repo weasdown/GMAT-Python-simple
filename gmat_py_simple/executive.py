@@ -186,6 +186,7 @@ class Moderator:
     def RemoveObject(self, obj_type: int, name: str, del_only_if_not_used: bool = True) -> bool:
         return self.gmat_obj.RemoveObject(obj_type, name, del_only_if_not_used)
 
+
     def RunMission(self, mission_command_sequence: list[GmatCommand]) -> int:
         """
         Run the mission command sequence
@@ -198,8 +199,9 @@ class Moderator:
 
         def configure_command(comm: GmatCommand):
             try:
-                print(f'    Attempting to configure {type(command).__name__} named "{command.GetName()}"')
+                print('    In configure_command()')
                 if isinstance(command, gpy.Target):
+                    print('Echoing log file for Target command')
                     gmat.EchoLogFile(True)
 
                 command.SetSolarSystem(gmat.GetSolarSystem())
@@ -232,6 +234,9 @@ class Moderator:
                 raise ex
 
         print('\nEntered Moderator.RunMission()')
+
+        gpy.Initialize()
+
         print(f'mission_command_sequence: {mission_command_sequence}')
         if not isinstance(mission_command_sequence, list):
             raise TypeError('mission_command_sequence must be a list of GmatCommand objects'
@@ -250,6 +255,7 @@ class Moderator:
 
         propagate_commands: list[gpy.Propagate] = []  # start a list of Propagates so their sats can be updated later
         for command in mission_command_sequence:
+            print(f'    Attempting to configure {type(command).__name__} named "{command.GetName()}"')
             if not isinstance(command, gpy.GmatCommand):
                 raise TypeError('command in RunMission for loop must be a gpy.GmatCommand')
 
@@ -280,6 +286,8 @@ class Moderator:
         elif run_mission_return == -4:
             raise RuntimeError('Execution of RunMission() was interrupted by the user')
         elif run_mission_return == -5:
+            rt_stop_cond = gmat.GetRuntimeObject('Sat.Earth.Periapsis')
+            print(f'Runtime StopCondition: {rt_stop_cond}')
             raise RuntimeError('An exception was thrown during Sandbox execution. See GMAT log for details')
         elif run_mission_return == -6:
             raise RuntimeError('An unknown error during Sandbox execution. See GMAT log for details')

@@ -8,7 +8,10 @@ import os
 log_path = os.path.normpath(f'{os.getcwd()}/GMAT-Log.txt')
 script_path = os.path.normpath(f'{os.getcwd()}/Tut01.script')
 gmat.UseLogFile(log_path)
-gmat.EchoLogFile()
+echo_log = True
+if echo_log:
+    gmat.EchoLogFile()
+    print('Echoing GMAT log file to terminal\n')
 
 sat_params = {
     'Name': 'Sat',
@@ -32,7 +35,7 @@ fm = gpy.ForceModel(name='LowEarthProp_ForceModel', point_masses=['Luna', 'Sun']
 prop = gpy.PropSetup('LowEarthProp', fm=fm, accuracy=9.999999999999999e-12,
                      gator=gpy.PropSetup.Propagator(name='LowEarthProp', integrator='RungeKutta89'))
 
-print(f'Sat state before running: {sat.GetState()}')
+print(f'\nSat state before running: {sat.GetState()}')
 print(f"Epoch before running: {sat.GetField('Epoch')}")
 
 # Mission Command Sequence

@@ -424,14 +424,6 @@ class GMATNameError(Exception):
         raise RuntimeError(f'No object currently exists in GMAT with the name {attempted_name}')
 
 
-def Initialize() -> bool:
-    try:
-        return gmat.Initialize()
-    except Exception as ex:
-        ex_str = str(ex).replace('\n', '')
-        raise RuntimeError(f'Initialize failed - GMAT error: "{ex_str}"') from None
-
-
 def GetTypeNameFromID(type_id: int) -> str:
     type_names = ['SPACECRAFT',
                   'FORMATION',
