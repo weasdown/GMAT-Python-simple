@@ -83,6 +83,8 @@ class Moderator:
         # TODO: remove test line below, uncomment actual default above
         stop_cond.SetStringParameter('Goal', '120')  # SetRhsString() called with goal value in source
 
+        gpy.Initialize()
+
         return stop_cond
 
     def CreateParameter(self, param_type: str, name: str):

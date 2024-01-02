@@ -8,7 +8,7 @@ import os
 log_path = os.path.normpath(f'{os.getcwd()}/GMAT-Log.txt')
 script_path = os.path.normpath(f'{os.getcwd()}/Tut01.script')
 gmat.UseLogFile(log_path)
-echo_log = True
+echo_log = False
 if echo_log:
     gmat.EchoLogFile()
     print('Echoing GMAT log file to terminal\n')

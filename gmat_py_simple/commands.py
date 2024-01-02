@@ -796,6 +796,9 @@ class Propagate(GmatCommand):
         else:  # create a StopCondition if the user didn't supply one
             self.stop_cond: gmat.StopCondition = gpy.Moderator().CreateDefaultStopCondition()
 
+        # !! TODO remove forced value !!
+        self.stop_cond: gmat.StopCondition = gpy.Moderator().CreateDefaultStopCondition()
+
         # From commit 1d1bb35
         # # # Check for existing Formation
         # form = mod.GetListOfObjects(gmat.FORMATION)
@@ -832,11 +835,11 @@ class Propagate(GmatCommand):
         # self.Validate()
 
         # Latest
-        self.goalless = self.stop_cond.goalless
+        # self.goalless = self.stop_cond.goalless
 
         self.SetRefObject(self.stop_cond, gmat.STOP_CONDITION, "", 0)  # attach StopCondition to Propagate
-        self.stop_cond.Initialize()
-        print(f'StopCondition Validate: {self.stop_cond.Validate()}')
+        # self.stop_cond.Initialize()
+        # print(f'StopCondition Validate: {self.stop_cond.Validate()}')
 
         coord_sys_name = self.sat.GetField('CoordinateSystem')
         coord_sys = gmat.GetObject(coord_sys_name)
