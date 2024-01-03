@@ -10,6 +10,18 @@ import os
 
 gmat.Clear()
 
+# Debug options - TODO remove
+gmat_global = gmat.GmatGlobal.Instance()
+gmat_global.SetMissionTreeDebug(True)
+
+# writes param info to log
+# e.g. "18  ECC                        Spacecraft     Origin                                Y  Y  Y  Eccentricity"
+gmat_global.SetWriteParameterInfo(True)
+
+gmat_global.SetWriteFilePathInfo(False)
+gmat_global.SetCommandEchoMode(True)  # enables "CurrentCommand: [command generating string]" print out in log
+
+# Set log and script options
 log_path = os.path.normpath(f'{os.getcwd()}/GMAT-Log.txt')
 script_path = os.path.normpath(f'{os.getcwd()}/example.script')
 gmat.UseLogFile(log_path)
@@ -35,8 +47,8 @@ sat_params = {
     },
 }
 
-# sat = gpy.Spacecraft.from_dict(sat_params)
-sat = gpy.Spacecraft('Sat')
+sat = gpy.Spacecraft.from_dict(sat_params)
+# sat = gpy.Spacecraft('Sat')
 sat.SetField('DateFormat', 'A1Gregorian')
 sat.SetField('Epoch', '01 Jan 2000 12:00:00.000')
 
@@ -53,7 +65,7 @@ gpy.Initialize()
 # prop1 = gpy.Propagate('Prop One Day', prop, sat, ('Sat.ElapsedSecs', 60))
 man1 = gpy.Maneuver('Maneuver1', toi, sat)
 # prop2 = gpy.Propagate('Prop Another Day', prop, sat, ('Sat.ElapsedDays', 1))
-prop3 = gpy.Propagate('Prop To Apoapsis', prop, sat, 'Sat.Earth.Periapsis')
+prop3 = gpy.Propagate('Prop To Periapsis', prop, sat, 'Sat.Earth.Periapsis')
 
 # gpy.Initialize()
 

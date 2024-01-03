@@ -204,6 +204,25 @@ class Moderator:
                     print('Echoing log file for Target command')
                     gmat.EchoLogFile(True)
 
+                # TODO remove if clause (for debugging only)
+                if isinstance(command, gpy.Propagate):
+                    print(f'\nCommand: {command.name}')
+                    stop_cond_obj: gmat.StopCondition = command.GetRefObject(gmat.STOP_CONDITION,
+                                                                             command.stop_cond.name, 0)
+                    stop_cond_ref_names = stop_cond_obj.GetRefObjectNameArray(gmat.PARAMETER)
+                    stop_cond_ref_types = stop_cond_obj.GetRefObjectTypeArray()
+                    print(stop_cond_ref_names)
+                    print(f'StopCond ref types: {stop_cond_ref_types}')
+
+                    sep = gmat.GetObject(stop_cond_ref_names[0])
+                    sep.Help()
+                    sep_ref_names = sep.GetRefObjectNameArray(gmat.PARAMETER)
+                    print(sep_ref_names)
+
+                    print(f'CM all list: {gmat.ConfigManager.Instance().GetListOfAllItems()}')
+                    # print(f'Find SpacePoint: {gmat.FindObject(command.gmat_obj, gmat.SPACE_POINT, )}')
+                    # print(f'scName: {gmat.GetRefObjectName(gmat.SPACE_POINT)}')
+
                 command.SetSolarSystem(gmat.GetSolarSystem())
                 command.SetObjectMap(mod.GetConfiguredObjectMap())
                 command.SetGlobalObjectMap(sb.GetGlobalObjectMap())
@@ -270,8 +289,10 @@ class Moderator:
                     configure_command(com)
 
             configure_command(command)
-            print(f'Showing objects in RunMission() for command {command.name}')
-            gmat.ShowObjects()
+            # print(f'Showing objects in RunMission() for command {command.name}')
+
+        gmat.ShowObjects()
+        # gpy.Initialize()
 
         run_mission_return = self.gmat_obj.RunMission()
         if run_mission_return == 1:

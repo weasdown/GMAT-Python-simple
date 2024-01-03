@@ -48,6 +48,20 @@ class Parameter:
     def Initialize(self):
         return self.gmat_base.Initialize()
 
+    def SetRefObject(self, obj, type_int: int, name: str, index: int = 0):
+        """
+        Return True if obj successfully set, False otherwise
+
+        :param obj:
+        :param type_int:
+        :param name:
+        :param index:
+        :return:
+        """
+        obj = gpy.extract_gmat_obj(obj)
+        response: bool = self.gmat_base.SetRefObject(obj, type_int, name, index)
+        return response
+
     def SetRefObjectName(self, type_int: int, name: str) -> bool:
         # GMAT's SetRefObjectName cannot be called on a Swig Parameter object, only a GmatBase (or subclass thereof)
         return self.gmat_base.SetRefObjectName(type_int, name)
