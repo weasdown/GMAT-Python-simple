@@ -62,10 +62,10 @@ toi = gpy.ImpulsiveBurn('IB1', sat.GetCoordinateSystem(), [0.2, 0, 0])
 gpy.Initialize()
 
 # Mission commands
-# prop1 = gpy.Propagate('Prop One Day', prop, sat, ('Sat.ElapsedSecs', 60))
-man1 = gpy.Maneuver('Maneuver1', toi, sat)
-# prop2 = gpy.Propagate('Prop Another Day', prop, sat, ('Sat.ElapsedDays', 1))
-prop3 = gpy.Propagate('Prop To Periapsis', prop, sat, 'Sat.Earth.Periapsis')
+prop1 = gpy.Propagate('Prop 60 s', prop, sat, ('Sat.ElapsedSecs', 60))
+# man1 = gpy.Maneuver('Maneuver1', toi, sat)
+prop2 = gpy.Propagate('Prop One Day', prop, sat, ('Sat.ElapsedDays', 1))
+# prop3 = gpy.Propagate('Prop To Apoapsis', prop, sat, 'Sat.Earth.Apoapsis')
 
 # gpy.Initialize()
 
@@ -74,10 +74,10 @@ print(f'Epoch before running: {sat.GetEpoch()}')
 
 # Mission Command Sequence
 mcs = [
-    # prop1,  # propagate by one day
-    man1,  # 0.2 km/s maneuver
-    # prop2,  # propagate by another day
-    prop3  # propagate to periapsis
+    prop1,  # propagate by 60 seconds
+    # man1,  # 0.2 km/s maneuver
+    prop2,  # propagate by one day
+    # prop3  # propagate to periapsis
 ]
 
 gpy.RunMission(mcs)  # Run the mission

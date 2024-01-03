@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gmat_py_simple as gpy
 from load_gmat import gmat
 
 from typing import Union

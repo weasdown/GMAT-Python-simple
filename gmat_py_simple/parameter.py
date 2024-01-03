@@ -27,6 +27,8 @@ class Parameter:
         self.swig_param = self.gmat_obj  # SwigPyObject instance
         self.gmat_base = gmat.Validator.Instance().FindObject(self.name)  # GmatBase instance
 
+        self.index: int = 0  # used in self.SetRefObject()
+
     # def AddRefObject(self, obj: gpy.GmatObject) -> bool:
     #     obj = gpy.extract_gmat_obj(obj)
     #     return self.swig_param.AddRefObject(obj)
@@ -48,7 +50,7 @@ class Parameter:
     def Initialize(self):
         return self.gmat_base.Initialize()
 
-    def SetRefObject(self, obj, type_int: int, name: str, index: int = 0):
+    def SetRefObject(self, obj, type_int: int, name: str):
         """
         Return True if obj successfully set, False otherwise
 
@@ -59,22 +61,35 @@ class Parameter:
         :return:
         """
         obj = gpy.extract_gmat_obj(obj)
-        response: bool = self.gmat_base.SetRefObject(obj, type_int, name, index)
+        try:
+            response: bool = self.gmat_base.SetRefObject(obj, type_int, name, self.index)
+            if not response:
+                raise RuntimeError(f'SetRefObject() returned a non-true value: {response}')
+            self.index += 1
+        except Exception as ex:
+            print(f'CM list of items in Parameter.SetRefObject(): {gmat.ConfigManager.Instance().GetListOfAllItems()}')
+            raise RuntimeError(f'Parameter named "{self.name}" failed to SetRefObject - see exception below:'
+                               f'\n     {ex}') from ex
         return response
 
     def SetRefObjectName(self, type_int: int, name: str) -> bool:
         # GMAT's SetRefObjectName cannot be called on a Swig Parameter object, only a GmatBase (or subclass thereof)
         return self.gmat_base.SetRefObjectName(type_int, name)
 
+    def SetSolarSystem(self, ss=gmat.SolarSystem()):
+        return self.gmat_base.SetSolarSystem(ss)
+
     def Validate(self) -> bool:
         try:
-            resp = self.gmat_base.Validate()
-            if not resp:
-                raise RuntimeError('Parameter Validate() returned False')
-            return resp
+            valid = self.gmat_base.Validate()
+            if not valid:
+                raise RuntimeError(f'Validate() returned a non-true value for Parameter {self.name}: {valid}.\n'
+                                   f'     (Parameter type: {self.GetTypeName()})')
+            return valid
         except Exception as ex:
-            raise RuntimeError(f'{type(self).__name__} named "{self.name}" failed to Validate - see exception above')\
-                from ex
+            print(f'CM list of items in Parameter.Validate(): {gmat.ConfigManager.Instance().GetListOfAllItems()}')
+            raise RuntimeError(f'Parameter named "{self.name}" failed to Validate - see exception below:'
+                               f'\n     {ex}') from ex
 
 # TODO: make a class for each type of StopCondition, e.g. ElapsedSecs, Apoapsis etc, that generates a
 #  properly-formed StopCondition of that type. Will help with code completion.
