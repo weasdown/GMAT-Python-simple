@@ -407,7 +407,12 @@ def CustomHelp(obj):
 
 def extract_gmat_obj(obj):
     obj_type = str(type(obj))
+    if obj is None:
+        raise SyntaxError('A NoneType object was given')
+
     if 'gmat_py_simple' in obj_type:  # wrapper object
+        if 'Parameter' in obj_type:
+            return obj.gmat_base
         return obj.gmat_obj
     elif 'gmat_py' in obj_type:  # native GMAT object
         return obj

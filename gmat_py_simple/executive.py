@@ -20,7 +20,10 @@ class Moderator:
         try:
             # print(f'Command type in mod.AppendCommand: {type(command)}')
             # print(f'GenString in AppComm: {command.GetGeneratingString()}')
-            resp: bool = self.gmat_obj.AppendCommand(gpy.extract_gmat_obj(command))
+            print(f'\tAttempting to append command {command.gmat_obj.GetTypeName()} named "{command.name}" '
+                  f'to the mission sequence')
+            command_gmat_obj = gpy.extract_gmat_obj(command)
+            resp: bool = self.gmat_obj.AppendCommand(command_gmat_obj)
             return resp
         except SystemExit as se:  # TODO bugfix: doesn't prevent hang
             print('SystemExit detected in Moderator.AppendCommand()!!')
@@ -82,7 +85,7 @@ class Moderator:
         # TODO: remove test line below, uncomment actual default above
         stop_cond.SetStringParameter('Goal', '120')  # SetRhsString() called with goal value in source
 
-        gpy.Initialize()
+        # gpy.Initialize()
 
         return stop_cond
 
@@ -228,16 +231,16 @@ class Moderator:
                 command.SetObjectMap(mod.GetConfiguredObjectMap())
                 command.SetGlobalObjectMap(sb.GetGlobalObjectMap())
 
-                print('    Object mapping complete')
+                print('\tObject mapping complete')
 
-                command.Validate()
-                print('    Validate complete')
+                print(f'\tValidate: {command.Validate()}')
+                print('\tValidate complete')
                 command.Initialize()
-                print('    Initialize complete')
+                print('\tInitialize complete')
                 mod.ValidateCommand(command)
-                print('    ValidateCommand complete')
+                print('\tValidateCommand complete')
                 mod.AppendCommand(command)
-                print('    AppendCommand complete')
+                print('\tAppendCommand complete')
 
                 if isinstance(command, gpy.Target):
                     command.run_mission_configured = True
@@ -292,7 +295,8 @@ class Moderator:
             configure_command(command)
             # print(f'Showing objects in RunMission() for command {command.name}')
 
-        gmat.ShowObjects()
+        print('Finished configuring command sequence')
+        # gmat.ShowObjects()
         # gpy.Initialize()
 
         run_mission_return = self.gmat_obj.RunMission()

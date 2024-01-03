@@ -50,34 +50,55 @@ class Parameter:
     def Initialize(self):
         return self.gmat_base.Initialize()
 
-    def SetRefObject(self, obj, type_int: int, name: str):
+    def SetRefObject(self, obj, type_int: int):
         """
         Return True if obj successfully set, False otherwise
 
         :param obj:
         :param type_int:
-        :param name:
-        :param index:
         :return:
         """
         obj = gpy.extract_gmat_obj(obj)
+        name = obj.GetName()
         try:
-            response: bool = self.gmat_base.SetRefObject(obj, type_int, name, self.index)
+            response: bool = self.gmat_base.SetRefObject(obj, type_int, name)
             if not response:
                 raise RuntimeError(f'SetRefObject() returned a non-true value: {response}')
-            self.index += 1
         except Exception as ex:
-            print(f'CM list of items in Parameter.SetRefObject(): {gmat.ConfigManager.Instance().GetListOfAllItems()}')
-            raise RuntimeError(f'Parameter named "{self.name}" failed to SetRefObject - see exception below:'
-                               f'\n     {ex}') from ex
+            raise RuntimeError(f'Parameter named "{self.name}" failed to SetRefObject with arguments:'
+                               f'\n\t- obj:         {obj}'
+                               f'\n\t- type_int:    {type_int} (gmat.{gpy.GetTypeNameFromID(type_int)})\n'
+                               f'\n\tRaised exception: {ex}\n'
+                               f'\tGMAT type: {self.GetTypeName()}\n'
+                               f'\tRef obj type array: {self.gmat_base.GetRefObjectTypeArray()}\n\n'
+                               f'\tRef obj array, SPACECRAFT: {self.gmat_base.GetRefObjectArray(gmat.SPACECRAFT)}\n'
+                               f'\tRef obj array, SPACE_POINT: {self.gmat_base.GetRefObjectArray(gmat.SPACE_POINT)}\n'
+                               f'\tRef obj array, COORDINATE_SYSTEM: {self.gmat_base.GetRefObjectArray(gmat.COORDINATE_SYSTEM)}\n\n'
+                               f'\tRef obj name array, SPACECRAFT: {self.gmat_base.GetRefObjectNameArray(gmat.SPACECRAFT)}\n'
+                               f'\tRef obj name array, SPACE_POINT: {self.gmat_base.GetRefObjectNameArray(gmat.SPACE_POINT)}\n'
+                               f'\tRef obj name array, COORDINATE_SYSTEM: {self.gmat_base.GetRefObjectNameArray(gmat.COORDINATE_SYSTEM)}')\
+                from ex
         return response
 
     def SetRefObjectName(self, type_int: int, name: str) -> bool:
         # GMAT's SetRefObjectName cannot be called on a Swig Parameter object, only a GmatBase (or subclass thereof)
-        return self.gmat_base.SetRefObjectName(type_int, name)
+        resp = self.gmat_base.SetRefObjectName(type_int, name)
+        if not resp:
+            raise RuntimeError(f'Parameter.SetRefObjectName() failed for Parameter {self.name} with arguments:'
+                               f'\n\t- type_int:  {type_int} (gmat.{gpy.GetTypeNameFromID(type_int)})'
+                               f'\n\t- name:      {name}')
+        return resp
 
-    def SetSolarSystem(self, ss=gmat.SolarSystem()):
+    def SetSolarSystem(self, ss: gmat.SolarSystem = gmat.GetSolarSystem()):
         return self.gmat_base.SetSolarSystem(ss)
+
+    def SetStringParameter(self, param_name: str, value: str) -> bool:
+        resp = self.gmat_base.SetStringParameter(param_name, value)
+        if not resp:
+            raise RuntimeError(f'Parameter.SetStringParameter() failed for parameter "{self.name}" of type '
+                               f'{self.GetTypeName()} with arguments:'
+                               f'\n\t- param_name:  {param_name}'
+                               f'\n\t- value:       {value}')
 
     def Validate(self) -> bool:
         try:
@@ -87,9 +108,11 @@ class Parameter:
                                    f'     (Parameter type: {self.GetTypeName()})')
             return valid
         except Exception as ex:
-            print(f'CM list of items in Parameter.Validate(): {gmat.ConfigManager.Instance().GetListOfAllItems()}')
-            raise RuntimeError(f'Parameter named "{self.name}" failed to Validate - see exception below:'
-                               f'\n     {ex}') from ex
+            raise RuntimeError(f'Parameter named "{self.name}" failed to Validate - '
+                               f'see exception below:\n     {ex}'
+                               # f'\nCM list of items in Parameter.Validate(): '
+                               # f'{gmat.ConfigManager.Instance().GetListOfAllItems()}'
+                               f'') from ex
 
 # TODO: make a class for each type of StopCondition, e.g. ElapsedSecs, Apoapsis etc, that generates a
 #  properly-formed StopCondition of that type. Will help with code completion.

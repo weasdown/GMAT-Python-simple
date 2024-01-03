@@ -135,7 +135,7 @@ class GmatObject:
         else:  # native GMAT object
             self.gmat_obj.SetReference(ref)
 
-    def SetSolarSystem(self, ss: gmat.SolarSystem) -> bool:
+    def SetSolarSystem(self, ss: gmat.SolarSystem = gmat.GetSolarSystem()) -> bool:
         return self.gmat_obj.SetSolarSystem(ss)
 
     def Validate(self) -> bool:

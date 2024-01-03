@@ -21,6 +21,6 @@ class Validator:
     def SetObjectMap(self, om: gmat.ObjectMap) -> bool:
         return self.gmat_obj.SetObjectMap(om)
 
-    def SetSolarSystem(self, ss: gmat.SolarSystem) -> bool:
+    def SetSolarSystem(self, ss: gmat.SolarSystem = gmat.GetSolarSystem()) -> bool:
         return self.gmat_obj.SetSolarSystem(ss)
 
