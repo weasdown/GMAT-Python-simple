@@ -30,8 +30,7 @@ class Moderator:
             raise RuntimeError('Moderator.AppendCommand() attempted to raise a SystemExit:\nse') from se
 
         except Exception as ex:
-            print('Exception detected in Moderator.AppendCommand()!!')
-            raise RuntimeError('Moderator.AppendCommand() attempted to raise an Exception:\nse') from ex
+            raise RuntimeError(f'\tModerator.AppendCommand() attempted to raise an Exception:\n\t\t{ex}') from ex
 
     def CreateCommand(self, command_type: str, name: str) -> gmat.GmatCommand:
         # True (retFlag) isn't actually used in source, but still required
@@ -237,10 +236,12 @@ class Moderator:
                 print('\tValidate complete')
                 command.Initialize()
                 print('\tInitialize complete')
-                mod.ValidateCommand(command)
-                print('\tValidateCommand complete')
+                # mod.ValidateCommand(command)
+                # print('\tValidateCommand complete')
+                # sb.AddCommand(command)
+                # print('\tsb.AppendCommand complete')
                 mod.AppendCommand(command)
-                print('\tAppendCommand complete')
+                print('\tmod.AppendCommand complete')
 
                 if isinstance(command, gpy.Target):
                     command.run_mission_configured = True
@@ -253,8 +254,9 @@ class Moderator:
                                    f'{sys_exit}')
 
             except Exception as ex:
-                print(f'Failed command in RunMission: "{command.name}" of type {command.gmat_obj.GetTypeName()}')
-                raise ex
+                # print(f'Failed command in RunMission: "{command.name}" of type {command.gmat_obj.GetTypeName()}')
+                raise RuntimeError(f'configure_command in RunMission failed for "{command.name}" of type '
+                                   f'{command.gmat_obj.GetTypeName()}\n{ex}') from ex
 
         print('\nEntered Moderator.RunMission()')
 

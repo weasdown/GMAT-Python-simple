@@ -38,7 +38,10 @@ class GmatCommand:
 
     def Initialize(self) -> bool:
         try:
-            return self.gmat_obj.Initialize()
+            resp = self.gmat_obj.Initialize()
+            if not resp:
+                raise RuntimeError('Non-true response from Initialize()')
+            return resp
         except Exception as ex:
             raise RuntimeError(f'Initialize failed for {type(self).__name__} named "{self.name}". See GMAT error below:'
                                f'\n{ex}') from ex
@@ -1069,6 +1072,9 @@ class Propagate(GmatCommand):
             # TODO: check for multiple sats - required for synchro. First need to define syntax for multi-sat prop
             self.synchronized = True
 
+        mod.ValidateCommand(self)
+        print('\tValidateCommand complete in Propagate.init')
+
         self.SetSolarSystem()
         self.SetObjectMap(mod.GetConfiguredObjectMap())
         self.SetGlobalObjectMap(sb.GetGlobalObjectMap())
@@ -1078,6 +1084,10 @@ class Propagate(GmatCommand):
         print(f'Propagate Initialize: {self.Initialize()}')
         gpy.Initialize()
         print(f'Creation of Propagate "{self.name}" complete\n')
+
+        vdator = gpy.Validator()
+        vdator.SetSolarSystem(gmat.GetSolarSystem())
+        vdator.SetObjectMap(mod.GetConfiguredObjectMap())
 
     @classmethod
     def CreateDefault(cls, name: str = 'DefaultPropagateCommand'):
