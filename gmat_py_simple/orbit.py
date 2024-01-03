@@ -204,6 +204,9 @@ class ForceModel(GmatObject):
         #     setattr(self, f'_{attr}', defaults[attr]) if attr is None else attr
 
         # check_valid_args(primary_bodies=primary_bodies)
+
+        self.Validate()
+        self.Initialize()
         gpy.Initialize()
 
     def __repr__(self):
@@ -419,6 +422,8 @@ class PropSetup(GmatObject):  # variable called prop in GMAT Python examples
         self.SetReference(self.force_model)
         self.psm = self.GetPropStateManager()
 
+        self.Validate()
+        self.Initialize()
         gpy.Initialize()
 
     def AddPropObject(self, sc: gpy.Spacecraft):

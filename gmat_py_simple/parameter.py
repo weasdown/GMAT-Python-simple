@@ -35,19 +35,22 @@ class Parameter:
         self.name: str = self.gmat_base.GetName()
         return self.name
 
+    def GetRefObjectName(self, type_int: int) -> str:
+        # GMAT's SetRefObjectName cannot be called on a Swig Parameter object, only a GmatBase (or subclass thereof)
+        return self.gmat_base.GetRefObjectName(type_int)
+
     def GetTypeName(self) -> str:
         return self.gmat_base.GetTypeName()
-
-    def SetRefObjectName(self, type_int: int, name: str) -> bool:
-        # GMAT's SetRefObjectName cannot be called on a Swig Parameter object, only a GmatBase (or subclass thereof)
-        # self_obj = gmat.GetObject(self.GetName())
-        return self.gmat_base.SetRefObjectName(type_int, name)
 
     def Help(self):
         return self.gmat_base.Help()
 
     def Initialize(self):
         return self.gmat_base.Initialize()
+
+    def SetRefObjectName(self, type_int: int, name: str) -> bool:
+        # GMAT's SetRefObjectName cannot be called on a Swig Parameter object, only a GmatBase (or subclass thereof)
+        return self.gmat_base.SetRefObjectName(type_int, name)
 
     def Validate(self) -> bool:
         try:

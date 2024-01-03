@@ -187,7 +187,6 @@ class Moderator:
     def RemoveObject(self, obj_type: int, name: str, del_only_if_not_used: bool = True) -> bool:
         return self.gmat_obj.RemoveObject(obj_type, name, del_only_if_not_used)
 
-
     def RunMission(self, mission_command_sequence: list[GmatCommand]) -> int:
         """
         Run the mission command sequence
@@ -236,9 +235,10 @@ class Moderator:
 
         print('\nEntered Moderator.RunMission()')
 
-        gpy.Initialize()
+        # gmat.ShowObjects()
+        # gpy.Initialize()
 
-        print(f'mission_command_sequence: {mission_command_sequence}')
+        print(f'mission_command_sequence: {[f"{type(command).__name__} {command.GetName()}" for command in mission_command_sequence]}')
         if not isinstance(mission_command_sequence, list):
             raise TypeError('mission_command_sequence must be a list of GmatCommand objects'
                             ' (e.g. BeginMissionSequence, Propagate)')
@@ -269,8 +269,9 @@ class Moderator:
                 for com in command.command_sequence:
                     configure_command(com)
 
-            else:
-                configure_command(command)
+            configure_command(command)
+            print(f'Showing objects in RunMission() for command {command.name}')
+            gmat.ShowObjects()
 
         run_mission_return = self.gmat_obj.RunMission()
         if run_mission_return == 1:
@@ -287,8 +288,6 @@ class Moderator:
         elif run_mission_return == -4:
             raise RuntimeError('Execution of RunMission() was interrupted by the user')
         elif run_mission_return == -5:
-            rt_stop_cond = gmat.GetRuntimeObject('Sat.Earth.Periapsis')
-            print(f'Runtime StopCondition: {rt_stop_cond}')
             raise RuntimeError('An exception was thrown during Sandbox execution. See GMAT log for details')
         elif run_mission_return == -6:
             raise RuntimeError('An unknown error during Sandbox execution. See GMAT log for details')
