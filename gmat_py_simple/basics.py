@@ -63,10 +63,20 @@ class GmatObject:
         return self.gmat_obj.GetGeneratingString()
 
     def GetObject(self):
-        if not self.was_propagated:  # sat not yet propagated
+        """
+        Return the latest version of an object so its state info is up-to-date
+        :return:
+        """
+        try:
+            if not self.was_propagated:  # sat not yet propagated
+                return gmat.GetObject(self._name)
+            else:  # sat has been propagated so gmat.GetObject() would return incorrect (starting) values
+                return gmat.GetRuntimeObject(self._name)
+
+        except AttributeError:  # object may not have a self.was_propagated attribute
+            print(f'**Warning** Object {self.name} of type {self.gmat_obj.GetTypeName()} does not have an attribute '
+                  f'self.was_propagate. GetObject() is using gmat.GetObject() instead')
             return gmat.GetObject(self._name)
-        else:  # sat has been propagated so gmat.GetObject() would return incorrect (starting) values
-            return gmat.GetRuntimeObject(self._name)
 
     def GetName(self):
         return self._name

@@ -50,35 +50,41 @@ sat_params = {
 }
 
 sat = gpy.Spacecraft.from_dict(sat_params)
-# gpy.Initialize()
 
 fm = gpy.ForceModel(name='LowEarthProp_ForceModel', point_masses=['Luna', 'Sun'], drag=gpy.ForceModel.DragForce(),
                     srp=True, gravity_field=gpy.ForceModel.GravityField(degree=10, order=10))
-prop = gpy.PropSetup('LowEarthProp', accuracy=9.999999999999999e-12,
+prop = gpy.PropSetup('LowEarthProp', fm=fm, accuracy=9.999999999999999e-12,
                      gator=gpy.PropSetup.Propagator(name='LowEarthProp', integrator='RungeKutta89'))
-# prop = gpy.PropSetup('LowEarthProp')
+
 toi = gpy.ImpulsiveBurn('IB1', sat.GetCoordinateSystem(), [0.2, 0, 0])
 
 # Mission commands
-prop1 = gpy.Propagate('Prop 60 s', prop, sat, ('Sat.ElapsedSecs', 60))
-man1 = gpy.Maneuver('Maneuver1', toi, sat)
-# prop2 = gpy.Propagate('Prop One Day', prop, sat, ('Sat.ElapsedSecs', 1))
-prop3 = gpy.Propagate('Prop To Periapsis', prop, sat, 'Sat.Earth.Apoapsis')
+# # prop1 = gpy.Propagate('Prop 60 s', prop, sat, ('Sat.ElapsedSecs', 60))
+# man1 = gpy.Maneuver('Maneuver1', toi, sat)
+# # prop2 = gpy.Propagate('Prop One Day', prop, sat, ('Sat.ElapsedDays', 1))
+# # prop3 = gpy.Propagate('Prop To Apoapsis', prop, sat, 'Sat.Earth.Apoapsis')
+
+gmat.ShowObjects()
 
 print(f'Sat state before running: {sat.GetState()}')
 print(f'Epoch before running: {sat.GetEpoch()}')
 
 # Mission Command Sequence
 mcs = [
-    prop1,  # propagate by 60 seconds
-    man1,  # 0.2 km/s maneuver
-    # prop2,  # propagate by one day
-    prop3  # propagate to periapsis
+    gpy.Propagate('Prop 60 s', prop, sat, ('Sat.ElapsedSecs', 60)),
+    # gpy.Maneuver('Maneuver1', toi, sat),
+    # gpy.Propagate('Prop One Day', prop, sat, ('Sat.ElapsedDays', 1)),
+    # gpy.Propagate('Prop To Apoapsis', prop, sat, 'Sat.Earth.Apoapsis'),
+
+    # # prop1,  # propagate by 60 seconds
+    # man1,  # 0.2 km/s maneuver
+    # # prop2,  # propagate by one day (TODO make comment accurate)
+    # # prop3  # propagate to periapsis
 ]
 
 gpy.RunMission(mcs)  # Run the mission
 
-print(f'Sat state after running: {sat.GetState()}')
-print(f'Epoch after running: {sat.GetEpoch()}')
-
+# print(f'Sat state after running: {sat.GetState()}')
+# print(f'Epoch after running: {sat.GetEpoch()}')
+#
 # gmat.SaveScript(script_path)

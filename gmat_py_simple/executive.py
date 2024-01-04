@@ -84,7 +84,7 @@ class Moderator:
         # TODO: remove test line below, uncomment actual default above
         stop_cond.SetStringParameter('Goal', '120')  # SetRhsString() called with goal value in source
 
-        # gpy.Initialize()
+        gpy.Initialize()
 
         return stop_cond
 
@@ -199,9 +199,12 @@ class Moderator:
         :return:
         """
 
-        def configure_command(comm: GmatCommand):
+        def configure_command(comm: gmat.GmatCommand):
+            mod = gmat.Moderator.Instance()
             try:
-                # TODO remove print and if Target (for debugging only)
+                sb = gmat.Sandbox()
+
+                # TODO remove print and "if Target" (for debugging only)
                 print('    In configure_command()')
                 if isinstance(command, gpy.Target):
                     print('Echoing log file for Target command')
@@ -226,67 +229,106 @@ class Moderator:
                 #     # print(f'Find SpacePoint: {gmat.FindObject(command.gmat_obj, gmat.SPACE_POINT, )}')
                 #     # print(f'scName: {gmat.GetRefObjectName(gmat.SPACE_POINT)}')
 
-                command.SetSolarSystem(gmat.GetSolarSystem())
-                command.SetObjectMap(mod.GetConfiguredObjectMap())
-                command.SetGlobalObjectMap(sb.GetGlobalObjectMap())
+                obj_map = gmat.ConfigManager.Instance().GetObjectMap()
 
+                comm.SetSolarSystem(gmat.GetSolarSystem())
+                comm.SetObjectMap(obj_map)
+                # comm.SetObjectMap(mod.GetConfiguredObjectMap())
+                comm.SetGlobalObjectMap(sb.GetGlobalObjectMap())
                 print('\tObject mapping complete')
 
-                print(f'\tValidate: {command.Validate()}')
-                print('\tValidate complete')
-                command.Initialize()
-                print('\tInitialize complete')
-                # mod.ValidateCommand(command)
-                # print('\tValidateCommand complete')
-                # sb.AddCommand(command)
+                # print(f'\tValidate: {command.Validate()}')
+                # print('\tValidate complete')
+                # sb.AddCommand(command.gmat_obj)
                 # print('\tsb.AppendCommand complete')
-                mod.AppendCommand(command)
+                # gmat.Initialize()
+                # command.Initialize()
+                # print('\tInitialize complete')
+
+                vdator = gmat.Validator.Instance()
+
+                print('\n\nDebugging output:\n')
+                print(comm.GetTypeName())
+                print(comm.ClearWrappers())
+                print(f'wrapper_names: {comm.GetWrapperObjectNameArray()}')
+                print(f'Assignment: {comm.IsOfType("Assignment")}')
+                print(f'Write: {comm.IsOfType("Write")}')
+                conditional_branch_report_propagate = (comm.IsOfType("ConditionalBranch") or
+                                                       comm.GetTypeName() == "Report" or
+                                                       comm.GetTypeName() == "Propagate")
+                print(f'ConditionalBranch/Report/Propagate: {conditional_branch_report_propagate}')
+                print(f'SolverCommand: {comm.IsOfType("SolverCommand")}')
+                print(f'GetChildCommand(0): {comm.GetChildCommand(0)}')
+                print(f'CheckUndefinedReference: {vdator.CheckUndefinedReference(comm)}')
+
+                valid = vdator.ValidateCommand(comm)
+                if not valid:
+                    raise RuntimeError(f'{type(comm).__name__} command "{comm.name}" failed ValidateCommand')
+                # mod.ValidateCommand is void so cannot be used to assess validity, but it calls
+                #  Interpreter.ValidateCommand (also void) that performs useful parameter setup and error handling
+                mod.ValidateCommand(comm)
+                print('\tValidateCommand complete')
+
+                print(gmat.GetLastCommand(mod.GetFirstCommand()))
+
+                # # TODO bugfix: AppendCommand causing "Process finished with exit code -1073741819 (0xC0000005)".
+                # #  Code still completes but not with normal exit code 0.
+                mod.AppendCommand(comm, 0)
                 print('\tmod.AppendCommand complete')
 
-                if isinstance(command, gpy.Target):
-                    command.run_mission_configured = True
+                if isinstance(comm, gpy.Target):
+                    comm.run_mission_configured = True
                     gmat.EchoLogFile(False)
 
-                print(f'    Done for {type(command).__name__} named "{command.GetName()}"\n')
+                print(f'    Done for {type(comm).__name__} named "{comm.GetName()}"\n')
 
             except SystemExit as sys_exit:
-                raise RuntimeError(f'GMAT attempted to stop code execution while processing command {command} - '
+                raise RuntimeError(f'GMAT attempted to stop code execution while processing command {comm} - '
                                    f'{sys_exit}')
 
             except Exception as ex:
                 # print(f'Failed command in RunMission: "{command.name}" of type {command.gmat_obj.GetTypeName()}')
-                raise RuntimeError(f'configure_command in RunMission failed for "{command.name}" of type '
-                                   f'{command.gmat_obj.GetTypeName()}\n{ex}') from ex
+                raise RuntimeError(f'configure_command in RunMission failed for "{comm.GetName()}" of type '
+                                   f'{comm.GetTypeName()}\n{ex}') from ex
+
+        # gmat.Initialize()
+
+        mission_command_sequence = []
 
         print('\nEntered Moderator.RunMission()')
 
-        # gmat.ShowObjects()
-        # gpy.Initialize()
-
-        print(f'mission_command_sequence: {[f"{type(command).__name__} {command.GetName()}" for command in mission_command_sequence]}')
+        print(
+            f'mission_command_sequence: {[f"{type(command).__name__} {command.GetName()}" for command in mission_command_sequence]}')
         if not isinstance(mission_command_sequence, list):
             raise TypeError('mission_command_sequence must be a list of GmatCommand objects'
                             ' (e.g. BeginMissionSequence, Propagate)')
 
         # if mcs empty, or the first command is not a BeginMissionSequence command, add a BMS to the sequence
+        # TODO uncomment
         if not mission_command_sequence or not isinstance(mission_command_sequence[0], gpy.BeginMissionSequence):
-            mission_command_sequence.insert(0, gpy.BeginMissionSequence())
+            mission_command_sequence.insert(0, gmat.BeginMissionSequence())
 
-        mod = gpy.Moderator()
-        sb = mod.GetSandbox()
-
-        vdator = gpy.Validator()
-        vdator.SetSolarSystem(gmat.GetSolarSystem())
-        vdator.SetObjectMap(mod.GetConfiguredObjectMap())
+        # vdator = gpy.Validator()
+        # vdator.SetSolarSystem(gmat.GetSolarSystem())
+        # vdator.SetObjectMap(gmat.Moderator.Instance().GetConfiguredObjectMap())
 
         propagate_commands: list[gpy.Propagate] = []  # start a list of Propagates so their sats can be updated later
         for command in mission_command_sequence:
             print(f'    Attempting to configure {type(command).__name__} named "{command.GetName()}"')
-            if not isinstance(command, gpy.GmatCommand):
-                raise TypeError('command in RunMission for loop must be a gpy.GmatCommand')
+            if not isinstance(command, gmat.GmatCommand):
+                raise TypeError('command in RunMission for loop must be an instance of gmat.GmatCommand()\n'
+                                f'Type found: {type(command)}')
 
             if isinstance(command, gpy.Propagate):
-                propagate_commands.append(command)
+                print(f'\tPropagate command found!')
+                propagate_commands.append(command)  # add to list so its spacecraft can later be set as propagated
+
+                # # TODO remove (debugging only)
+                # print(f'\t\tepoch_var: {command.stop_cond.epoch_var}')
+                # print(f'\t\tstop_var: {command.stop_cond.stop_var}')
+                # print(f'\t\tgoal: {command.stop_cond.goal}')
+                # command_params = command.stop_cond.GetAllParameters()
+                # print(f'\t{command_params}')
 
             if isinstance(command, gpy.Target) and not command.run_mission_configured:
                 # Commands within Target branch need to be configured, then the Target command
@@ -295,13 +337,13 @@ class Moderator:
                     configure_command(com)
 
             configure_command(command)
-            # print(f'Showing objects in RunMission() for command {command.name}')
+
+        # obj_map = gmat.ConfigManager.Instance().GetObjectMap()
 
         print('Finished configuring command sequence')
-        # gmat.ShowObjects()
-        # gpy.Initialize()
 
         run_mission_return = self.gmat_obj.RunMission()
+        # TODO: uncomment run_mission_return evaluation below
         if run_mission_return == 1:
             print(f'\nMission run complete!\n')
             for propagate in propagate_commands:
@@ -323,17 +365,17 @@ class Moderator:
             raise RuntimeError(f'RunMission return value not recognized: {run_mission_return}.'
                                f' See GMAT log for possible hints')
 
-    def ValidateCommand(self, command: GmatCommand | gmat.GmatCommand):
-        command = gpy.extract_gmat_obj(command)
-        self.gmat_obj.ValidateCommand(command)
+    # def ValidateCommand(self, command: GmatCommand | gmat.GmatCommand) -> bool:
+    #     command = gpy.extract_gmat_obj(command)
+    #     return self.gmat_obj.ValidateCommand(command)
 
 
 class Sandbox:
     def __init__(self):
         self.gmat_obj = gmat.Moderator.Instance().GetSandbox()
 
-    def AddCommand(self, command: gpy.GmatCommand | gmat.GmatCommand) -> bool:
-        return self.gmat_obj.AddCommand(gpy.extract_gmat_obj(command))
+    # def AddCommand(self, command: gpy.GmatCommand | gmat.GmatCommand) -> bool:
+    #     return self.gmat_obj.AddCommand(gpy.extract_gmat_obj(command))
 
     def AddObject(self, obj: gpy.GmatObject) -> bool:
         return self.gmat_obj.AddObject(gpy.extract_gmat_obj(obj))

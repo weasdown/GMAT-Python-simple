@@ -58,6 +58,5 @@ class ImpulsiveBurn(GmatObject):
 
         self.SetSolarSystem(gmat.GetSolarSystem())
 
-        self.Validate()
+        gmat.Initialize()
         self.Initialize()
-        # gpy.Initialize()

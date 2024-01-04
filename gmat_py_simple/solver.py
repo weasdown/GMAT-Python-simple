@@ -60,7 +60,7 @@ class DifferentialCorrector:
 
         # TODO bugfix: DifferentialCorrector Initialize throwing error: "Solver subsystem exception: Targeter cannot
         #  initialize: No goals or variables are set."
-        # self.Initialize()
+        self.Initialize()
 
     def Help(self):
         return self.gmat_obj.Help()

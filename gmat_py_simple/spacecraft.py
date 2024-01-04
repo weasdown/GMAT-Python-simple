@@ -178,8 +178,8 @@ class Spacecraft(GmatObject):
         self._orbit = None
         self._dry_mass = self.GetField('DryMass')
 
-        self.Validate()
-        # gpy.Initialize()
+        gpy.Initialize()
+        self.Initialize()
 
     def __repr__(self):
         return f'Spacecraft with name {self._name}'
@@ -229,8 +229,9 @@ class Spacecraft(GmatObject):
             setattr(sc, attr_name, specs[spec])
             sc.SetField(spec, specs[spec])
 
-        sc.Validate()  # validate the completed Spacecraft object
         gpy.Initialize()  # initialize GMAT as a whole
+        sc.Initialize()  # initialize the completed Spacecraft object
+        sc.Validate()  # validate the completed Spacecraft object
 
         return sc
 
@@ -271,10 +272,7 @@ class Spacecraft(GmatObject):
         pass
 
     def GetState(self) -> list[float]:
-        # TODO: in Propagate command, update sat.was_propagated, to be able to remove the two lines below.
-        #  Means won't need it in every function that requires updates from GetRuntimeObject().
-        if self.was_propagated:  # spacecraft has been used in a mission run
-            self.gmat_obj = self.GetObject()  # update Spacecraft's gmat_obj with the run data
+        self.gmat_obj = self.GetObject()  # update Spacecraft's gmat_obj with latest data (e.g. from mission run)
 
         state: list[float | None] = [None] * 6
         for i in range(13, 19):
@@ -374,7 +372,8 @@ class Tank(GmatObject):
         self.spacecraft = None
         self.fuel_mass = self.GetField('FuelMass')
 
-        self.Validate()
+        gmat.Initialize()
+        self.Initialize()
 
     def __repr__(self):
         return f'{self.tank_type} with name {self.name}'
@@ -435,7 +434,8 @@ class ElectricTank(Tank):
 
     def __init__(self, name: str):
         super().__init__('ElectricTank', name)
-        self.Validate()
+        gmat.Initialize()
+        self.Initialize()
 
     @classmethod
     def from_dict(cls, ep_tank_dict: dict):
@@ -454,7 +454,8 @@ class Thruster(GmatObject):
         self.tanks: list[ChemicalTank | ElectricTank] | None = None
         self._decrement_mass = self.decrement_mass
 
-        self.Validate()
+        gpy.Initialize()
+        self.Initialize()
 
     def __repr__(self):
         return f'A {self.thruster_type} with name {self.name}'
@@ -517,7 +518,8 @@ class Thruster(GmatObject):
 class ChemicalThruster(Thruster):
     def __init__(self, name: str):
         super().__init__('ChemicalThruster', name)
-        self.Validate()
+        gpy.Initialize()
+        self.Initialize()
 
     @classmethod
     def from_dict(cls, cp_thr_dict: dict) -> ChemicalThruster:
@@ -529,7 +531,8 @@ class ChemicalThruster(Thruster):
 class ElectricThruster(Thruster):
     def __init__(self, name: str):
         super().__init__('ElectricThruster', name)
-        self.Validate()
+        gpy.Initialize()
+        self.Initialize()
 
     @classmethod
     def from_dict(cls, ep_thr_dict: dict):

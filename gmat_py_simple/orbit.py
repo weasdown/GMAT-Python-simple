@@ -205,9 +205,8 @@ class ForceModel(GmatObject):
 
         # check_valid_args(primary_bodies=primary_bodies)
 
-        self.Validate()
+        gpy.Initialize()
         self.Initialize()
-        # gpy.Initialize()
 
     def __repr__(self):
         return f'ForceModel with name {self.name}'
@@ -397,7 +396,7 @@ class PropSetup(GmatObject):  # variable called prop in GMAT Python examples
 
             super().__init__(integrator, name)
 
-            # gpy.Initialize()
+            gpy.Initialize()
 
     def __init__(self, name: str, fm: ForceModel = None, gator: PropSetup.Propagator = None,
                  initial_step_size: int = 60, accuracy: int | float = 1e-12, min_step: int = 0):
@@ -406,6 +405,8 @@ class PropSetup(GmatObject):  # variable called prop in GMAT Python examples
         self.force_model = fm if fm else ForceModel()
         self.gator = gator if gator else PropSetup.Propagator()
         self.SetReference(self.gator)
+
+        # gpy.Initialize()
 
         if initial_step_size:
             self.initial_step_size = initial_step_size
@@ -422,12 +423,12 @@ class PropSetup(GmatObject):  # variable called prop in GMAT Python examples
         self.SetReference(self.force_model)
         self.psm = self.GetPropStateManager()
 
-        self.Validate()
+        gpy.Initialize()
         self.Initialize()
-        # gpy.Initialize()
 
     def AddPropObject(self, sc: gpy.Spacecraft):
-        self.gmat_obj.AddPropObject(sc.gmat_obj)
+        obj = gpy.extract_gmat_obj(sc)
+        self.gmat_obj.AddPropObject(obj)  # GMAT function does not give a return value
 
     def PrepareInternals(self):
         self.gmat_obj.PrepareInternals()
@@ -495,6 +496,7 @@ class OrbitState:
 
             # TODO parse Origin parameter
             # print(f'Currently allowed Origin values:\n{self._allowed_values["Origin"]}')
+            gmat.Initialize()
             self.Initialize()
 
         def __repr__(self):
