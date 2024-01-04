@@ -33,6 +33,14 @@ class Parameter:
     #     obj = gpy.extract_gmat_obj(obj)
     #     return self.swig_param.AddRefObject(obj)
 
+    # TODO: make getters/setters as appropriate for following fields (taken from old Parameter class)
+    #  (See src / base / parameter / Parameter.cpp). Key should be type ParameterKey, from GmatParam
+    #     def __init__(self, name: str = 'Param', type_str: str = None, key: str = None, owner: str = None, desc: str = None,
+    #                  unit: str = None, dep_obj: str = None, owner_type: int = None, is_time_param: bool = False,
+    #                  is_settable: bool = False, is_plottable: bool = False, is_reportable: bool = False,
+    #                  owned_obj_type: int = None):
+
+
     def GetName(self) -> str:
         self.name: str = self.gmat_base.GetName()
         return self.name

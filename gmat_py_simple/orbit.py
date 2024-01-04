@@ -207,7 +207,7 @@ class ForceModel(GmatObject):
 
         self.Validate()
         self.Initialize()
-        gpy.Initialize()
+        # gpy.Initialize()
 
     def __repr__(self):
         return f'ForceModel with name {self.name}'
@@ -397,7 +397,7 @@ class PropSetup(GmatObject):  # variable called prop in GMAT Python examples
 
             super().__init__(integrator, name)
 
-            gpy.Initialize()
+            # gpy.Initialize()
 
     def __init__(self, name: str, fm: ForceModel = None, gator: PropSetup.Propagator = None,
                  initial_step_size: int = 60, accuracy: int | float = 1e-12, min_step: int = 0):
@@ -424,7 +424,7 @@ class PropSetup(GmatObject):  # variable called prop in GMAT Python examples
 
         self.Validate()
         self.Initialize()
-        gpy.Initialize()
+        # gpy.Initialize()
 
     def AddPropObject(self, sc: gpy.Spacecraft):
         self.gmat_obj.AddPropObject(sc.gmat_obj)

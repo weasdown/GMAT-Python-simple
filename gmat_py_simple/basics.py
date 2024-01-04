@@ -154,13 +154,3 @@ class GmatObject:
         self._name = new_name
         self.gmat_obj.SetName(new_name)
 
-
-class Parameter(GmatObject):
-    # TODO: see src/base/parameter/Parameter.cpp
-    #  key should be type ParameterKey, from GmatParam
-    def __init__(self, name: str = 'Param', type_str: str = None, key: str = None, owner: str = None, desc: str = None,
-                 unit: str = None, dep_obj: str = None, owner_type: int = None, is_time_param: bool = False,
-                 is_settable: bool = False, is_plottable: bool = False, is_reportable: bool = False,
-                 owned_obj_type: int = None):
-        super().__init__('Parameter', name)
-

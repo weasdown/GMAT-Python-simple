@@ -179,7 +179,7 @@ class Spacecraft(GmatObject):
         self._dry_mass = self.GetField('DryMass')
 
         self.Validate()
-        gpy.Initialize()
+        # gpy.Initialize()
 
     def __repr__(self):
         return f'Spacecraft with name {self._name}'
@@ -206,10 +206,10 @@ class Spacecraft(GmatObject):
             logging.info('No hardware parameters specified in Spacecraft dictionary - none will be built')
             hardware = {}
 
-        hardware_obj = Spacecraft.SpacecraftHardware.from_dict(hardware, sc)
-        sc.hardware = sc.update_hardware(hardware_obj)
+        hardware_obj = Spacecraft.SpacecraftHardware.from_dict(hardware, sc)  # build wrapper Hardware object from specs
+        sc.hardware = sc.update_hardware(hardware_obj)  # apply the new Hardware object to the spacecraft
 
-        # represent sc's orbit with an OrbitState, with Cartesian as the default state_type
+        # use any Orbit params specified in the specs dictionary
         try:
             orbit = specs['Orbit']
             specs.pop('Orbit')
@@ -220,8 +220,8 @@ class Spacecraft(GmatObject):
         if not orbit:  # orbit dict is empty
             sc.orbit = OrbitState()
         else:
-            sc.orbit = OrbitState.from_dict(orbit)
-        sc.orbit.apply_to_spacecraft(sc)
+            sc.orbit = OrbitState.from_dict(orbit)  # build wrapper Orbit object from specs
+        sc.orbit.apply_to_spacecraft(sc)  # apply the new Hardware object to the spacecraft
 
         # Apply remaining specs
         for spec in specs:
@@ -229,9 +229,8 @@ class Spacecraft(GmatObject):
             setattr(sc, attr_name, specs[spec])
             sc.SetField(spec, specs[spec])
 
-        sc.Validate()
-
-        gpy.Initialize()
+        sc.Validate()  # validate the completed Spacecraft object
+        gpy.Initialize()  # initialize GMAT as a whole
 
         return sc
 

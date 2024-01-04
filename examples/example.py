@@ -29,12 +29,15 @@ if echo_log:
     gmat.EchoLogFile()
     print('Echoing GMAT log file to terminal\n')
 
-# TODO: change parameters and commands from Tut01 to Tut02
 sat_params = {
     'Name': 'Sat',
     'Orbit': {
-        'Epoch': '22 Jul 2014 11:29:10.811',
-        'DateFormat': 'UTCGregorian',
+        # TODO: uncomment defaults and remove debugging values once working
+        # 'Epoch': '22 Jul 2014 11:29:10.811',
+        # 'DateFormat': 'UTCGregorian',
+        'Epoch': '01 Jan 2000 12:00:00.000',  # debugging
+        'DateFormat': 'A1Gregorian',  # debugging
+
         'CoordSys': 'EarthMJ2000Eq',
         'DisplayStateType': 'Keplerian',
         'SMA': 83474.318,
@@ -47,9 +50,7 @@ sat_params = {
 }
 
 sat = gpy.Spacecraft.from_dict(sat_params)
-# sat = gpy.Spacecraft('Sat')
-sat.SetField('DateFormat', 'A1Gregorian')
-sat.SetField('Epoch', '01 Jan 2000 12:00:00.000')
+# gpy.Initialize()
 
 fm = gpy.ForceModel(name='LowEarthProp_ForceModel', point_masses=['Luna', 'Sun'], drag=gpy.ForceModel.DragForce(),
                     srp=True, gravity_field=gpy.ForceModel.GravityField(degree=10, order=10))
@@ -58,16 +59,11 @@ prop = gpy.PropSetup('LowEarthProp', accuracy=9.999999999999999e-12,
 # prop = gpy.PropSetup('LowEarthProp')
 toi = gpy.ImpulsiveBurn('IB1', sat.GetCoordinateSystem(), [0.2, 0, 0])
 
-# gpy.Initialize()
-
 # Mission commands
 prop1 = gpy.Propagate('Prop 60 s', prop, sat, ('Sat.ElapsedSecs', 60))
 man1 = gpy.Maneuver('Maneuver1', toi, sat)
-prop2 = gpy.Propagate('Prop One Day', prop, sat, ('Sat.ElapsedSecs', 86400))
-# prop3 = gpy.Propagate('Prop To Periapsis', prop, sat, 'Sat.Earth.Periapsis')
-
-prop1.Initialize()
-gpy.Initialize()
+# prop2 = gpy.Propagate('Prop One Day', prop, sat, ('Sat.ElapsedSecs', 1))
+prop3 = gpy.Propagate('Prop To Periapsis', prop, sat, 'Sat.Earth.Apoapsis')
 
 print(f'Sat state before running: {sat.GetState()}')
 print(f'Epoch before running: {sat.GetEpoch()}')
@@ -76,8 +72,8 @@ print(f'Epoch before running: {sat.GetEpoch()}')
 mcs = [
     prop1,  # propagate by 60 seconds
     man1,  # 0.2 km/s maneuver
-    prop2,  # propagate by one day
-    # prop3  # propagate to periapsis
+    # prop2,  # propagate by one day
+    prop3  # propagate to periapsis
 ]
 
 gpy.RunMission(mcs)  # Run the mission
