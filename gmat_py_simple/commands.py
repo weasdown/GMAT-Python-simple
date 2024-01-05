@@ -20,15 +20,19 @@ class GmatCommand:
         # This then has full access to the relevant class methods e.g. ClearObject() for a Propagate.
         # If created with Moderator.CreateDefaultCommand(command_type), a GmatCommand object is made instead of the
         # relevant subtype e.g. Propagate
-        self.gmat_obj = eval(f'gmat.{self.command_type}()')  # e.g. calls gmat.Propagate() for a Propagate command
-        print(self.gmat_obj)
+        # self.gmat_obj = eval(f'gmat.{self.command_type}()')  # e.g. calls gmat.Propagate() for a Propagate command
+        self.gmat_obj = gpy.Moderator().CreateDefaultCommand(self.command_type)  # type <class 'gmat_py.GmatCommand'>
 
         # Set GMAT object's name
-        if self.command_type == 'BeginMissionSequence':  # TODO: remove if not needed - TBC
-            self.name: str = ''  # the BeginMissionSequence command is not allowed to have a name
-        else:
-            self.name: str = name
-        self.gmat_obj.SetName(self.name)  # set obj name, as CreateDefaultCommand does not (Jira issue GMT-8095)
+        # if self.command_type == 'BeginMissionSequence':  # TODO: remove if not needed - TBC
+        #     self.name: str = ''  # the BeginMissionSequence command is not allowed to have a name
+        # else:
+        self.name: str = name
+        self.gmat_obj.SetName(name)  # set obj name, as CreateDefaultCommand does not (Jira issue GMT-8095)
+
+        # if self.command_type == 'Propagate':
+        #     # self.ClearDefaultObjects()   # instead of clearing objects, make use of them
+        #     pass  # TODO remove
 
         # # CreateCommand currently broken (GMT-8100), so use CreateDefaultCommand and remove any unnecessary objects
         # if self.command_type != 'Propagate':
@@ -76,6 +80,69 @@ class GmatCommand:
     def AddToMCS(self) -> bool:
         return gpy.Moderator().AppendCommand(self)
 
+    def ClearDefaultObjects(self):
+        command_type = self.GetTypeName()
+        if command_type != 'Propagate':
+            raise RuntimeError('ClearDefaultObjects() only works on Propagate commands')
+        else:
+            set_before = set(gmat.ConfigManager.Instance().GetListOfAllItems())
+            print(f'\nCM list of all before clearing: {set_before}\n')
+            sat_name = gpy.Moderator().GetDefaultSpacecraft().GetName()
+            # Find which objs exist that would be made during CreateDefaultCommand('Propagate'). Then we won't try to
+            # remove them later, as they're being used by other objects (e.g. DefaultProp_ForceModel by a PropSetup)
+            pgate_def_obj_names = ['DefaultProp_ForceModel', f'{sat_name}.A1ModJulian', f'{sat_name}.ElapsedSecs']
+            existing_pgate_objs = []
+            for obj_name in pgate_def_obj_names:
+                try:
+                    gmat.GetObject(obj_name)
+                    # GetObject worked, so object already exists and must not be deleted - add to list
+                    existing_pgate_objs.append(obj_name)
+
+                # object doesn't yet exist in GMAT, so can safely be deleted after CreateDefaultCommand('Propagate')
+                except AttributeError as ex:
+                    pass
+
+            for def_name in pgate_def_obj_names:  # clear objects that are safe to clear
+                if def_name in existing_pgate_objs:  # skip object if it already exists (so is used by another object)
+                    pass
+                else:
+                    print(f'\nClearing {def_name}...\n')
+                    gmat.Clear(def_name)  # remove the object from GMAT
+                    # if def_name == 'DefaultProp_ForceModel':  # gmat.ODE_MODEL
+                    #     gpy.Moderator().RemoveObject(gmat.ODE_MODEL, def_name)
+                    # else:  # gmat.PARAMETER
+                    #     gpy.Moderator().RemoveObject(gmat.PARAMETER, def_name)
+
+            # self.gmat_obj is of type <class 'gmat_py.GmatCommand'> so far
+            self.gmat_obj = eval(f'gmat.{command_type}()')  # convert to gmat_py.Propagate that supports ClearObject()
+
+            # Also clear the lists of Spacecraft, Formations and StopConditions referenced in the Propagate command
+            self.gmat_obj.ClearObject(gmat.SPACECRAFT)
+            self.gmat_obj.ClearObject(gmat.FORMATION)
+            self.gmat_obj.ClearObject(gmat.STOP_CONDITION)
+
+            commands = gmat.GetCommands()
+            print('\nCommand list:')
+            print(''.join([f'Name: {command.GetName()}, type: {command.GetTypeName()}\n' for command in commands]))
+
+            name = self.name
+            def_pgate_name = 'Propagate'
+
+            # gmat.ShowObjects()
+
+            gmat.Sandbox().AddCommand(self.gmat_obj)
+            self.gmat_obj = gmat.GetObject(self.name)
+
+            set_after = set(gmat.ConfigManager.Instance().GetListOfAllItems())
+            print(f'\nCM list of all after clearing: {set_after}\n')
+            print(f'Object(s) removed: {set_before-set_after}')
+
+            gmat.ShowObjects()
+
+            return self.gmat_obj
+            pass
+            # gpy.Initialize()
+
     def Initialize(self) -> bool:
         try:
             resp = self.gmat_obj.Initialize()
@@ -106,6 +173,9 @@ class GmatCommand:
 
     def GetName(self) -> str:
         return self.gmat_obj.GetName()
+
+    def GetTypeName(self) -> str:
+        return extract_gmat_obj(self).GetTypeName()
 
     def Help(self):
         self.gmat_obj.Help()
@@ -437,8 +507,11 @@ class Propagate(GmatCommand):
             self.name = f'StopOn{self.stop_var}'
 
             mod = gpy.Moderator()
+            # create default StopCondition then modify its parameters
+            self.gmat_obj: gmat.StopCondition = mod.CreateDefaultStopCondition()
+            self.gmat_obj.SetName(self.name)  # change name from default to the one we want
             # self.gmat_obj: gmat.StopCondition = mod.CreateStopCondition(self.name)  # create basic StopCondition
-            self.gmat_obj = gmat.StopCondition(self.name)  # create basic StopCondition
+            # self.gmat_obj = gmat.StopCondition(self.name)  # create basic StopCondition
             # self.SetSolarSystem()
 
             # Get coordinate system and body/origin details and assign to StopCondition
@@ -934,7 +1007,7 @@ class Propagate(GmatCommand):
                 self.sat = mod.GetDefaultSpacecraft()
                 self.sat_name = self.sat.GetName()
             else:
-                self.sat_name = self.sat.name
+                self.sat_name = self.sat.GetName()
             self.SetObject(self.sat_name, gmat.SPACECRAFT)
         else:  # a Formation does exist
             self.sat_name = mod.GetSpacecraftNotInFormation()
@@ -944,6 +1017,9 @@ class Propagate(GmatCommand):
                 self.SetObject(formation[0], gmat.SPACECRAFT)
 
         if stop_cond:  # use the stop condition that the user provided, parsing it if necessary
+            # TODO clear default StopCondition
+            raise NotImplementedError
+
             if type(stop_cond).__name__ == 'StopCondition':
                 self.stop_cond = stop_cond
             elif isinstance(stop_cond, (tuple, str)):  # a tuple or string has been given for the stop_cond argument
@@ -952,9 +1028,9 @@ class Propagate(GmatCommand):
             else:
                 raise TypeError('stop_cond must be a StopCondition, or a tuple or string that can be parsed by '
                                 f'StopCondition.parse_stop_params. Current type: {type(stop_cond).__name__}')
-        else:  # create a StopCondition if the user didn't supply one
-            # self.stop_cond: gmat.StopCondition = gpy.Moderator().CreateDefaultStopCondition()
-            self.stop_cond = gmat.StopCondition()
+
+        else:  # get the existing default StopCondition if the user didn't supply one
+            self.use_default_stop_cond()  # Propagate init generates default StopCondition, so make use of it
 
         # attach StopCondition to Propagate
         # self.gmat_obj.SetRefObject(self.stop_cond.gmat_obj, gmat.STOP_CONDITION, self.stop_cond.name, 0)
@@ -1028,6 +1104,14 @@ class Propagate(GmatCommand):
 
     def TakeAction(self, action: str):
         return self.gmat_obj.TakeAction(action)
+
+    def use_default_stop_cond(self):
+        def_sat_name = 'DefaultSC'  # default value
+        def_stop_var = f'StopOn{self.sat.GetName()}.ElapsedSecs'  # default value
+        self.stop_cond = self.gmat_obj.GetRefObject(gmat.STOP_CONDITION, def_stop_var, 0)
+        self.stop_cond.epoch_var = self.stop_cond.GetStringParameter('EpochVar')
+        self.stop_cond.stop_var = self.stop_cond.GetStringParameter('StopVar')
+        self.stop_cond.goal = self.stop_cond.GetStringParameter('Goal')
 
 
 class PropagateMulti(Propagate):
