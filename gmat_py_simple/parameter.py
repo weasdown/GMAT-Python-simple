@@ -89,7 +89,12 @@ class Parameter:
         return response
 
     def SetRefObjectName(self, type_int: int, name: str) -> bool:
-        # GMAT's SetRefObjectName cannot be called on a Swig Parameter object, only a GmatBase (or subclass thereof)
+        vdator = gmat.Validator.Instance()
+        vdator.SetSolarSystem(gmat.GetSolarSystem())
+        vdator.SetObjectMap(gmat.Moderator.Instance().GetConfiguredObjectMap())
+
+        # GMAT's SetRefObjectName doesn't work on Swig Parameter object, only a GmatBase, so get GmatBase from Validator
+        self.gmat_base = gmat.Validator.Instance().FindObject(name)
         resp = self.gmat_base.SetRefObjectName(type_int, name)
         if not resp:
             raise RuntimeError(f'Parameter.SetRefObjectName() failed for Parameter {self.name} with arguments:'

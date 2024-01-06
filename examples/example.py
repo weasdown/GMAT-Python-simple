@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import datetime
-
 from load_gmat import gmat
 import gmat_py_simple as gpy
 import os

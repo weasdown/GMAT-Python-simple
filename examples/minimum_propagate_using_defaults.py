@@ -25,6 +25,7 @@ def GetState(spacecraft) -> list[float]:
 
 
 sat = mod.CreateSpacecraft('Spacecraft', 'TestSC')  # create Spacecraft object
+sat.SetField('DisplayStateType', 'Keplerian')  # to make periapsis/apoapsis stop conditions easier to verify
 gmat.Initialize()
 
 print(f'\nBefore running mission: {GetState(sat)}\n')
@@ -58,12 +59,18 @@ stop_cond_ref = pgate.GetGmatObject(gmat.STOP_CONDITION)
 epoch_var_type = 'A1ModJulian'
 epoch_var = f'{sat_ref_name}.{epoch_var_type}'
 
-# For stop variable
-stop_var_type = 'ElapsedSecs'
-stop_var = f'{sat_ref_name}.{stop_var_type}'
+# For stop variable (uncomment two lines for desired stop condition)
+# For elapsed seconds = 60
+# stop_var_type = 'ElapsedSecs'
+# stop_var = f'{sat_ref_name}.{stop_var_type}'
 
-# For goal
-goal = 60.0  # elapsed secs
+# For stop variable for Earth periapsis
+stop_var_type = 'Periapsis'  # change to 'Apoapsis' for propagate to Earth apoapsis
+stop_var = f'{sat_ref_name}.Earth.{stop_var_type}'
+
+# For goal (uncomment desired line)
+goal = 60.0  # elapsed secs = 60
+# goal = f'{sat_ref_name}.Earth.Periapsis'  # Earth periapsis (or apoapsis similarly)
 
 # Apply the parameters to the stop condition
 stop_cond_ref.SetStringParameter('EpochVar', epoch_var)
