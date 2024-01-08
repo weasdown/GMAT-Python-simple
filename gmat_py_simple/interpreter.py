@@ -8,6 +8,9 @@ class Validator:
     def __init__(self):
         self.gmat_obj = gmat.Validator.Instance()
 
+    def CreateParameter(self, param_type: str, param_name: str):
+        return self.gmat_obj.CreateParameter(param_type, param_name)
+
     def CreateSystemParameter(self, param_created: bool, name: str, manage: int = 1):
         # TODO bugfix: param_created bool not accepted - see GMT-8100 on Jira
         if manage not in [0, 1, 2]:
@@ -24,3 +27,5 @@ class Validator:
     def SetSolarSystem(self, ss: gmat.SolarSystem = gmat.GetSolarSystem()) -> bool:
         return self.gmat_obj.SetSolarSystem(ss)
 
+    def ValidateCommand(self, command: gpy.GmatCommand | gmat.GmatCommand) -> bool:
+        return self.gmat_obj.ValidateCommand(gpy.extract_gmat_obj(command))

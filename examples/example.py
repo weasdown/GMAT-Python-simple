@@ -28,7 +28,7 @@ if echo_log:
     print('Echoing GMAT log file to terminal\n')
 
 sat_params = {
-    'Name': 'Sat',
+    'Name': 'DebugSat',
     'Orbit': {
         # TODO: uncomment defaults and remove debugging values once working
         # 'Epoch': '22 Jul 2014 11:29:10.811',
@@ -49,10 +49,10 @@ sat_params = {
 
 sat = gpy.Spacecraft.from_dict(sat_params)
 
-# fm = gpy.ForceModel(name='LowEarthProp_ForceModel', point_masses=['Luna', 'Sun'], drag=gpy.ForceModel.DragForce(),
-#                     srp=True, gravity_field=gpy.ForceModel.GravityField(degree=10, order=10))
-# prop = gpy.PropSetup('LowEarthProp', fm=fm, accuracy=9.999999999999999e-12,
-#                      gator=gpy.PropSetup.Propagator(name='LowEarthProp', integrator='RungeKutta89'))
+fm = gpy.ForceModel(name='LowEarthProp_ForceModel', point_masses=['Luna', 'Sun'], drag=gpy.ForceModel.DragForce(),
+                    srp=True, gravity_field=gpy.ForceModel.GravityField(degree=10, order=10))
+prop = gpy.PropSetup('LowEarthProp', fm=fm, accuracy=9.999999999999999e-12,
+                     gator=gpy.PropSetup.Propagator(name='LowEarthProp', integrator='RungeKutta89'))
 
 toi = gpy.ImpulsiveBurn('IB1', sat.GetCoordinateSystem(), [0.2, 0, 0])
 
@@ -69,7 +69,8 @@ print(f'Epoch before running: {sat.GetEpoch()}')
 
 # Mission Command Sequence
 mcs = [
-    gpy.Propagate('Prop 60 s', sat=sat, stop_cond=('Sat.ElapsedSecs', 60)),
+    gpy.BeginMissionSequence(),
+    gpy.Propagate('Prop 60 s', prop, sat, (f'{sat.name}.ElapsedDays', 123)),
     # gpy.Maneuver('Maneuver1', toi, sat),
     # gpy.Propagate('Prop One Day', prop, sat, ('Sat.ElapsedDays', 1)),
     # gpy.Propagate('Prop To Apoapsis', prop, sat, 'Sat.Earth.Apoapsis'),
