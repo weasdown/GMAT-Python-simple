@@ -16,12 +16,22 @@ class GmatCommand:
     def __init__(self, command_type: str, name: str):
         self.command_type: str = command_type
 
+        mod = gpy.Moderator()
+
         # We can use the Python layer of the GMAT Python API to create an object of the correct type
         # This then has full access to the relevant class methods e.g. ClearObject() for a Propagate.
         # If created with Moderator.CreateDefaultCommand(command_type), a GmatCommand object is made instead of the
         # relevant subtype e.g. Propagate
+
         # self.gmat_obj = eval(f'gmat.{self.command_type}()')  # e.g. calls gmat.Propagate() for a Propagate command
+        # self.gmat_obj = gpy.Moderator().CreateDefaultCommand(self.command_type)  # type <class 'gmat_py.GmatCommand'>
         self.gmat_obj = gpy.Moderator().CreateDefaultCommand(self.command_type)  # type <class 'gmat_py.GmatCommand'>
+
+        self.gmat_obj.SetObjectMap(mod.GetConfiguredObjectMap())
+        self.gmat_obj.SetGlobalObjectMap(gmat.Sandbox().GetGlobalObjectMap())
+        self.gmat_obj.SetSolarSystem(gmat.GetSolarSystem())
+
+        self.Initialize()
 
         # Set GMAT object's name
         # if self.command_type == 'BeginMissionSequence':  # TODO: remove if not needed - TBC
@@ -166,10 +176,10 @@ class GmatCommand:
         return self.gmat_obj.GetStringParameter('MissionSummary')
 
     def GetRefObject(self, type_id: int, name: str):
-        return self.gmat_obj.GetRefObject(type_id, name)
+        return extract_gmat_obj(self).GetRefObject(type_id, name)
 
-    def GetRefObjectName(self):
-        raise NotImplementedError
+    def GetRefObjectName(self, type_id: int) -> str:
+        return extract_gmat_obj(self).GetRefObject(type_id)
 
     def GetName(self) -> str:
         return self.gmat_obj.GetName()
@@ -984,17 +994,31 @@ class Propagate(GmatCommand):
         sb = gpy.Sandbox()
         sb.AddSolarSystem(gmat.GetSolarSystem())
 
+        # extract ref objects from the default Propagate command created in super().__init__()
+        self.stop_cond = self.gmat_obj.GetGmatObject(gmat.STOP_CONDITION)  # get ref StopCondition obj
+        self.prop_name = self.gmat_obj.GetRefObjectName(gmat.PROP_SETUP)  # get name of ref PropSetup
+        self.prop = self.gmat_obj.GetRefObject(gmat.PROP_SETUP, self.prop_name, 0)  # get ref PropSetup obj
+        self.sat_name = self.gmat_obj.GetRefObjectName(gmat.SPACECRAFT)  # get name of ref Spacecraft
+        self.sat = self.gmat_obj.GetRefObjectName(gmat.SPACECRAFT)  # get ref Spacecraft obj
+
+        self.stop_cond.Help()
+        self.prop.Help()
+
         self.sat = sat if sat else None
         if prop:  # user provided a PropSetup object
             self.prop = prop
-        else:  # no PropSetup provided - make one instead
-            # self.prop = gmat.Moderator.Instance().CreateDefaultPropSetup('DefaultProp')  # note: not a wrapper object
-            self.prop = gpy.PropSetup('DefaultProp')
-            if not self.sat:  # no satellite provided either - get the default
-                self.sat = mod.GetDefaultSpacecraft()
-            self.prop.AddPropObject(self.sat)  # let self.sat be propagated by new self.prop
+            self.SetObject(self.prop.GetName(), gmat.PROP_SETUP)  # attach self.prop to the Propagate command
 
-        self.SetObject(self.prop.GetName(), gmat.PROP_SETUP)  # attach self.prop to the Propagate command
+        # 'else': no PropSetup provided so default to the one created by mod.CreateDefaultCommand('Propagate') in init
+        #  Also means no need to use SetObject() because PropSetup is already attached
+
+        # else:  # no PropSetup provided - make one instead TODO remove this paragraph once proven unnecessary
+        #     # self.prop = gmat.Moderator.Instance().CreateDefaultPropSetup('DefaultProp')  # note: not a wrapper obj
+        #     self.prop = gpy.PropSetup('DefaultProp')
+        #     if not self.sat:  # no satellite provided either - get the default
+        #         self.sat = mod.GetDefaultSpacecraft()
+        #     self.prop.AddPropObject(self.sat)  # let self.sat be propagated by new self.prop
+
         # sb.AddObject(self.prop)  # add self.prop to Sandbox
 
         # sb.AddObject(self.sat)
@@ -1018,6 +1042,7 @@ class Propagate(GmatCommand):
 
         if stop_cond:  # use the stop condition that the user provided, parsing it if necessary
             # TODO clear default StopCondition
+            print(f'Existing ref stop_cond: {self.stop_cond}')
             raise NotImplementedError
 
             if type(stop_cond).__name__ == 'StopCondition':
@@ -1029,8 +1054,8 @@ class Propagate(GmatCommand):
                 raise TypeError('stop_cond must be a StopCondition, or a tuple or string that can be parsed by '
                                 f'StopCondition.parse_stop_params. Current type: {type(stop_cond).__name__}')
 
-        else:  # get the existing default StopCondition if the user didn't supply one
-            self.use_default_stop_cond()  # Propagate init generates default StopCondition, so make use of it
+        # else:  # get the existing default StopCondition if the user didn't supply one
+        #     self.use_default_stop_cond()  # Propagate init generates default StopCondition, so make use of it
 
         # attach StopCondition to Propagate
         # self.gmat_obj.SetRefObject(self.stop_cond.gmat_obj, gmat.STOP_CONDITION, self.stop_cond.name, 0)

@@ -115,7 +115,7 @@ class Moderator:
         return self.gmat_obj.GetConfiguredObjectMap()
 
     def GetDefaultPropSetup(self) -> gmat.PropSetup:
-        config_list: list[str] = self.gmat_obj.GetListOfObjects(gmat.SPACECRAFT)
+        config_list: list[str] = self.gmat_obj.GetListOfObjects(gmat.PROP_SETUP)
         if config_list:  # list length > 0
             return self.gmat_obj.GetPropSetup(config_list[0])
         else:  # no spacecraft found, so create one

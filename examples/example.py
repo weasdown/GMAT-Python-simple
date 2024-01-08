@@ -16,13 +16,13 @@ gmat_global = gmat.GmatGlobal.Instance()
 # e.g. "18  ECC                        Spacecraft     Origin                                Y  Y  Y  Eccentricity"
 gmat_global.SetWriteParameterInfo(True)
 gmat_global.SetWriteFilePathInfo(False)
-gmat_global.SetCommandEchoMode(True)  # enables "CurrentCommand: [command generating string]" print out in log
+gmat_global.SetCommandEchoMode(False)  # enables "CurrentCommand: [command generating string]" print out in log
 
 # Set log and script options
 log_path = os.path.normpath(f'{os.getcwd()}/GMAT-Log.txt')
 script_path = os.path.normpath(f'{os.getcwd()}/example.script')
 gmat.UseLogFile(log_path)
-echo_log = True
+echo_log = False
 if echo_log:
     gmat.EchoLogFile()
     print('Echoing GMAT log file to terminal\n')
@@ -49,10 +49,10 @@ sat_params = {
 
 sat = gpy.Spacecraft.from_dict(sat_params)
 
-fm = gpy.ForceModel(name='LowEarthProp_ForceModel', point_masses=['Luna', 'Sun'], drag=gpy.ForceModel.DragForce(),
-                    srp=True, gravity_field=gpy.ForceModel.GravityField(degree=10, order=10))
-prop = gpy.PropSetup('LowEarthProp', fm=fm, accuracy=9.999999999999999e-12,
-                     gator=gpy.PropSetup.Propagator(name='LowEarthProp', integrator='RungeKutta89'))
+# fm = gpy.ForceModel(name='LowEarthProp_ForceModel', point_masses=['Luna', 'Sun'], drag=gpy.ForceModel.DragForce(),
+#                     srp=True, gravity_field=gpy.ForceModel.GravityField(degree=10, order=10))
+# prop = gpy.PropSetup('LowEarthProp', fm=fm, accuracy=9.999999999999999e-12,
+#                      gator=gpy.PropSetup.Propagator(name='LowEarthProp', integrator='RungeKutta89'))
 
 toi = gpy.ImpulsiveBurn('IB1', sat.GetCoordinateSystem(), [0.2, 0, 0])
 
@@ -69,7 +69,7 @@ print(f'Epoch before running: {sat.GetEpoch()}')
 
 # Mission Command Sequence
 mcs = [
-    gpy.Propagate('Prop 60 s', prop, sat, ('Sat.ElapsedSecs', 60)),
+    gpy.Propagate('Prop 60 s', sat=sat, stop_cond=('Sat.ElapsedSecs', 60)),
     # gpy.Maneuver('Maneuver1', toi, sat),
     # gpy.Propagate('Prop One Day', prop, sat, ('Sat.ElapsedDays', 1)),
     # gpy.Propagate('Prop To Apoapsis', prop, sat, 'Sat.Earth.Apoapsis'),
