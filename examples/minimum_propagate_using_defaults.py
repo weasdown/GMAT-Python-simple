@@ -24,7 +24,8 @@ def GetState(spacecraft) -> list[float]:
     return state
 
 
-sat = mod.CreateSpacecraft('Spacecraft', 'TestSC')  # create Spacecraft object
+# sat = mod.CreateSpacecraft('Spacecraft', 'TestSC')  # create Spacecraft object
+sat = gmat.Construct('Spacecraft', 'TestSC')  # create Spacecraft object
 sat.SetField('DisplayStateType', 'Keplerian')  # to make periapsis/apoapsis stop conditions easier to verify
 gmat.Initialize()
 

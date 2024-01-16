@@ -20,7 +20,7 @@ gmat_global.SetCommandEchoMode(True)  # enables "CurrentCommand: [command genera
 
 # Set log and script options
 log_path = os.path.normpath(f'{os.getcwd()}/GMAT-Log.txt')
-script_path = os.path.normpath(f'{os.getcwd()}/example.script')
+script_path = os.path.normpath(f'{os.getcwd()}/matplotlib_example.script')
 gmat.UseLogFile(log_path)
 echo_log = False
 if echo_log:
@@ -54,7 +54,7 @@ fm = gpy.ForceModel(name='LowEarthProp_ForceModel', point_masses=['Luna', 'Sun']
 prop = gpy.PropSetup('LowEarthProp', fm=fm, accuracy=9.999999999999999e-12,
                      gator=gpy.PropSetup.Propagator(name='LowEarthProp', integrator='RungeKutta89'))
 
-toi = gpy.ImpulsiveBurn('IB1', sat.GetCoordinateSystem(), [0.2, 0, 0])
+# toi = gpy.ImpulsiveBurn('IB1', sat.GetCoordinateSystem(), [0.2, 0, 0])
 
 # Mission commands
 # # prop1 = gpy.Propagate('Prop 60 s', prop, sat, ('Sat.ElapsedSecs', 60))
@@ -62,27 +62,30 @@ toi = gpy.ImpulsiveBurn('IB1', sat.GetCoordinateSystem(), [0.2, 0, 0])
 # # prop2 = gpy.Propagate('Prop One Day', prop, sat, ('Sat.ElapsedDays', 1))
 # # prop3 = gpy.Propagate('Prop To Apoapsis', prop, sat, 'Sat.Earth.Apoapsis')
 
-gmat.ShowObjects()
+# gmat.ShowObjects()
 
-print(f'Sat state before running: {sat.GetState()}')
-print(f'Epoch before running: {sat.GetEpoch()}')
+for t in range(10, 120, 10):
+    print(f'Sat state before running: {sat.GetState()}')
+    print(f'Epoch before running: {sat.GetEpoch()}')
 
-# Mission Command Sequence
-mcs = [
-    gpy.Propagate('Prop 60 s', prop, sat, ('Sat.ElapsedSecs', 60)),
-    # gpy.Maneuver('Maneuver1', toi, sat),
-    # gpy.Propagate('Prop One Day', prop, sat, ('Sat.ElapsedDays', 1)),
-    # gpy.Propagate('Prop To Apoapsis', prop, sat, 'Sat.Earth.Apoapsis'),
+    # Mission Command Sequence
+    mcs = [
+        gpy.Propagate('Prop 60 s', prop, sat, ('Sat.ElapsedSecs', t)),
+        # gpy.Maneuver('Maneuver1', toi, sat),
+        # gpy.Propagate('Prop One Day', prop, sat, ('Sat.ElapsedDays', 1)),
+        # gpy.Propagate('Prop To Apoapsis', prop, sat, 'Sat.Earth.Apoapsis'),
 
-    # # prop1,  # propagate by 60 seconds
-    # man1,  # 0.2 km/s maneuver
-    # # prop2,  # propagate by one day (TODO make comment accurate)
-    # # prop3  # propagate to periapsis
-]
+        # # prop1,  # propagate by 60 seconds
+        # man1,  # 0.2 km/s maneuver
+        # # prop2,  # propagate by one day (TODO make comment accurate)
+        # # prop3  # propagate to periapsis
+    ]
 
-gpy.RunMission(mcs)  # Run the mission
+    gpy.RunMission(mcs)  # Run the mission
 
-# print(f'Sat state after running: {sat.GetState()}')
-# print(f'Epoch after running: {sat.GetEpoch()}')
-#
+    new_state = sat.GetState()
+    new_epoch = sat.GetEpoch()
+    print(f'Sat state after running for {t} s: {new_state}')
+    print(f'Epoch after running for {t} s: {new_epoch}')
+
 # gmat.SaveScript(script_path)
