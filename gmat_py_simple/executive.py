@@ -18,10 +18,6 @@ class Moderator:
     def AppendCommand(self, command: gpy.GmatCommand) -> bool:
         # print('\nEntered Moderator.AppendCommand()')
         try:
-            # print(f'Command type in mod.AppendCommand: {type(command)}')
-            # print(f'GenString in AppComm: {command.GetGeneratingString()}')
-            print(f'\tAttempting to append command {command.gmat_obj.GetTypeName()} named "{command.name}" '
-                  f'to the mission sequence')
             command_gmat_obj = gpy.extract_gmat_obj(command)
             resp: bool = self.gmat_obj.AppendCommand(command_gmat_obj)
             return resp
@@ -313,30 +309,41 @@ class Moderator:
         # vdator.SetObjectMap(gmat.Moderator.Instance().GetConfiguredObjectMap())
 
         propagate_commands: list[gpy.Propagate] = []  # start a list of Propagates so their sats can be updated later
+        mod = gpy.Moderator()
         for command in mission_command_sequence:
             print(f'    Attempting to configure {type(command).__name__} named "{command.GetName()}"')
-            if not isinstance(command, gmat.GmatCommand):
-                raise TypeError('command in RunMission for loop must be an instance of gmat.GmatCommand()\n'
-                                f'Type found: {type(command)}')
 
-            if isinstance(command, gpy.Propagate):
-                print(f'\tPropagate command found!')
-                propagate_commands.append(command)  # add to list so its spacecraft can later be set as propagated
+            command.SetObjectMap(mod.GetConfiguredObjectMap())
+            command.SetGlobalObjectMap(gmat.Sandbox().GetGlobalObjectMap())
+            command.SetSolarSystem(gmat.GetSolarSystem())
 
-                # # TODO remove (debugging only)
-                # print(f'\t\tepoch_var: {command.stop_cond.epoch_var}')
-                # print(f'\t\tstop_var: {command.stop_cond.stop_var}')
-                # print(f'\t\tgoal: {command.stop_cond.goal}')
-                # command_params = command.stop_cond.GetAllParameters()
-                # print(f'\t{command_params}')
+            gpy.Validator().ValidateCommand(command)
+            command.Initialize()
+            mod.AppendCommand(command)
+            gmat.Initialize()
 
-            if isinstance(command, gpy.Target) and not command.run_mission_configured:
-                # Commands within Target branch need to be configured, then the Target command
-                configure_command(command)
-                for com in command.command_sequence:
-                    configure_command(com)
-
-            configure_command(command)
+            # if not isinstance(command, gmat.GmatCommand):
+            #     raise TypeError('command in RunMission for loop must be an instance of gmat.GmatCommand()\n'
+            #                     f'Type found: {type(command)}')
+            #
+            # if isinstance(command, gpy.Propagate):
+            #     print(f'\tPropagate command found!')
+            #     propagate_commands.append(command)  # add to list so its spacecraft can later be set as propagated
+            #
+            #     # # TODO remove (debugging only)
+            #     # print(f'\t\tepoch_var: {command.stop_cond.epoch_var}')
+            #     # print(f'\t\tstop_var: {command.stop_cond.stop_var}')
+            #     # print(f'\t\tgoal: {command.stop_cond.goal}')
+            #     # command_params = command.stop_cond.GetAllParameters()
+            #     # print(f'\t{command_params}')
+            #
+            # if isinstance(command, gpy.Target) and not command.run_mission_configured:
+            #     # Commands within Target branch need to be configured, then the Target command
+            #     configure_command(command)
+            #     for com in command.command_sequence:
+            #         configure_command(com)
+            #
+            # configure_command(command)
 
         # obj_map = gmat.ConfigManager.Instance().GetObjectMap()
 

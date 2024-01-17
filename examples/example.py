@@ -62,14 +62,14 @@ toi = gpy.ImpulsiveBurn('IB1', sat.GetCoordinateSystem(), [0.2, 0, 0])
 # # prop2 = gpy.Propagate('Prop One Day', prop, sat, ('Sat.ElapsedDays', 1))
 # # prop3 = gpy.Propagate('Prop To Apoapsis', prop, sat, 'Sat.Earth.Apoapsis')
 
-gmat.ShowObjects()
-
 print(f'Sat state before running: {sat.GetState()}')
 print(f'Epoch before running: {sat.GetEpoch()}')
 
+pgate_new = gpy.PropagateNew('Prop 60 s', prop, sat, ('Sat.ElapsedSecs', 60))
+
 # Mission Command Sequence
 mcs = [
-    gpy.Propagate('Prop 60 s', prop, sat, ('Sat.ElapsedSecs', 60)),
+    pgate_new,
     # gpy.Maneuver('Maneuver1', toi, sat),
     # gpy.Propagate('Prop One Day', prop, sat, ('Sat.ElapsedDays', 1)),
     # gpy.Propagate('Prop To Apoapsis', prop, sat, 'Sat.Earth.Apoapsis'),
@@ -80,9 +80,10 @@ mcs = [
     # # prop3  # propagate to periapsis
 ]
 
+# gmat.Initialize()
 gpy.RunMission(mcs)  # Run the mission
 
-# print(f'Sat state after running: {sat.GetState()}')
-# print(f'Epoch after running: {sat.GetEpoch()}')
-#
-# gmat.SaveScript(script_path)
+print(f'Sat state after running: {sat.GetState()}')
+print(f'Epoch after running: {sat.GetEpoch()}')
+
+gmat.SaveScript(script_path)

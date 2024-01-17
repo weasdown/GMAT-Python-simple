@@ -24,3 +24,6 @@ class Validator:
     def SetSolarSystem(self, ss: gmat.SolarSystem = gmat.GetSolarSystem()) -> bool:
         return self.gmat_obj.SetSolarSystem(ss)
 
+    def ValidateCommand(self, command: gpy.GmatCommand | gmat.GmatCommand):
+        return self.gmat_obj.ValidateCommand(gpy.extract_gmat_obj(command))
+
