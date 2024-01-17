@@ -16,7 +16,7 @@ if echo_log:
 
 # Build a Spacecraft from a dictionary of parameters
 sat_params = {
-    'Name': 'TestSat',
+    'Name': 'ExampleSat',
     'Orbit': {
         'Epoch': '01 Jan 2000 12:00:00.000',
         'DateFormat': 'UTCGregorian',
@@ -64,5 +64,5 @@ gpy.RunMission(mcs)  # Run the mission
 print(f'Sat state after running: {sat.GetState()}')
 print(f'Epoch after running: {sat.GetEpoch()}')
 
-script_path = os.path.normpath(f'{os.getcwd()}/example.script')  # path to save script to
+script_path = os.path.normpath(f'{os.getcwd()}/examples/scripts/example.script')  # path for saved script
 gmat.SaveScript(script_path)
