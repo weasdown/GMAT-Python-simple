@@ -14,8 +14,7 @@ if echo_log:
     gmat.EchoLogFile()
     print('Echoing GMAT log file to terminal\n')
 
-mod = gmat.Moderator.Instance()
-
+# Build a Spacecraft from a dictionary of parameters
 sat_params = {
     'Name': 'TestSat',
     'Orbit': {
@@ -31,39 +30,33 @@ sat_params = {
         'TA': 181,
     },
 }
-
 sat = gpy.Spacecraft.from_dict(sat_params)
 
+# Build a ForceModel and Propagator that will be used within Propagate commands
 fm = gpy.ForceModel(name='LowEarthProp_ForceModel', point_masses=['Luna', 'Sun'], drag=gpy.ForceModel.DragForce(),
                     srp=True, gravity_field=gpy.ForceModel.GravityField(degree=10, order=10))
 prop = gpy.PropSetup('LowEarthProp', fm=fm, accuracy=9.999999999999999e-12,
                      gator=gpy.PropSetup.Propagator(name='LowEarthProp', integrator='RungeKutta89'))
 
+# Build an ImpulsiveBurn that will be used in the Maneuver command
 toi = gpy.ImpulsiveBurn('IB1', sat.GetCoordinateSystem(), [0.2, 0, 0])
 
-# StopConditions - ready for use in Propagate commands
+# StopConditions for use in Propagate commands
 secs_60 = (f'{sat.name}.ElapsedSecs', 60)
 days_1 = (f'{sat.name}.ElapsedDays', 1)
 earth_apo = f'{sat.name}.Earth.Apoapsis'
 earth_peri = f'{sat.name}.Earth.Periapsis'
-
-# Mission commands
-prop_60s = gpy.Propagate('Prop 60 s', sat, prop, secs_60)
-man_200ms = gpy.Maneuver('0.2km/s Maneuver', toi, sat)
-prop_1d = gpy.Propagate('Prop One Day', sat, prop, days_1)
-prop_1d_2 = gpy.Propagate('Prop Another One Day', sat, prop, days_1)
-prop_apo = gpy.Propagate('Prop To Apoapsis', sat, prop, earth_apo)
 
 print(f'Sat state before running: {sat.GetState()}')
 print(f'Epoch before running: {sat.GetEpoch()}')
 
 # Mission Command Sequence
 mcs = [
-    prop_1d,  # propagate by 1 day
-    prop_60s,  # propagate by 60 seconds
-    man_200ms,  # perform an impulsive maneuver of 0.2 km/s
-    prop_1d_2,  # propagate by 1 day again (Propagate name within GMAT must be different)
-    prop_apo  # propagate to Earth apoapsis
+    gpy.Propagate('Prop One Day', sat, prop, days_1),
+    gpy.Propagate('Prop 60 s', sat, prop, secs_60),
+    gpy.Maneuver('0.2km/s Maneuver', toi, sat),
+    gpy.Propagate('Prop Another One Day', sat, prop, days_1),
+    gpy.Propagate('Prop To Apoapsis', sat, prop, earth_apo),
 ]
 
 gpy.RunMission(mcs)  # Run the mission
