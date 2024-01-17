@@ -8,6 +8,7 @@ import os
 # Set log and script options
 log_path = os.path.normpath(f'{os.getcwd()}/GMAT-Log.txt')
 gmat.UseLogFile(log_path)
+gmat.GmatGlobal.Instance().SetCommandEchoMode(True)  # enables "CurrentCommand: [command generating string]" print out in log
 gmat.EchoLogFile(False)  # set to True to have the log also print to the console as it's written
 
 # Shortcuts for later
@@ -27,9 +28,10 @@ def GetState(spacecraft) -> list[float]:
 # sat = mod.CreateSpacecraft('Spacecraft', 'TestSC')  # create Spacecraft object
 sat = gmat.Construct('Spacecraft', 'TestSC')  # create Spacecraft object
 sat.SetField('DisplayStateType', 'Keplerian')  # to make periapsis/apoapsis stop conditions easier to verify
-gmat.Initialize()
+gmat.Initialize()  # needed for correct initial state
 
-print(f'\nBefore running mission: {GetState(sat)}\n')
+print(f'\nState before running mission: {GetState(sat)}')
+print(f'Epoch before running mission: {sat.GetField("Epoch")}\n')
 
 # # Setup Validator for use during Propagate creation - if not set, exceptions thrown in log (set EchoLogFile(True))
 # vdator = gmat.Validator.Instance()
@@ -65,7 +67,7 @@ epoch_var = f'{sat_ref_name}.{epoch_var_type}'
 # stop_var_type = 'ElapsedSecs'
 # stop_var = f'{sat_ref_name}.{stop_var_type}'
 
-# For stop variable for Earth periapsis
+# # For stop variable for Earth periapsis
 stop_var_type = 'Periapsis'  # change to 'Apoapsis' for propagate to Earth apoapsis
 stop_var = f'{sat_ref_name}.Earth.{stop_var_type}'
 
@@ -77,6 +79,10 @@ goal = 60.0  # elapsed secs = 60
 stop_cond_ref.SetStringParameter('EpochVar', epoch_var)
 stop_cond_ref.SetStringParameter('StopVar', stop_var)
 stop_cond_ref.SetStringParameter('Goal', str(goal))
+
+print(f'EpochVar: {stop_cond_ref.GetStringParameter("EpochVar")}')
+print(f'StopVar: {stop_cond_ref.GetStringParameter("StopVar")}')
+print(f'Goal: {stop_cond_ref.GetStringParameter("Goal")}')
 
 # As well as the StopCondition's String Parameter's we also need to create relevant Parameters for wider GMAT
 # Setup Validator for use during Parameter creation
@@ -96,9 +102,10 @@ if not mod.GetParameter(stop_var):
 
 # Mission Command Sequence
 mcs = [gmat.BeginMissionSequence(),  # BeginMissionSequence command (required at start of sequence)
-       pgate]  # Propagate to Sat.ElapsedSecs = 12000.0
+       pgate]  # Propagate command
 
 for command in mcs:
+    print(f'\n{command}')
     command.SetObjectMap(mod.GetConfiguredObjectMap())
     command.SetGlobalObjectMap(gmat.Sandbox().GetGlobalObjectMap())
     command.SetSolarSystem(gmat.GetSolarSystem())
@@ -113,4 +120,5 @@ mod.RunMission()
 print('Run complete!')
 
 sat = gmat.GetRuntimeObject(sat_ref_name)  # update Spacecraft object now it's been propagated
-print(f'\nAfter running mission: {GetState(sat)}')
+print(f'\nState after running mission: {GetState(sat)}')
+print(f'Epoch after running mission: {sat.GetField("Epoch")}\n')

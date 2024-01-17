@@ -39,6 +39,7 @@ class GmatObject:
         return cls(type(obj).__name__, obj.GetName())
 
     def GetEpoch(self, as_datetime: bool = False) -> str | datetime:
+        self.gmat_obj = self.GetObject()  # update object's gmat_obj with latest data (e.g. from mission run)
         epoch_str: str = self.GetField('Epoch')
         if not as_datetime:
             return epoch_str
@@ -70,7 +71,7 @@ class GmatObject:
         try:
             if not self.was_propagated:  # sat not yet propagated
                 return gmat.GetObject(self._name)
-            else:  # sat has been propagated so gmat.GetObject() would return incorrect (starting) values
+            elif self.was_propagated:  # sat has been propagated - gmat.GetObject() would return incorrect values
                 return gmat.GetRuntimeObject(self._name)
 
         except AttributeError:  # object may not have a self.was_propagated attribute
@@ -104,7 +105,7 @@ class GmatObject:
                                f'above') from ex
 
     def IsInitialized(self):
-        self.gmat_obj.IsInitialized()
+        return self.gmat_obj.IsInitialized()
 
     def SetField(self, field: str, val: str | int | float | bool | list):
         """
@@ -140,10 +141,7 @@ class GmatObject:
             raise SyntaxError(f'Invalid argument OnOff - {OnOff} - must be "On" or "Off"')
 
     def SetReference(self, ref):
-        if 'gmat_py.' not in str(type(ref)):  # wrapper object
-            self.gmat_obj.SetReference(ref.gmat_obj)
-        else:  # native GMAT object
-            self.gmat_obj.SetReference(ref)
+        self.gmat_obj.SetReference(gpy.extract_gmat_obj(ref))
 
     def SetSolarSystem(self, ss: gmat.SolarSystem = gmat.GetSolarSystem()) -> bool:
         return self.gmat_obj.SetSolarSystem(ss)

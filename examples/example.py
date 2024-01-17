@@ -1,41 +1,26 @@
-# Tutorial 02: Simple Orbit Transfer. Perform a Hohmann Transfer from Low Earth Orbit (LEO) to Geostationary orbit (GEO)
+# General wrapper example. Written by William Easdown Babb
 
 from __future__ import annotations
+import os
 
 from load_gmat import gmat
 import gmat_py_simple as gpy
-import os
-
-gmat.Clear()
-
-# Debug options - TODO remove
-gmat_global = gmat.GmatGlobal.Instance()
-# gmat_global.SetMissionTreeDebug(True)
-
-# writes param info to log
-# e.g. "18  ECC                        Spacecraft     Origin                                Y  Y  Y  Eccentricity"
-gmat_global.SetWriteParameterInfo(True)
-gmat_global.SetWriteFilePathInfo(False)
-gmat_global.SetCommandEchoMode(True)  # enables "CurrentCommand: [command generating string]" print out in log
 
 # Set log and script options
-log_path = os.path.normpath(f'{os.getcwd()}/GMAT-Log.txt')
-script_path = os.path.normpath(f'{os.getcwd()}/example.script')
-gmat.UseLogFile(log_path)
+log_path = os.path.normpath(f'{os.getcwd()}/GMAT-Log-example.txt')
+gmat.UseLogFile(log_path)  # tell GMAT to log to the path previously declared
 echo_log = False
 if echo_log:
     gmat.EchoLogFile()
     print('Echoing GMAT log file to terminal\n')
 
-sat_params = {
-    'Name': 'Sat',
-    'Orbit': {
-        # TODO: uncomment defaults and remove debugging values once working
-        # 'Epoch': '22 Jul 2014 11:29:10.811',
-        # 'DateFormat': 'UTCGregorian',
-        'Epoch': '01 Jan 2000 12:00:00.000',  # debugging
-        'DateFormat': 'A1Gregorian',  # debugging
+mod = gmat.Moderator.Instance()
 
+sat_params = {
+    'Name': 'TestSat',
+    'Orbit': {
+        'Epoch': '01 Jan 2000 12:00:00.000',
+        'DateFormat': 'UTCGregorian',
         'CoordSys': 'EarthMJ2000Eq',
         'DisplayStateType': 'Keplerian',
         'SMA': 83474.318,
@@ -43,7 +28,7 @@ sat_params = {
         'INC': 12.4606,
         'RAAN': 292.8362,
         'AOP': 218.9805,
-        'TA': 180,
+        'TA': 181,
     },
 }
 
@@ -56,34 +41,35 @@ prop = gpy.PropSetup('LowEarthProp', fm=fm, accuracy=9.999999999999999e-12,
 
 toi = gpy.ImpulsiveBurn('IB1', sat.GetCoordinateSystem(), [0.2, 0, 0])
 
+# StopConditions - ready for use in Propagate commands
+secs_60 = (f'{sat.name}.ElapsedSecs', 60)
+days_1 = (f'{sat.name}.ElapsedDays', 1)
+earth_apo = f'{sat.name}.Earth.Apoapsis'
+earth_peri = f'{sat.name}.Earth.Periapsis'
+
 # Mission commands
-# # prop1 = gpy.Propagate('Prop 60 s', prop, sat, ('Sat.ElapsedSecs', 60))
-# man1 = gpy.Maneuver('Maneuver1', toi, sat)
-# # prop2 = gpy.Propagate('Prop One Day', prop, sat, ('Sat.ElapsedDays', 1))
-# # prop3 = gpy.Propagate('Prop To Apoapsis', prop, sat, 'Sat.Earth.Apoapsis')
+prop_60s = gpy.Propagate('Prop 60 s', sat, prop, secs_60)
+man_200ms = gpy.Maneuver('0.2km/s Maneuver', toi, sat)
+prop_1d = gpy.Propagate('Prop One Day', sat, prop, days_1)
+prop_1d_2 = gpy.Propagate('Prop Another One Day', sat, prop, days_1)
+prop_apo = gpy.Propagate('Prop To Apoapsis', sat, prop, earth_apo)
 
 print(f'Sat state before running: {sat.GetState()}')
 print(f'Epoch before running: {sat.GetEpoch()}')
 
-pgate_new = gpy.PropagateNew('Prop 60 s', prop, sat, ('Sat.ElapsedSecs', 60))
-
 # Mission Command Sequence
 mcs = [
-    pgate_new,
-    # gpy.Maneuver('Maneuver1', toi, sat),
-    # gpy.Propagate('Prop One Day', prop, sat, ('Sat.ElapsedDays', 1)),
-    # gpy.Propagate('Prop To Apoapsis', prop, sat, 'Sat.Earth.Apoapsis'),
-
-    # # prop1,  # propagate by 60 seconds
-    # man1,  # 0.2 km/s maneuver
-    # # prop2,  # propagate by one day (TODO make comment accurate)
-    # # prop3  # propagate to periapsis
+    prop_1d,  # propagate by 1 day
+    prop_60s,  # propagate by 60 seconds
+    man_200ms,  # perform an impulsive maneuver of 0.2 km/s
+    prop_1d_2,  # propagate by 1 day again (Propagate name within GMAT must be different)
+    prop_apo  # propagate to Earth apoapsis
 ]
 
-# gmat.Initialize()
 gpy.RunMission(mcs)  # Run the mission
 
 print(f'Sat state after running: {sat.GetState()}')
 print(f'Epoch after running: {sat.GetEpoch()}')
 
+script_path = os.path.normpath(f'{os.getcwd()}/example.script')  # path to save script to
 gmat.SaveScript(script_path)
