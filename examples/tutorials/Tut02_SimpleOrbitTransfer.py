@@ -5,42 +5,55 @@ from load_gmat import gmat
 import gmat_py_simple as gpy
 import os
 
-log_path = os.path.normpath(f'{os.getcwd()}/GMAT-Log.txt')
-script_path = os.path.normpath(f'{os.getcwd()}/Tut01.script')
+log_path = os.path.normpath(f'{os.getcwd()}/examples/logs/GMAT-Tut02-Log.txt')  # TODO mkdir
 gmat.UseLogFile(log_path)
+gmat.EchoLogFile(True)
 
 # TODO: change parameters and commands from Tut01 to Tut02
 
 sat = gpy.Spacecraft('TestSC')
-prop = gpy.PropSetup('DefaultProp')
-toi = gpy.ImpulsiveBurn('TOI', sat.GetCoordinateSystem(), [0, 0, 0])
-dc1 = gpy.DifferentialCorrector('DC1')
-goi = gpy.ImpulsiveBurn('GOI', sat.GetCoordinateSystem(), [0, 0, 0])
+prop = gpy.PropSetup('DefaultProp', gator=gpy.PropSetup.Propagator('RungeKutta89'))
 
-# gpy.Initialize()  # initialize GMAT so objects are in place for use in command sequence
+prop.gator.Help()
+
+toi = gpy.ImpulsiveBurn('TestIB_TOI', sat.GetCoordinateSystem(), [0, 0, 0])
+goi = gpy.ImpulsiveBurn('TestIB_GOI', sat.GetCoordinateSystem(), [0, 0, 0])
+
+pgate_peri = gpy.Propagate('Prop To Periapsis', sat, prop, f'{sat.name}.Earth.Periapsis')
+pgate_apo = gpy.Propagate('Prop To Apoapsis', sat, prop, f'{sat.name}.Earth.Apoapsis')
+pgate_1d = gpy.Propagate('Prop One Day', sat, prop, (f'{sat.name}.ElapsedSecs', 86400))
+
+# (TODO check whether still accurate) Creation of DifferentialCorrector objects *must* be after creation of Propagates
+dc1 = gpy.DifferentialCorrector('TestDiffCorr')
+targ1 = gpy.Target('Hohmann Transfer', dc1, command_sequence=[
+    # TODO in Vary, if setting DC variables/goals, check whether Vary is first in Target sequence. If so,
+    #  delete existing (placeholder) entries in DC Variables/Goals
+    gpy.Vary('Vary TOI', dc1, f'{toi.name}.Element1'),
+    gpy.Maneuver('Perform TOI', toi, sat),
+    pgate_apo,
+    gpy.Achieve('Achieve RMAG = 42165', dc1, f'{sat.name}.Earth.RMAG', 42164.169, 0.1),
+    gpy.Vary('Vary GOI', dc1, f'{goi.name}.Element1'),
+    gpy.Maneuver('Perform GOI', goi, sat),
+    gpy.Achieve('Achieve ECC = 0.005', dc1, f'{sat.name}.Earth.ECC', 0.005, 0.0001),
+    # gpy.EndTarget('End Hohmann Transfer')
+])
 
 print(f'Sat state before running: {sat.GetState()}')
 print(f"Epoch before running: {sat.GetField('Epoch')}")
 
 # Mission Command Sequence
-mcs = [gpy.BeginMissionSequence(),
-       gpy.Propagate('Prop To Periapsis', prop, sat, f'{sat.name}.Earth.Apoapsis'),
-       gpy.Target('', dc1, command_sequence=[
-           gpy.Vary('Vary TOI', dc1, 'TOI.Element1'),
-           gpy.Maneuver('Perform TOI', toi, sat),
-           gpy.Propagate('Prop To Apoapsis', prop, sat, f'{sat.name}.Earth.Apoapsis'),
-           gpy.Achieve('Achieve RMAG = 42165', dc1, f'{sat.name}.Earth.RMAG', 42164.169, 0.1),
-           gpy.Vary('Vary GOI', dc1, 'GOI.Element1'),
-           gpy.Maneuver('Perform GOI', goi, sat),
-           gpy.Achieve('Achieve ECC = 0.005', dc1, f'{sat.name}.Earth.ECC', 0.005, 0.0001),
-           gpy.EndTarget('End Hohmann Transfer')
-       ]),
-       gpy.Propagate('Prop One Day', prop, sat, (f'{sat.name}.ElapsedSecs', 86400)),
-       ]
+mcs = [
+    # gpy.BeginMissionSequence(),
+    pgate_peri,
+    targ1,
+    # gpy.EndTarget(targ1),
+    pgate_1d
+]
 
 gpy.RunMission(mcs)  # Run the mission
 
 print(f'Sat state after running: {sat.GetState()}')
 print(f'Epoch after running: {sat.GetField("Epoch")}')
 
+script_path = os.path.normpath(f'{os.getcwd()}/examples/scripts/Tut02-SimpleOrbitTransfer.script')
 gmat.SaveScript(script_path)

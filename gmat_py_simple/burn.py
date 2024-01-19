@@ -58,5 +58,5 @@ class ImpulsiveBurn(GmatObject):
 
         self.SetSolarSystem(gmat.GetSolarSystem())
 
-        gmat.Initialize()
+        # gmat.Initialize()
         self.Initialize()

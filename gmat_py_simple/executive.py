@@ -97,6 +97,12 @@ class Moderator:
         else:
             raise RuntimeError(f'CreateParameter failed to create a parameter of type {param_type} called {name}')
 
+    def CreateSolver(self, solver_type: str, solver_name: str) -> gmat.Solver:
+        gpy.extract_gmat_obj(self).CreateSolver(solver_type, solver_name)  # make a Solver within GMAT
+        # get Solver as  object specific solver subtype (e.g. gmat.DifferentialCorrector)
+        obj: gmat.DifferentialCorrector = gmat.GetObject(solver_name)  # TODO finish obj type list
+        return obj
+
     def CreateStopCondition(self, name: str) -> gmat.StopCondition:
         return self.gmat_obj.CreateStopCondition('StopCondition', name)
 
@@ -105,10 +111,27 @@ class Moderator:
         # return self.gmat_obj.FindObject(name)
 
     def GetConfiguredObject(self, name: str) -> gmat.GmatBase:
-        return self.gmat_obj.GetConfiguredObject(name)
+        return gpy.extract_gmat_obj(self).GetConfiguredObject(name)
 
     def GetConfiguredObjectMap(self):
         return self.gmat_obj.GetConfiguredObjectMap()
+
+    def GetDefaultBoundaryValueSolver(self) -> gmat.GmatBase | gmat.Solver:
+        """
+        Returns a default Differential Corrector. Ported from Moderator.cpp/GetDefaultBoundaryValueSolver().
+        :return:
+        """
+        config_list = self.GetListOfObjects(gmat.SOLVER)
+        num_solver = len(config_list)
+        if num_solver > 0:
+            for i in range(num_solver):
+                obj: gmat.GmatBase = self.GetConfiguredObject(config_list[i])
+                if obj.IsOfType('BoundaryValueSolver'):
+                    obj = gmat.GetObject(obj.GetName())  # get a gmat.DifferentialCorrector rather than a gmat.GmatBase
+                    return obj  # note this returns a gmat.GmatBase, different to below
+
+        def_solver: gmat.Solver = self.CreateSolver('DifferentialCorrector', 'DefaultDC')
+        return def_solver  # note this returns a gmat.Solver, different to above
 
     def GetDefaultPropSetup(self) -> gmat.PropSetup:
         config_list: list[str] = self.gmat_obj.GetListOfObjects(gmat.SPACECRAFT)
@@ -204,24 +227,89 @@ class Moderator:
             mission_command_sequence.insert(0, gmat.BeginMissionSequence())
 
         propagate_commands: list[gpy.Propagate] = []  # start a list of Propagates so their sats can be updated later
+        target_commands: list[gpy.Target] = []  # start a list of Targets for checking convergence later
         mod = gpy.Moderator()
+
+        # configure each command in the mission sequence
         for command in mission_command_sequence:
+            print(f'\nAssessing {command.GetTypeName()} command named "{command.GetName()}"')
             command.SetObjectMap(mod.GetConfiguredObjectMap())
             command.SetGlobalObjectMap(gmat.Sandbox().GetGlobalObjectMap())
             command.SetSolarSystem(gmat.GetSolarSystem())
 
+            # if isinstance(command, gpy.BranchCommand):
+            command_sequence = getattr(command, 'command_sequence', None)
+            if command_sequence is not None:
+                print(f'\tBranchCommand found, subtype: {type(command).__name__}')
+                print(f'\tSub-command seq: {[comm.GetTypeName() for comm in command_sequence]}')
+                print(f'\tChild command: {gpy.extract_gmat_obj(command).GetChildCommand()}')
+                for sub_comm in command_sequence:
+                    print(f'\t\tFound a {sub_comm.GetTypeName()} sub-command')
+                    gpy.Validator().ValidateCommand(sub_comm)
+                    # command.Append(sub_comm)
+                    # gmat.Initialize()
+                    # sub_comm.gmat_obj.Append(gpy.extract_gmat_obj(command))
+                    sub_comm.Initialize()
+                    print(f'\t\tSetup complete for {sub_comm.GetTypeName()} sub-command')
+                    print(
+                        f'\t\tLast command from {sub_comm.GetTypeName()}: '
+                        f'{gmat.GetLastCommand(gpy.extract_gmat_obj(sub_comm))}')
+                    print(f'\t\tPrevious command from {sub_comm.GetTypeName()}: {sub_comm.gmat_obj.GetPrevious()}')
+                    print(f'\t\tNext command from {sub_comm.GetTypeName()}: '
+                          f'{gmat.GetNextCommand(gpy.extract_gmat_obj(sub_comm))}\n')
+
+                print('\tSubcommands complete')
+
+            else:
+                print('\tNot a BranchCommand')
+
             gpy.Validator().ValidateCommand(command)
-
+            print('\tCompleted Validator.ValidateCommand()')
             command.Initialize()
-            mod.AppendCommand(command)
-            gmat.Initialize()
+            print('\tCompleted command.Initialize()')
+            print(f'\tLast command from {command.GetTypeName()}: {gmat.GetLastCommand(gpy.extract_gmat_obj(command))}')
+            print(f'\tPrevious command from {command.GetTypeName()}: {gpy.extract_gmat_obj(command).GetPrevious()}')
+            print(f'\tNext command from {command.GetTypeName()}: {gmat.GetNextCommand(gpy.extract_gmat_obj(command))}')
 
+            # # if the user has forgotten to add an EndTarget after Target's sequence, add one automatically
+            # last = gmat.GetLastCommand(gpy.extract_gmat_obj(command))
+            # if (last.GetTypeName() == 'Target') and (command.GetTypeName() != 'EndTarget'):
+            #     print('\t!! Found a Target without an EndTarget - appending EndTarget')
+            #     # mod.AppendCommand(gpy.EndTarget(gpy.extract_gmat_obj(command)))
+            #     last.Append(gpy.extract_gmat_obj(command))
+            #     print('\t\tEndTarget appended')
+
+            mod.AppendCommand(command)
+            print(f'\tCompleted mod.AppendCommand()')
+            gpy.Initialize()
+
+            # add any Propagate commands to list so their spacecraft can later be set as propagated
             if isinstance(command, gpy.Propagate):
-                propagate_commands.append(command)  # add to list so its spacecraft can later be set as propagated
+                propagate_commands.append(command)
+
+            # add any Target commands to list so their convergence can be checked later
+            if isinstance(command, gpy.Target):
+                target_commands.append(command)
+
+            print(f'\tSetup complete for {command.GetTypeName()} command named "{command.GetName()}"\n')
+
+            if isinstance(command, gpy.Target):
+                print(f'\tObject list for Target: {command.gmat_obj.GetObjectList()}')
 
         print('\nRunning mission...')
         run_mission_return = self.gmat_obj.RunMission()
         if run_mission_return == 1:
+            # Mission run complete but unknown whether any Target commands converged
+            for comm in target_commands:
+                solver = comm.solver
+                gpy.CustomHelp(solver)
+                solver_status = solver.GetIntegerParameter('IntegerSolverStatus')
+                print(solver_status)
+                print(solver.gmat_obj.ReportProgress())
+
+                print(gmat.GmatGlobal.Instance().GetSolverStatusString(solver.GetName()))  # "ExceededIterations"
+                pass
+
             print(f'Mission run complete!\n')
             for propagate in propagate_commands:
                 propagate.sat.was_propagated = True  # mark sat as propagated so GetState uses runtime values

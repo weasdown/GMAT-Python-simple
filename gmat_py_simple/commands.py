@@ -12,19 +12,37 @@ class GmatCommand:
         self.command_type: str = command_type
 
         mod = gpy.Moderator()
-        self.gmat_obj = mod.CreateDefaultCommand(self.command_type)  # type <class 'gmat_py.GmatCommand'>
+        if command_type != 'Target':
+            # TODO convert all GmatCommand creation to the native Python form e.g. gmat.Propagate()
+            self.gmat_obj = mod.CreateDefaultCommand(self.command_type)  # type <class 'gmat_py.GmatCommand'>
+        else:
+            # Target must be in native Python form to allow access to AddBranch()
+            self.gmat_obj = gmat.Target()
 
         # Set GMAT object's name
         self.name: str = name
-        current_comms_of_type = gmat.GetCommands(self.command_type)
+        current_commands_of_type = gmat.GetCommands(self.command_type)
         self.gmat_obj.SetName(name)  # set obj name, as CreateDefaultCommand does not (Jira issue GMT-8095)
 
         self.SetObjectMap(mod.GetConfiguredObjectMap())
         self.SetGlobalObjectMap(gpy.Sandbox().GetGlobalObjectMap())
         self.SetSolarSystem(gmat.GetSolarSystem())
 
-        gmat.Initialize()
-        self.Initialize()
+        if not isinstance(self, gpy.Target | gpy.EndTarget | gpy.Achieve):
+            try:
+                self.Initialize()
+            except Exception as ex:
+                print(ex)
+                print(type(ex))
+                raise RuntimeError(f'{self.command_type} command named "{self.name}" failed to initialize in '
+                                   f'GmatCommand.__init__() - see exception below:\n\t{ex}') from ex
+
+        # self.Initialize()
+
+        # # gmat.Initialize()
+        # # FIXME Achieve needs Targeter to be initialized before itself
+        # if not isinstance(self, gpy.Achieve):
+        #     self.Initialize()
 
     def AddToMCS(self) -> bool:
         return gpy.Moderator().AppendCommand(self)
@@ -92,6 +110,50 @@ class GmatCommand:
             pass
             # gpy.Initialize()
 
+    def GeneratingString(self):
+        print(self.GetGeneratingString())
+
+    def GetGeneratingString(self, mode: int = gmat.NO_COMMENTS, prefix: str = '', use_name: str = 'self.name') -> str:
+        use_name = self.name
+        return self.gmat_obj.GetGeneratingString(mode, prefix, use_name)
+
+    def GetField(self, field: str) -> str:
+        return self.gmat_obj.GetField(field)
+
+    def GetMissionSummary(self):
+        return self.gmat_obj.GetStringParameter('MissionSummary')
+
+    def GetName(self) -> str:
+        return self.gmat_obj.GetName()
+
+    def GetNext(self):
+        return gpy.extract_gmat_obj(self).GetNext()
+
+    def GetParameterID(self, param_name: str) -> int:
+        return gpy.extract_gmat_obj(self).GetParameterID(param_name)
+
+    def GetRefObject(self, type_id: int, name: str, index: int = 0):
+        return self.gmat_obj.GetRefObject(type_id, name, index)
+
+    def GetRefObjectName(self, type_int: int) -> str:
+        return self.gmat_obj.GetRefObjectName(type_int)
+
+    def GetStringArrayParameter(self, param: str | int) -> tuple:
+        if isinstance(param, str):
+            param = self.GetParameterID(param)
+        return gpy.extract_gmat_obj(self).GetStringArrayParameter(param)
+
+    def GetStringParameter(self, param: str | int) -> str:
+        if isinstance(param, str):
+            param = self.GetParameterID(param)
+        return gpy.extract_gmat_obj(self).GetStringParameter(param)
+
+    def GetTypeName(self) -> str:
+        return extract_gmat_obj(self).GetTypeName()
+
+    def Help(self):
+        self.gmat_obj.Help()
+
     def Initialize(self) -> bool:
         try:
             resp = extract_gmat_obj(self).Initialize()
@@ -103,34 +165,7 @@ class GmatCommand:
         #     raise RuntimeError(f'Initialize command for {self.__name__} attempted SystemExit - {sys_ex}')
         except Exception as ex:
             raise RuntimeError(f'Initialize failed for {type(self).__name__} named "{self.name}". See GMAT error below:'
-                               f'\n\t{str(ex).replace("\n", "")}') from ex
-
-    def GeneratingString(self):
-        print(self.GetGeneratingString())
-
-    def GetGeneratingString(self) -> str:
-        return self.gmat_obj.GetGeneratingString()
-
-    def GetField(self, field: str) -> str:
-        return self.gmat_obj.GetField(field)
-
-    def GetMissionSummary(self):
-        return self.gmat_obj.GetStringParameter('MissionSummary')
-
-    def GetRefObject(self, type_id: int, name: str, index: int = 0):
-        return self.gmat_obj.GetRefObject(type_id, name, index)
-
-    def GetRefObjectName(self, type_int: int) -> str:
-        return self.gmat_obj.GetRefObjectName(type_int)
-
-    def GetName(self) -> str:
-        return self.gmat_obj.GetName()
-
-    def GetTypeName(self) -> str:
-        return extract_gmat_obj(self).GetTypeName()
-
-    def Help(self):
-        self.gmat_obj.Help()
+                               f'\n\tGMAT internal exception/error: {str(ex).replace("\n", "")}') from ex
 
     def SetBooleanParameter(self, param_name: str, value: bool) -> bool:
         return self.gmat_obj.SetBooleanParameter(param_name, value)
@@ -148,8 +183,8 @@ class GmatCommand:
     def SetObjectMap(self, om: gmat.ObjectMap) -> bool:
         return extract_gmat_obj(self).SetObjectMap(om)
 
-    def SetRefObject(self, obj, type_int: int, obj_name: str) -> bool:
-        return extract_gmat_obj(self).SetRefObject(extract_gmat_obj(obj), type_int, obj_name)
+    # def SetRefObject(self, obj, type_int: int, obj_name: str = '') -> bool:
+    #     return extract_gmat_obj(self).SetRefObject(extract_gmat_obj(obj), type_int, obj_name)
 
     def SetRefObjectName(self, type_id: int, name: str) -> bool:
         return self.gmat_obj.SetRefObjectName(type_id, name)
@@ -157,8 +192,10 @@ class GmatCommand:
     def SetSolarSystem(self, ss: gmat.SolarSystem = gmat.GetSolarSystem()) -> bool:
         return extract_gmat_obj(self).SetSolarSystem(ss)
 
-    def SetStringParameter(self, param_name: str, value: str) -> bool:
-        return self.gmat_obj.SetStringParameter(param_name, value)
+    def SetStringParameter(self, param: str | int, value: str) -> bool:
+        if isinstance(param, str):
+            param = self.GetParameterID(param)
+        return gpy.extract_gmat_obj(self).SetStringParameter(param, value)
 
     def Validate(self) -> bool:
         try:
@@ -167,38 +204,65 @@ class GmatCommand:
             raise RuntimeError(f'{type(self).__name__} named "{self.name}" failed to Validate') from ex
 
 
-# class BranchCommand(GmatCommand):
-#     def __init__(self, command_type: str, name: str):
-#         super().__init__(command_type, name)
+class BranchCommand(GmatCommand):
+    def __init__(self, command_type: str, name: str):
+        super().__init__(command_type, name)
+        self.command_sequence = []
+
+    def AddBranch(self, command: gpy.GmatCommand | gmat.GmatCommand, which: int = 0):
+        """
+        No return value.
+        :param command:
+        :param which:
+        """
+        gpy.extract_gmat_obj(self).AddBranch(gpy.extract_gmat_obj(command), which)
+
+    def Append(self, command: gpy.GmatCommand | gmat.GmatCommand) -> bool:
+        command_gmat_obj = gpy.extract_gmat_obj(command)
+        return gpy.extract_gmat_obj(self).Append(command_gmat_obj)
 
 
 class Achieve(GmatCommand):
-    def __init__(self, name: str, solver: gpy.DifferentialCorrector, goal: str, value: int | float,
-                 tolerance: float | int = 0.1):
+    def __init__(self, name: str, solver: gpy.DifferentialCorrector | gmat.DifferentialCorrector,
+                 variable: str, value: int | float, tolerance: float | int = 0.1):
         super().__init__('Achieve', name)
 
-        self.solver = solver
-        self.SetField('TargeterName', self.solver.name)
+        self.solver: gpy.DifferentialCorrector | gmat.DifferentialCorrector = solver
+        self.SetField('TargeterName', self.solver.GetName())
         # type_array = self.gmat_obj.GetRefObjectTypeArray()
         # print(f'{type_array[0]}: {gpy.GetTypeNameFromID(type_array[0])}')
         # print(f'Ref object name array: {self.gmat_obj.GetRefObjectNameArray(127)}')
-        self.SetRefObject(self.solver.gmat_obj, gmat.SOLVER, self.solver.name)
+        self.SetStringParameter(self.GetParameterID('TargeterName'), self.solver.GetName())
+        self.SetRefObject(self.solver, gmat.SOLVER, self.solver.GetName())
 
-        self.goal = goal
-        self.SetField('Goal', self.goal)
+        # print(f'TargeterName set in Achieve: {self.GetStringParameter("TargeterName")}')
+
+        self.variable = variable
+        self.SetField('Goal', self.variable)
+        vars_id = self.solver.GetParameterID('Variables')
+        self.solver.SetStringParameter(vars_id, str(self.variable))
+
+        # CustomHelp(self.solver)
 
         self.value = value
-        self.SetField('GoalValue', str(self.value))
+        # self.SetField('GoalValue', str(self.value))
+        goals_id = self.solver.GetParameterID('Goals')
+        self.solver.SetStringParameter(goals_id, str(self.value))
 
         self.tolerance = tolerance
         self.SetField('Tolerance', str(self.tolerance))
 
         # TODO: try the following:
-        self.solver.gmat_obj.UpdateSolverGoal(0, self.value)
+        # self.solver.UpdateSolverGoal(0, self.value)
 
         # TODO bugfix: Exception thrown during self.solver.Initialize(): gmat_py.APIException: Solver subsystem
         #  exception: Targeter cannot initialize: No goals or variables are set.
         # self.solver.Initialize()
+
+        # TODO remove (debugging only)
+        # CustomHelp(self)
+        # gmat.ShowObjects()
+        # def_dc = gmat.GetObject('DefaultDC')
 
         self.SetSolarSystem()
         self.SetObjectMap(gpy.Moderator().GetConfiguredObjectMap())
@@ -208,8 +272,11 @@ class Achieve(GmatCommand):
         #  initialized for Achieve command "Achieve DC1(DefaultSC.Earth.RMAG = 42165.0, {Tolerance = 0.1});"
         #  Caused by targeter parameter in Achieve being null
 
-        gpy.Initialize()
         self.Initialize()
+        # gpy.Initialize()
+
+    def SetRefObject(self, obj, type_int: int, obj_name: str = '') -> bool:
+        return extract_gmat_obj(self).SetRefObject(extract_gmat_obj(obj), type_int, obj_name)
 
 
 class BeginFiniteBurn(GmatCommand):
@@ -221,7 +288,7 @@ class BeginFiniteBurn(GmatCommand):
 class BeginMissionSequence(GmatCommand):
     def __init__(self):
         # TODO: uncomment to get all items initialized (handling in Tut02 for now)
-        gpy.Initialize()  # initialize GMAT so objects are in place for use in command sequence
+        # gpy.Initialize()  # initialize GMAT so objects are in place for use in command sequence
 
         super().__init__('BeginMissionSequence', 'BeginMissionSequenceCommand')
 
@@ -229,7 +296,7 @@ class BeginMissionSequence(GmatCommand):
         self.SetObjectMap(gpy.Moderator().GetConfiguredObjectMap())
         self.SetGlobalObjectMap(gpy.Sandbox().GetGlobalObjectMap())
 
-        gpy.Initialize()
+        # gpy.Initialize()
         self.Initialize()
 
 
@@ -239,9 +306,23 @@ class EndFiniteBurn(GmatCommand):
         raise NotImplementedError
 
 
-class EndTarget(GmatCommand):
-    def __init__(self, name: str):
+class EndTarget(BranchCommand):
+    def __init__(self, parent_target: gpy.Target, name: str = None):
+        if name is None:
+            name = f'EndTarget_{parent_target.GetName()}'
+
         super().__init__('EndTarget', name)
+
+        # self.Append(parent_target)
+
+        # for command in self.target.command_sequence:
+        #     self.Append(command)
+
+    def Insert(self, command: gpy.GmatCommand | gmat.GmatCommand,
+               prev: gpy.GmatCommand | gmat.GmatCommand = None) -> bool:
+        command = gpy.extract_gmat_obj(command)
+        prev = gpy.extract_gmat_obj(prev) if prev is not None else None
+        return gpy.extract_gmat_obj(self).Insert(command, prev)
 
 
 class Maneuver(GmatCommand):
@@ -285,7 +366,7 @@ class Maneuver(GmatCommand):
         self.SetObjectMap(gpy.Moderator().GetConfiguredObjectMap())
         self.SetGlobalObjectMap(gpy.Sandbox().GetGlobalObjectMap())
 
-        gpy.Initialize()
+        # gpy.Initialize()
         self.Initialize()
 
 
@@ -438,6 +519,10 @@ class Propagate(GmatCommand):
             if num_stop_var_elements == 2:
                 # print('2 elements found in StopCond parse')
                 sat_name, parameter = stop_var.split('.')
+                if sat_name != self.sat.name:
+                    raise RuntimeError(
+                        f'Name of satellite given in StopCondition "{stop_cond}" ({sat_name}) does'
+                        f' not match name for Propagate\'s satellite ({self.sat_name})')
                 stop_var = '.'.join([sat_name, parameter])
 
                 # Get body from satellite's coordinate system
@@ -447,10 +532,10 @@ class Propagate(GmatCommand):
 
             elif num_stop_var_elements == 3:
                 # print('3 elements found in StopCond parse')
-                sat_from_stop_cond, body, parameter = stop_var.split('.')
-                if sat_from_stop_cond != self.sat_name:
+                sat_name, body, parameter = stop_var.split('.')
+                if sat_name != self.sat.name:
                     raise RuntimeError(
-                        f'Name of satellite given in StopCondition "{stop_cond}" ({sat_from_stop_cond}) does'
+                        f'Name of satellite given in StopCondition "{stop_cond}" ({sat_name}) does'
                         f' not match name for Propagate\'s satellite ({self.sat_name})')
 
             else:
@@ -513,6 +598,8 @@ class Propagate(GmatCommand):
                  user_stop_cond: tuple | str = None):
         # TODO add None as default for sat, prop, stop_cond and handle appropriately in __init__()
         super().__init__('Propagate', name)
+        # gpy.Initialize()
+        self.Initialize()
 
         # Get names of Propagate's ref objects and extract the objects
         prop_ref_name = self.GetRefObjectName(gmat.PROP_SETUP)
@@ -642,6 +729,7 @@ class Propagate(GmatCommand):
     def TakeAction(self, action: str, action_data: str) -> bool:
         return extract_gmat_obj(self).TakeAction(action, action_data)
 
+
 # class PropagateMulti(Propagate):
 #     # TODO: consider making this a nested/inner class of Propagate, so would call Propagate.Multi()
 #     """
@@ -660,16 +748,28 @@ class Propagate(GmatCommand):
 #         super().__init__(name, prop, sat, stop_cond, synchronized)
 
 
-class SolverBranchCommand:
-    def __init__(self):
-        pass
+class SolverBranchCommand(BranchCommand):
+    def __init__(self, command_type: str, name: str):
+        super().__init__(command_type, name)
 
 
-class Target(GmatCommand):
-    def __init__(self, name: str, solver: gpy.DifferentialCorrector, solve_mode: str = 'Solve',
-                 exit_mode: str = 'SaveAndContinue', command_sequence: list[GmatCommand] = None):
-        super().__init__('Target', name)
+class SolverSequenceCommand(GmatCommand):
+    def __init__(self, command_type: str, name: str):
+        super().__init__(command_type, name)
+
+
+class Target(SolverBranchCommand):
+    def __init__(self, name: str, solver: gpy.DifferentialCorrector | gmat.DifferentialCorrector,
+                 solve_mode: str = 'Solve', exit_mode: str = 'SaveAndContinue',
+                 command_sequence: list[gpy.GmatCommand] = None):
         # 'Show Progress Window' argument not implemented (for now) - seems to be a GUI-only option
+
+        if command_sequence is None:
+            command_sequence = [gpy.EndTarget(self, f'EndTarget for Target "{self.name}"')]
+
+        super().__init__('Target', name)
+
+        self.command_sequence = command_sequence
 
         """
         Parameters:
@@ -688,11 +788,13 @@ class Target(GmatCommand):
         cmd->SetStringParameter(id, solver->GetName());
         """
 
-        self.run_mission_configured = False  # used in RunMission to track whether Target already setup
+        # self.run_mission_configured = False  # used in RunMission to track whether Target already setup
 
         self.solver = solver
-        self.SetStringParameter('Targeter', self.solver.name)
-        self.SetRefObjectName(gmat.SOLVER, self.solver.name)
+        self.SetRefObjectName(gmat.SOLVER, self.solver.GetName())
+        self.SetStringParameter('Targeter', self.solver.GetName())
+        # self.solver = gmat.GetObject(self.solver_name)
+        # self.solver.Initialize()
 
         self.solve_mode = solve_mode
         self.SetField('SolveMode', self.solve_mode)
@@ -700,62 +802,161 @@ class Target(GmatCommand):
         self.exit_mode = exit_mode
         # TODO: type for ExitMode field must be "Reference Array" - see User Guide pg 813 (PDF pg 822)
         # self.SetField('ExitMode', self.exit_mode)
-        print(self.gmat_obj.GetParameterID('ExitMode'))
 
-        self.command_sequence = command_sequence
+        self.command_sequence: list[gpy.GmatCommand] = command_sequence
 
         self.SetSolarSystem()
         self.SetObjectMap(gpy.Moderator().GetConfiguredObjectMap())
         self.SetGlobalObjectMap(gpy.Sandbox().GetGlobalObjectMap())
 
-        print(self.GetGeneratingString())
+        # # Make sure the final item in the command sequence is an EndTarget object
+        if not isinstance(command_sequence[-1], gmat.EndTarget | gpy.EndTarget):
+            # self.Append(gpy.EndTarget(f'EndTarget for {self.name}'))
+            command_sequence.append(gpy.EndTarget(self))
 
+        print([command.GetTypeName() for command in command_sequence])
+
+        # end_target = gpy.EndTarget(self)
+        # self.AddBranch(end_target)
+        # print(end_target.gmat_obj.IsOfType('BranchCommand'))
+        # end_target.Append(self)
+        # print(self.GetNext())
+
+        for command in self.command_sequence:
+            self.Append(gpy.extract_gmat_obj(command))
+
+            # self.AddBranch(gpy.extract_gmat_obj(command))
+            # update variables and goals in Achieve commands
+            # if isinstance(command, gpy.Achieve | gpy.Vary):
+            #     if isinstance(command, gpy.Achieve):
+            #         # use Achieve's goal in Target
+            #         goals_id = command.solver.GetParameterID('Goals')
+            #         command.solver.SetStringParameter(goals_id, command.goal)
+            #         # print(command.solver.gmat_obj.GetStringParameter(goals_id))
+            #         CustomHelp(command.solver)
+            #         print('(For Achieve command\'s solver)')
+            #         pass
+            #
+            #     if isinstance(command, gpy.Vary):
+            #         # use Vary's variable in Target
+            #         vars_id = command.solver.GetParameterID('Variables')
+            #         command.solver.SetStringParameter(vars_id, command.variable)
+            #         CustomHelp(command.solver)
+            #         print('(For Vary command\'s solver)')
+            #         # print(command.solver.gmat_obj.GetStringParameter(1))
+            #         pass
+                # command.Initialize()
+                # self.Initialize()
+
+            # CustomHelp(command.solver)
+
+            # try:
+            #     gmat.Initialize()
+            #     command.Initialize()
+            # except Exception as ex:
+            #     raise RuntimeError(f'Initialization failed for {command.GetTypeName()} command named '
+            #                        f'"{command.GetName()}" in Target.__init__():\n\t{ex}') from ex
+
+        # print(self.GetGeneratingString())
+        # print('\n', self.solver.GetGeneratingString())
+        # self.Initialize()
+        gmat.Initialize()
         self.Initialize()
 
-    def ApplyCorrections(self):
-        raise NotImplementedError
+        # CustomHelp(self.solver)
+        # print(f'Target command named "{self.name}" will target {self.variable}')
+        pass
 
 
-class Vary(GmatCommand):
-    def __init__(self, name: str, solver: gpy.DifferentialCorrector, variable: str,
+class Vary(SolverSequenceCommand):
+    def __init__(self, name: str, solver: gpy.DifferentialCorrector | gmat.DifferentialCorrector, variable: str,
                  initial_value: float | int = 1, perturbation: float | int = 0.0001, lower: float | int = 0.0,
                  upper: float | int = pi, max_step: float | int = 0.5, additive_scale_factor: float | int = 0.0,
                  multiplicative_scale_factor: float | int = 1.0):
         super().__init__('Vary', name)
 
         self.solver = solver
-        self.SetField('SolverName', self.solver.name)
-        self.SetRefObject(self.solver.gmat_obj, gmat.SOLVER, self.solver.name)
+        self.SetStringParameter('SolverName', self.solver.GetName())
+        self.SetRefObject(self.solver, gmat.SOLVER)
 
         self.variable = variable
-        self.SetField('Variable', self.variable)
+        self.SetStringParameter('Variable', self.variable)
 
+        if initial_value < lower:
+            raise RuntimeError('initial_value is less than lower (minimum value) in Vary.__init__().'
+                               f'\n- initial_value:\t{initial_value}'
+                               f'\n- lower:\t\t\t{lower}')
+        if initial_value > upper:
+            raise RuntimeError('initial_value is greater than upper (maximum value) in Vary.__init__().'
+                               f'\n- initial_value:\t{initial_value}'
+                               f'\n- upper:\t\t\t{upper}')
         self.initial_value = initial_value
-        self.SetField('InitialValue', str(self.initial_value))
+        self.SetStringParameter('InitialValue', str(self.initial_value))
 
         self.perturbation = perturbation
-        self.SetField('Perturbation', str(self.perturbation))
+        self.SetStringParameter('Perturbation', str(self.perturbation))
 
         self.lower = lower
-        self.SetField('Lower', str(self.lower))
+        self.SetStringParameter('Lower', str(self.lower))
 
         self.upper = upper
-        self.SetField('Upper', str(self.upper))
+        self.SetStringParameter('Upper', str(self.upper))
 
         self.max_step = max_step
-        self.SetField('MaxStep', str(self.max_step))
+        self.SetStringParameter('MaxStep', str(self.max_step))
 
         self.additive_scale_factor = additive_scale_factor
-        self.SetField('AdditiveScaleFactor', str(self.additive_scale_factor))
+        self.SetStringParameter('AdditiveScaleFactor', str(self.additive_scale_factor))
 
         self.multiplicative_scale_factor = multiplicative_scale_factor
-        self.SetField('MultiplicativeScaleFactor', str(self.multiplicative_scale_factor))
+        self.SetStringParameter('MultiplicativeScaleFactor', str(self.multiplicative_scale_factor))
 
         self.SetSolarSystem()
         self.SetObjectMap(gpy.Moderator().GetConfiguredObjectMap())
         self.SetGlobalObjectMap(gpy.Sandbox().GetGlobalObjectMap())
 
-        # if not self.Validate():
-        #     raise RuntimeError(f'Vary command {self.name} failed to Validate')
+        # ! SetSolverVariables() not needed - already set during object creation !
+        # Line 1321 of Vary.cpp: variableID = solver->SetSolverVariables(varData, variableName);
+        #  varData is a 6-element array (lines 1307-1312 of Vary.cpp):
+        #     // scale by using Eq. 13.5 of Architecture document
+        #     varData[0] = (varData[5] + asf) / msf;
+        #     varData[1] = (perturbation->EvaluateReal()) / msf;         // pert
+        #     varData[2] = (minval + asf) / msf;  // minimum
+        #     varData[3] = (maxval + asf) / msf;  // maximum
+        #     varData[4] = (variableMaximumStep->EvaluateReal()) / msf;  // largest step
+        # self.gmat_obj.SetSolverVariables(f'TestSat.Earth.RMAG', '')
 
-        self.Initialize()
+        # SetSolverVariables lead-in
+        # msf = 1/float(self.GetStringParameter('MultiplicativeScaleFactor'))
+        # if msf <= 0:
+        #     raise RuntimeError(f'msf in Vary __init__() was <= 0 (value: {msf})')
+        #
+        # initval = float(self.GetStringParameter('InitialValue')
+        # minval = float(self.GetStringParameter('InitialValue')
+        # maxval = float(self.GetStringParameter('InitialValue')
+
+        # # Ported from lines 1308-1312 of Vary.cpp in source
+        # var_data: list = [None] * 6
+        # var_data[5] = initial_value
+        # var_data[0] = (var_data[5] + self.additive_scale_factor) / self.multiplicative_scale_factor
+        # var_data[1] = perturbation / self.multiplicative_scale_factor
+        # var_data[2] = (self.lower + self.additive_scale_factor) / self.multiplicative_scale_factor
+        # var_data[3] = (self.upper + self.additive_scale_factor) / self.multiplicative_scale_factor
+        # var_data[4] = self.max_step / self.multiplicative_scale_factor
+        #
+        # print(self.solver.GetStringArrayParameter('Variables'))
+        # print(self.variable)
+        # self.solver.SetSolverVariables(var_data, self.variable)
+
+        # self.Initialize()  # adds self.variable to self.solver's Variables list
+        #
+        # self.solver.Initialize()
+
+        # if not self.Validate():
+        #     raise RuntimeError(f'Vary command {self.name} failed self.Validate')
+        #
+        # if not gpy.Validator().ValidateCommand(self):
+        #     raise RuntimeError(f'Vary command {self.name} failed Validator.ValidateCommand')
+
+    def SetRefObject(self, obj: gmat.GmatBase, type_id: int) -> bool:
+        return gpy.extract_gmat_obj(self).SetRefObject(gpy.extract_gmat_obj(obj), type_id)

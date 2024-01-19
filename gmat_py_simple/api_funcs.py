@@ -20,7 +20,7 @@ def Initialize() -> bool:
         return gmat.Initialize()
     except Exception as ex:
         ex_str = str(ex).replace('\n', '')
-        raise RuntimeError(f'Initialize failed - GMAT error: "{ex_str}"') from None
+        raise RuntimeError(f'GMAT Initialize failed - GMAT error: "{ex_str}"') from None
 
 
 def LoadScript(script_path: str) -> bool:

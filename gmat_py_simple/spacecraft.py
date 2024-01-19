@@ -288,18 +288,6 @@ class Spacecraft(GmatObject):
     def GetCoordinateSystem(self) -> gpy.OrbitState.CoordinateSystem:
         return gpy.OrbitState.CoordinateSystem.from_sat(self)
 
-    # @property
-    # def gmat_runtime(self):
-    #     return self._gmat_runtime
-    #
-    # @gmat_runtime.setter
-    # def gmat_runtime(self, grt: gmat.GmatBase):
-    #     # if not None, or if not a GmatBase
-    #     if not ((grt is not None) or ('gmat_py.GmatBase' not in str(type(grt)))):
-    #         raise TypeError('Spacecraft.gmat_runtime can only a gmat.GmatBase object, or None')
-    #     else:  # grt is something other than None or a gmat_py.GmatBase
-    #         self._gmat_runtime = grt
-
     @property
     def Thrusters(self):
         return self.hardware.Thrusters

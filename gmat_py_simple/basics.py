@@ -63,6 +63,11 @@ class GmatObject:
         """
         return self.gmat_obj.GetGeneratingString()
 
+    def GetIntegerParameter(self, param: str | int) -> int:
+        if isinstance(param, str):
+            param = self.GetParameterID(param)
+        return gpy.extract_gmat_obj(self).GetIntegerParameter(param)
+
     def GetObject(self):
         """
         Return the latest version of an object so its state info is up-to-date
@@ -89,6 +94,9 @@ class GmatObject:
         except KeyError:
             raise SyntaxError(f"Required field 'name' not provided when building {type(obj_type).__name__} object")
         return name
+
+    def GetParameterID(self, param_name: str) -> int:
+        return gpy.extract_gmat_obj(self).GetParameterID(param_name)
 
     def Help(self):
         # TODO: upgrade to get list of fields with utils.gmat_obj_field_list then print all fields/values
