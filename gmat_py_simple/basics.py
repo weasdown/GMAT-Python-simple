@@ -142,17 +142,22 @@ class GmatObject:
     def SetName(self, name: str):
         self.gmat_obj.SetName(name)
 
-    def SetOnOffParameter(self, field: str, OnOff: str):
-        if (OnOff == 'On') or (OnOff == 'Off'):
-            self.gmat_obj.SetOnOffParameter(field, OnOff)
+    def SetOnOffParameter(self, field: str, on_off: str):
+        if (on_off == 'On') or (on_off == 'Off'):
+            self.gmat_obj.SetOnOffParameter(field, on_off)
         else:
-            raise SyntaxError(f'Invalid argument OnOff - {OnOff} - must be "On" or "Off"')
+            raise SyntaxError(f'Invalid argument OnOff - {on_off} - must be "On" or "Off"')
 
     def SetReference(self, ref):
         self.gmat_obj.SetReference(gpy.extract_gmat_obj(ref))
 
     def SetSolarSystem(self, ss: gmat.SolarSystem = gmat.GetSolarSystem()) -> bool:
         return self.gmat_obj.SetSolarSystem(ss)
+
+    def SetStringParameter(self, param: str | int, value: str) -> bool:
+        if isinstance(param, str):
+            param = self.GetParameterID(param)
+        return gpy.extract_gmat_obj(self).SetStringParameter(param, value)
 
     def Validate(self) -> bool:
         try:

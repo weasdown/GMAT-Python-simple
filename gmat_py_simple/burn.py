@@ -37,7 +37,10 @@ class ImpulsiveBurn(GmatObject):
         super().__init__('ImpulsiveBurn', name)
 
         self.coord_sys: gpy.OrbitState.CoordinateSystem = coord_sys
-        self.SetField('CoordinateSystem', self.coord_sys.name)
+        # self.SetField('CoordinateSystem', self.coord_sys.name)
+        self.SetStringParameter(gmat.COORDINATE_SYSTEM, self.coord_sys.name)
+        self.SetStringParameter(gmat.BURN_ORIGIN, self.coord_sys.origin)
+        self.SetStringParameter(gmat.BURN_AXES, self.coord_sys.axes)
 
         self.delta_v: list[float | int] = delta_v
         for index, element in enumerate(delta_v):
@@ -48,7 +51,8 @@ class ImpulsiveBurn(GmatObject):
 
         self.tanks: list[str] = [tank.name for tank in tanks] if tanks is not None else None
         if self.tanks is not None:
-            self.SetField('Tanks', self.tanks)
+            # self.SetField('Tanks', self.tanks)
+            self.SetStringParameter(self.gmat_obj.FUEL_TANK, str(self.tanks))
 
         self.isp: int | float = isp
         self.SetField('Isp', self.isp)

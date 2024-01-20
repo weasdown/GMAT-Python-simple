@@ -230,6 +230,10 @@ class Moderator:
         target_commands: list[gpy.Target] = []  # start a list of Targets for checking convergence later
         mod = gpy.Moderator()
 
+        print('\nBefore RunMission for command loop')
+        solver = gpy.Moderator().GetDefaultBoundaryValueSolver()
+        print(gmat.GmatGlobal.Instance().GetSolverStatusString(solver.GetName()))  # "Initialized"
+
         # configure each command in the mission sequence
         for command in mission_command_sequence:
             print(f'\nAssessing {command.GetTypeName()} command named "{command.GetName()}"')
@@ -244,19 +248,30 @@ class Moderator:
                 print(f'\tSub-command seq: {[comm.GetTypeName() for comm in command_sequence]}')
                 print(f'\tChild command: {gpy.extract_gmat_obj(command).GetChildCommand()}')
                 for sub_comm in command_sequence:
-                    print(f'\t\tFound a {sub_comm.GetTypeName()} sub-command')
-                    gpy.Validator().ValidateCommand(sub_comm)
-                    # command.Append(sub_comm)
-                    # gmat.Initialize()
-                    # sub_comm.gmat_obj.Append(gpy.extract_gmat_obj(command))
-                    sub_comm.Initialize()
-                    print(f'\t\tSetup complete for {sub_comm.GetTypeName()} sub-command')
-                    print(
-                        f'\t\tLast command from {sub_comm.GetTypeName()}: '
-                        f'{gmat.GetLastCommand(gpy.extract_gmat_obj(sub_comm))}')
-                    print(f'\t\tPrevious command from {sub_comm.GetTypeName()}: {sub_comm.gmat_obj.GetPrevious()}')
-                    print(f'\t\tNext command from {sub_comm.GetTypeName()}: '
-                          f'{gmat.GetNextCommand(gpy.extract_gmat_obj(sub_comm))}\n')
+                    # print(f'\t\tFound a {sub_comm.GetTypeName()} sub-command')
+                    # gpy.Validator().ValidateCommand(sub_comm)
+                    # # command.Append(sub_comm)
+                    # # gmat.Initialize()
+                    # # sub_comm.gmat_obj.Append(gpy.extract_gmat_obj(command))
+                    # sub_comm.Initialize()
+                    # print(f'\t\tSetup complete for {sub_comm.GetTypeName()} sub-command')
+                    # print(
+                    #     f'\t\tLast command from {sub_comm.GetTypeName()}: '
+                    #     f'{gmat.GetLastCommand(gpy.extract_gmat_obj(sub_comm))}')
+                    # print(f'\t\tPrevious command from {sub_comm.GetTypeName()}: {sub_comm.gmat_obj.GetPrevious()}')
+                    # print(f'\t\tNext command from {sub_comm.GetTypeName()}: '
+                    #       f'{gmat.GetNextCommand(gpy.extract_gmat_obj(sub_comm))}\n')
+                    # TODO remove (debugging only)
+                    if isinstance(sub_comm, gpy.Vary):
+                        # gpy.CustomHelp(sub_comm)
+                        print(f'\t\tInitial value for Vary "{sub_comm.GetName()}": {sub_comm.GetStringParameter("InitialValue")}')
+                        pass
+                    # TODO remove (debugging only)
+                    if isinstance(sub_comm, gpy.Achieve):
+                        # gpy.CustomHelp(sub_comm)
+                        print(f'\t\tGoal (variable) for Achieve "{sub_comm.GetName()}": {sub_comm.GetStringParameter("Goal")}')
+                        print(f'\t\tGoalValue for Achieve "{sub_comm.GetName()}": {sub_comm.GetStringParameter("GoalValue")}')
+                        pass
 
                 print('\tSubcommands complete')
 
@@ -296,20 +311,27 @@ class Moderator:
             if isinstance(command, gpy.Target):
                 print(f'\tObject list for Target: {command.gmat_obj.GetObjectList()}')
 
+        print(f"\nVariables before RunMission: {solver.GetStringArrayParameter(solver.GetParameterID('Variables'))}")
+        print(f"Goals before RunMission: {solver.GetStringArrayParameter(solver.GetParameterID('Goals'))}\n")
         print('\nRunning mission...')
-        run_mission_return = self.gmat_obj.RunMission()
+        run_mission_return = gpy.extract_gmat_obj(self).RunMission()
         if run_mission_return == 1:
             # Mission run complete but unknown whether any Target commands converged
             for comm in target_commands:
                 solver = comm.solver
-                gpy.CustomHelp(solver)
                 solver_status = solver.GetIntegerParameter('IntegerSolverStatus')
-                print(solver_status)
-                print(solver.gmat_obj.ReportProgress())
-
-                print(gmat.GmatGlobal.Instance().GetSolverStatusString(solver.GetName()))  # "ExceededIterations"
+                # TODO uncomment if once debugged in case of future problems
+                # if solver_status != 1:  # solver failed
+                #     raise RuntimeError(f'Solver {solver.GetName()} failed to converge. Returned code {solver_status}: '
+                #                        f'{gmat.GmatGlobal.Instance().GetSolverStatusString(solver.GetName())}')
+                # gpy.CustomHelp(solver)
+                print(f"\nVariables in RunMission: {solver.GetStringArrayParameter('Variables')}")
+                print(f"Goals in RunMission: {solver.GetStringArrayParameter('Goals')}\n")
+                print(gpy.extract_gmat_obj(solver).ReportProgress())
+                # print(gmat.GmatGlobal.Instance().GetSolverStatusString(solver.GetName()))  # "ExceededIterations"
                 pass
 
+            print('Custom complete alert:')
             print(f'Mission run complete!\n')
             for propagate in propagate_commands:
                 propagate.sat.was_propagated = True  # mark sat as propagated so GetState uses runtime values

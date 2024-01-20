@@ -21,8 +21,16 @@ class Solver(gpy.GmatObject):
     def GetStringArrayParameter(self, param_id: int) -> tuple:
         return gpy.extract_gmat_obj(self).GetStringArrayParameter(param_id)
 
+    def SetBooleanParameter(self, param: str | int, value: bool) -> bool:
+        return gpy.GmatCommand.SetBooleanParameter(gpy.extract_gmat_obj(self), param, value)
+
+    def SetIntegerParameter(self, param: str | int, value: int) -> bool:
+        return gpy.GmatCommand.SetIntegerParameter(gpy.extract_gmat_obj(self), param, value)
+
     def SetStringParameter(self, param: str | int, value: str) -> bool:
-        return gpy.GmatCommand.SetStringParameter(gpy.extract_gmat_obj(self), param, value)
+        if isinstance(param, str):
+            param = self.GetParameterID(param)
+        return gpy.extract_gmat_obj(self).SetStringParameter(param, value)
 
 
 class DifferentialCorrector(Solver):
@@ -51,30 +59,40 @@ class DifferentialCorrector(Solver):
         """
 
         self.algorithm = algorithm
-        self.SetField('Algorithm', self.algorithm)
+        # self.SetField('Algorithm', self.algorithm)
+        self.SetStringParameter('Algorithm', self.algorithm)
 
         self.max_iter = max_iter
-        self.SetField('MaximumIterations', self.max_iter)
+        # self.SetField('MaximumIterations', self.max_iter)
+        self.SetIntegerParameter('MaximumIterations', self.max_iter)
 
         self.derivative_method = derivative_method
-        self.SetField('DerivativeMethod', self.derivative_method)
+        # self.SetField('DerivativeMethod', self.derivative_method)
+        self.SetStringParameter('DerivativeMethod', self.derivative_method)
 
         self.show_progress = show_progress
-        self.SetField('ShowProgress', self.show_progress)
+        # self.SetField('ShowProgress', self.show_progress)
+        self.SetBooleanParameter('ShowProgress', self.show_progress)
 
         self.report_style = report_style
-        self.SetField('ReportStyle', self.report_style)
+        # self.SetField('ReportStyle', self.report_style)
+        self.SetStringParameter('ReportStyle', self.report_style)  # Enum type
 
         self.report_file = report_file
-        self.SetField('ReportFile', self.report_file)
+        # self.SetField('ReportFile', self.report_file)
+        self.SetStringParameter('ReportFile', self.report_file)  # Filename type
+
+        # Variables are set later by Vary/Achieve commands (TODO determine which)
+
+        print(f"\nVariables in DiffCor: {self.GetStringArrayParameter('Variables')}")
+        print(f"Goals in DiffCor: {self.GetStringArrayParameter('Goals')}\n")
+        pass
 
         # Set initial variable and goal so object can initialize
         # self.SetStringParameter('Variables', 'PlaceholderVarSetInDiffCorrInit')
         # self.SetStringParameter('Goals', str('PlaceholderGoalSetInDiffCorrInit'))
         #
         # self.Initialize()
-
-        pass
 
         # self.SetStringParameter(self.GetParameterID('Variables'), 'TOI.Element1')
         # self.SetStringParameter(self.GetParameterID('Goals'), str(2.240269210751019))
@@ -92,6 +110,9 @@ class DifferentialCorrector(Solver):
         # TODO bugfix: DifferentialCorrector Initialize throwing error: "Solver subsystem exception: Targeter cannot
         #  initialize: No goals or variables are set."
         # self.Initialize()
+
+    def GetStringParameter(self, param: str | int) -> str:
+        return gpy.GmatCommand.GetStringParameter(gpy.extract_gmat_obj(self), param)
 
     def GetStringArrayParameter(self, param: str | int) -> tuple:
         return gpy.GmatCommand.GetStringArrayParameter(gpy.extract_gmat_obj(self), param)
