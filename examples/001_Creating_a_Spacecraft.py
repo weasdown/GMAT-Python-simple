@@ -9,10 +9,10 @@ sat_params = {
         'SMA': 7200
     },
     'DryMass': 100,  # kg
-    'Hardware': {'Tanks': {'Chemical': [{'Name': 'ChemicalTank1'}],
-                           'Electric': [{'Name': 'ElectricTank1'}]},
-                 'Thrusters': {'Chemical': [{'Name': 'ChemicalThruster1', 'Tanks': 'ChemicalTank1'}],
-                               'Electric': [{'Name': 'ElectricThruster1', 'Tanks': 'ElectricTank1'}]}
+    'Hardware': {'Tanks': {'chemical': [{'Name': 'ChemicalTank1'}],
+                           'electric': [{'Name': 'ElectricTank1'}]},
+                 'Thrusters': {'chemical': [{'Name': 'ChemicalThruster1', 'Tanks': 'ChemicalTank1'}],
+                               'electric': [{'Name': 'ElectricThruster1', 'Tanks': 'ElectricTank1'}]}
                  }
 }
 

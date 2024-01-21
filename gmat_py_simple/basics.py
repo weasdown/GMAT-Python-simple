@@ -86,6 +86,18 @@ class GmatObject:
     def GetParameterID(self, param_name: str) -> int:
         return gpy.extract_gmat_obj(self).GetParameterID(param_name)
 
+    def GetParameterType(self, param: str | int) -> str:
+        if isinstance(param, str):
+            param = self.GetParameterID(param)
+        type_id: int = gpy.extract_gmat_obj(self).GetParameterType(param)
+        type_string: str = gpy.utils.GetTypeNameFromID(type_id)
+        return type_string
+
+    def GetRealParameter(self, param: str | int) -> float:
+        if isinstance(param, str):
+            param = self.GetParameterID(param)
+        return gpy.extract_gmat_obj(self).GetRealParameter(param)
+
     def GetRefObject(self, type_id: int, name: str) -> gmat.GmatBase:
         return gpy.extract_gmat_obj(self).GetRefObject(type_id, name)
 
@@ -109,13 +121,18 @@ class GmatObject:
 
     def Initialize(self):
         try:
-            return self.gmat_obj.Initialize()
+            return gpy.extract_gmat_obj(self).Initialize()
         except Exception as ex:
-            raise RuntimeError(f'{type(self).__name__} named "{self.name}" failed to Initialize - see GMAT exception '
-                               f'above') from ex
+            raise RuntimeError(f'{type(self).__name__} named "{self.name}" failed to Initialize - see exception '
+                               f'below:\n\t{ex}') from ex
 
     def IsInitialized(self):
         return self.gmat_obj.IsInitialized()
+
+    def SetBooleanParameter(self, param: str | int, value: bool) -> bool:
+        if isinstance(param, str):
+            param = self.GetParameterID(param)
+        return gpy.extract_gmat_obj(self).SetBooleanParameter(param, value)
 
     def SetField(self, field: str, val: str | int | float | bool | list):
         """
@@ -149,6 +166,11 @@ class GmatObject:
             self.gmat_obj.SetOnOffParameter(field, on_off)
         else:
             raise SyntaxError(f'Invalid argument OnOff - {on_off} - must be "On" or "Off"')
+
+    def SetRealParameter(self, param: str | int, value: int | float) -> bool:
+        if isinstance(param, str):
+            param = self.GetParameterID(param)
+        return gpy.extract_gmat_obj(self).SetRealParameter(param, value)
 
     def SetReference(self, ref):
         self.gmat_obj.SetReference(gpy.extract_gmat_obj(ref))

@@ -406,7 +406,7 @@ class PropSetup(GmatObject):  # variable called prop in GMAT Python examples
         self.gator = gator if gator else PropSetup.Propagator()
         self.SetReference(self.gator)
 
-        # gpy.Initialize()
+        gpy.Initialize()
 
         if initial_step_size:
             self.initial_step_size = initial_step_size
@@ -498,7 +498,7 @@ class OrbitState:
 
             # TODO parse Origin parameter
             # print(f'Currently allowed Origin values:\n{self._allowed_values["Origin"]}')
-            # gmat.Initialize()
+            gpy.Initialize()
             self.Initialize()
 
         def __repr__(self):

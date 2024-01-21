@@ -12,23 +12,6 @@ gmat.EchoLogFile(False)  # set to True to view log output in console (e.g. live 
 
 sat = gpy.Spacecraft('DefaultSC')
 
-# sat_params = {
-#     'Name': 'DefaultSC',
-#     'Orbit': {
-#         'CoordSys': 'EarthMJ2000Eq',
-#         'Epoch': '21545',
-#         'StateType': 'Keplerian',
-#         'SMA': 7200
-#     },
-#     'DryMass': 100,  # kg
-#     'Hardware': {'Tanks': {'Chemical': [{'Name': 'ChemicalTank1'}],
-#                            'Electric': [{'Name': 'ElectricTank1'}]},
-#                  'Thrusters': {'Chemical': [{'Name': 'ChemicalThruster1', 'Tanks': 'ChemicalTank1'}],
-#                                'Electric': [{'Name': 'ElectricThruster1', 'Tanks': 'ElectricTank1'}]}
-#                  }
-# }
-# test_sat = gpy.Spacecraft.from_dict(sat_params)
-
 prop = gpy.PropSetup('DefaultProp', gator=gpy.PropSetup.Propagator('RungeKutta89'),
                      accuracy=9.999999999999999e-12)
 
@@ -68,7 +51,3 @@ print(f'Epoch after running: {sat.GetField("Epoch")}')
 
 script_path = os.path.normpath(f'{os.getcwd()}/examples/scripts/Tut02-SimpleOrbitTransfer.script')
 gmat.SaveScript(script_path)
-
-# print(test_sat.thrusters)
-# fb1 = gpy.FiniteBurn('FB1', test_sat.thrusters.Electric[0])
-# fb1.Help()

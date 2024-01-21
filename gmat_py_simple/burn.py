@@ -16,42 +16,51 @@ class Burn(GmatObject):
 
     def HasFired(self) -> bool:
         # FIXME determine why GMAT returns False for fired (Impulsive)Burns - using self.has_fired as workaround
-        # return gpy.extract_gmat_obj(self).HasFired()
+        return gpy.extract_gmat_obj(self).HasFired()
         # return self.has_fired
-        raise NotImplementedError
+        # raise NotImplementedError
 
     def IsFiring(self) -> bool:
-        # return gpy.extract_gmat_obj(self).IsFiring()
-        raise NotImplementedError
-
-    def GetTotalMassFlowRate(self) -> float:
-        # return gpy.extract_gmat_obj(self).GetTotalMassFlowRate()
-        raise NotImplementedError
+        return gpy.extract_gmat_obj(self).IsFiring()
+        # raise NotImplementedError
 
     def GetDeltaVInertial(self) -> float:
-        # return gpy.extract_gmat_obj(self).GetDeltaVInertial()
-        raise NotImplementedError
-
-    def GetTotalAcceleration(self) -> float:
-        # return gpy.extract_gmat_obj(self).GetTotalAcceleration()
-        raise NotImplementedError
-
-    def GetTotalThrust(self) -> float:
-        # return gpy.extract_gmat_obj(self).GetTotalThrust()
-        raise NotImplementedError
+        return gpy.extract_gmat_obj(self).GetDeltaVInertial()
+        # raise NotImplementedError
 
     def GetEpochAtLastFire(self):
-        # return gpy.extract_gmat_obj(self).GetEpochAtLastFire()
-        raise NotImplementedError
+        return gpy.extract_gmat_obj(self).GetEpochAtLastFire()
+        # raise NotImplementedError
+
+    def GetTotalAcceleration(self) -> float:
+        return gpy.extract_gmat_obj(self).GetTotalAcceleration()
+        # raise NotImplementedError
+
+    def GetTotalMassFlowRate(self) -> float:
+        return gpy.extract_gmat_obj(self).GetTotalMassFlowRate()
+        # raise NotImplementedError
+
+    def GetTotalThrust(self) -> float:
+        return gpy.extract_gmat_obj(self).GetTotalThrust()
+        # raise NotImplementedError
+
+    def SetSpacecraftToManeuver(self, spacecraft: gpy.Spacecraft | gmat.Spacecraft):
+        # No return value from internal GMAT so don't return here either
+        gpy.extract_gmat_obj(self).SetSpacecraftToManeuver(gpy.extract_gmat_obj(spacecraft))
 
 
 class FiniteBurn(Burn):
     def __init__(self, name, thrusters: gpy.Thruster | list[gpy.Thruster]):
-        # TODO generic: convert thruster type to Thruster once class created
         super().__init__('FiniteBurn', name)
 
+        # Attach specified thruster(s) to FiniteBurn
         self.thrusters: list[gpy.Thruster] = [thrusters]
-        self.SetField('Thrusters', self.thrusters)
+        for thruster in self.thrusters:
+            thruster_name = thruster.GetName()
+            self.SetStringParameter('Thrusters', thruster_name)
+            self.SetRefObject(thruster, gmat.THRUSTER, thruster_name)
+
+        self.Initialize()
 
 
 class FiniteThrust(GmatObject):  # TODO tidy: consider making subclass of FiniteBurn
@@ -80,11 +89,9 @@ class ImpulsiveBurn(Burn):
 
         # Get default coordinate system from GMAT object
         self.coord_sys_name = self.GetStringParameter('CoordinateSystem')
-        # self.coord_sys = gmat.GetObject(self.coord_sys_name)  # CoordinateSystem is not RefObject of IB - get from GMAT
-        # self.coord_sys.Help()
         self.origin: str = self.GetStringParameter('Origin')
         self.axes: str = self.GetStringParameter('Axes')
-        # self.origin = self.GetStringParameter('Origin')
+        self.origin = self.GetStringParameter('Origin')
 
         # Update coordinate system if user has supplied one
         if coord_sys is not None:
@@ -92,27 +99,25 @@ class ImpulsiveBurn(Burn):
                 raise TypeError(f'CoordinateSystem type "{type(coord_sys).__name__}" not recognized in ImpulsiveBurn '
                                 f'init')
             coord_sys.Initialize()
-            self.coord_sys: gpy.OrbitState.CoordinateSystem | gmat.CoordinateSystem = coord_sys
-            self.coord_sys_name = self.coord_sys.GetName()
-
-            coord_sys = gmat.GetObject('EarthMJ2000Eq')
+            coord_sys_new: gpy.OrbitState.CoordinateSystem | gmat.CoordinateSystem = coord_sys
+            self.coord_sys_name = coord_sys_new.GetName()
 
             # Extract celestial body (e.g. Earth) and axes (e.g. MJ2000Eq) from CoordinateSystem
-            if isinstance(coord_sys, gpy.OrbitState.CoordinateSystem):
-                self.origin: gmat.Planet = coord_sys.origin  # obj for celestial body at coordinate system origin
-                self.axes: gpy.OrbitState.CoordinateSystem.Axes = coord_sys.axes
+            if isinstance(coord_sys_new, gpy.OrbitState.CoordinateSystem):
+                self.origin: gmat.Planet = coord_sys_new.origin  # obj for celestial body at coordinate system origin
+                self.axes: gpy.OrbitState.CoordinateSystem.Axes = coord_sys_new.axes
                 self.axes_name: str = self.axes.name
             else:
                 # coord_sys is of type gmat.CoordinateSystem
-                self.origin_name: str = coord_sys.GetField('Origin')
+                self.origin_name: str = coord_sys_new.GetField('Origin')
                 # self. origin is GMAT object for celestial body at coordinate system origin
-                self.origin: gmat.Planet = gmat.GetObject(self.origin_name)
-                self.axes_name: str = coord_sys.GetField('Axes')
-                self.axes: gmat.GmatBase = coord_sys.GetRefObject(gmat.AXIS_SYSTEM, self.axes_name)
+                self.origin: gmat.Planet = gmat.GetSolarSystem().GetBody(self.origin_name)
+                self.axes_name: str = coord_sys_new.GetField('Axes')
+                self.axes: gmat.GmatBase = coord_sys_new.GetRefObject(gmat.AXIS_SYSTEM, self.axes_name)
 
             # Attach the new CoordinateSystem to the ImpulsiveBurn
             self.SetStringParameter(1, self.coord_sys_name)  # 1 for CS, 2 for Origin, 3 for Axes
-            self.SetRefObject(self.coord_sys, gmat.COORDINATE_SYSTEM, self.coord_sys_name)
+            self.SetRefObject(coord_sys_new, gmat.COORDINATE_SYSTEM, self.coord_sys_name)
 
             # Attach CoordinateSystem's celestial body (Origin) to the ImpulsiveBurn
             self.SetStringParameter(2, self.origin_name)  # 1 for CS, 2 for Origin, 3 for Axes
@@ -121,14 +126,17 @@ class ImpulsiveBurn(Burn):
             # Attach CoordinateSystem's Axes to the ImpulsiveBurn
             self.SetStringParameter(3, self.axes_name)  # 1 for CS, 2 for Origin, 3 for Axes
 
-            # self.coord_sys.Initialize()
+        # Set default spacecraft as the burn's spacecraft to maneuver, as a placeholder
+        # This is later updated by any Maneuver commands that call this burn
+        sat = gpy.Moderator().GetDefaultSpacecraft()
+        self.SetSpacecraftToManeuver(sat)
 
         self.delta_v: list[float | int] = delta_v
         for index, element in enumerate(delta_v):
             self.SetField(f'Element{index + 1}', element)
 
         self.decrement_mass: bool = decrement_mass
-        self.SetField('DecrementMass', self.decrement_mass)
+        self.SetBooleanParameter('DecrementMass', self.decrement_mass)
 
         self.tanks: list[str] = [tank.name for tank in tanks] if tanks is not None else None
         if self.tanks is not None:
@@ -136,15 +144,15 @@ class ImpulsiveBurn(Burn):
             self.SetStringParameter(self.gmat_obj.FUEL_TANK, str(self.tanks))
 
         self.isp: int | float = isp
-        self.SetField('Isp', self.isp)
+        self.SetRealParameter('Isp', self.isp)
 
         self.gravitational_accel: float = gravitational_accel
-        self.SetField('GravitationalAccel', self.gravitational_accel)
+        self.SetRealParameter('GravitationalAccel', self.gravitational_accel)
+
+        self.delta_tank_mass = self.GetRealParameter('DeltaTankMass')
+        # 0.0 initially, updated after burn fired if decrement_mass is True
 
         self.SetSolarSystem(gmat.GetSolarSystem())
 
-        # gmat.Initialize()
-        # self.Initialize()
-        #
-        # self.Help()
-        # pass
+        gpy.Initialize()
+        self.Initialize()

@@ -286,6 +286,7 @@ class Maneuver(GmatCommand):
 
         self.spacecraft = spacecraft
         self.SetStringParameter(self.gmat_obj.GetParameterID('Spacecraft'), self.spacecraft.name)
+        self.burn.SetSpacecraftToManeuver(self.spacecraft)  # update burn's assigned spacecraft
 
         self.backprop = backprop
         self.SetBooleanParameter(self.gmat_obj.GetParameterID('BackProp'), self.backprop)

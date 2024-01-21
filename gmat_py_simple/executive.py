@@ -139,11 +139,13 @@ class Moderator:
             return self.gmat_obj.CreatePropSetup('DefaultProp')
 
     def GetDefaultSpacecraft(self) -> gmat.Spacecraft:
-        so_config_list: list[str] = self.gmat_obj.GetListOfObjects(gmat.SPACECRAFT)
+        # Method not exposed to Python API, so have to remake here rather than calling gmat.Moderator().Instance()
+        so_config_list: list[str] = gpy.extract_gmat_obj(self).GetListOfObjects(gmat.SPACECRAFT)
         if so_config_list:  # list length > 0
-            return self.gmat_obj.GetSpacecraft(so_config_list[0])
+            # self.GetSpacecraft() as in original would return a SpaceObject (not Spacecraft), so use gmat.GetObject()
+            return gpy.GetObject(so_config_list[0])
         else:  # no spacecraft found, so create one
-            return self.gmat_obj.CreateSpacecraft('Spacecraft', 'DefaultSC')
+            return gpy.extract_gmat_obj(self).CreateSpacecraft('Spacecraft', 'DefaultSC')
 
     def GetDetailedRunState(self):
         drs = self.gmat_obj.GetDetailedRunState()
