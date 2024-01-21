@@ -60,6 +60,11 @@ class FiniteBurn(Burn):
             self.SetStringParameter('Thrusters', thruster_name)
             self.SetRefObject(thruster, gmat.THRUSTER, thruster_name)
 
+        # Set default spacecraft as the burn's spacecraft to maneuver, as a placeholder
+        # This is later updated by any BeginFiniteBurn commands that call this burn
+        sat = gpy.Moderator().GetDefaultSpacecraft()
+        self.SetSpacecraftToManeuver(sat)
+
         self.Initialize()
 
 

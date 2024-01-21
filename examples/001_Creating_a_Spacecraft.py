@@ -5,7 +5,7 @@ sat_params = {
     'Orbit': {
         'CoordSys': 'EarthMJ2000Eq',
         'Epoch': '21545',
-        'StateType': 'Keplerian',
+        'DisplayStateType': 'Keplerian',
         'SMA': 7200
     },
     'DryMass': 100,  # kg

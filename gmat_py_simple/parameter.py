@@ -25,7 +25,7 @@ class Parameter:
             self.gmat_obj = gpy.Moderator().CreateParameter(self.param_type, self.name)  # SwigPyObject instance
 
         self.swig_param = self.gmat_obj  # SwigPyObject instance
-        self.gmat_base = gmat.Validator.Instance().FindObject(self.name)  # GmatBase instance
+        self.gmat_base = gpy.Validator().FindObject(self.name)  # GmatBase instance
 
         self.index: int = 0  # used in self.SetRefObject()
 
@@ -40,14 +40,21 @@ class Parameter:
     #                  is_settable: bool = False, is_plottable: bool = False, is_reportable: bool = False,
     #                  owned_obj_type: int = None):
 
-
     def GetName(self) -> str:
         self.name: str = self.gmat_base.GetName()
         return self.name
 
+    def GetParameterID(self, param_name: str) -> int:
+        return self.gmat_base.GetParameterID(param_name)
+
     def GetRefObjectName(self, type_int: int) -> str:
         # GMAT's SetRefObjectName cannot be called on a Swig Parameter object, only a GmatBase (or subclass thereof)
         return self.gmat_base.GetRefObjectName(type_int)
+
+    def GetStringParameter(self, param: str | int) -> str:
+        if isinstance(param, str):
+            param = self.GetParameterID(param)
+        return self.gmat_base.GetStringParameter(param)
 
     def GetTypeName(self) -> str:
         return self.gmat_base.GetTypeName()
@@ -84,7 +91,7 @@ class Parameter:
                                f'\tRef obj array, COORDINATE_SYSTEM: {self.gmat_base.GetRefObjectArray(gmat.COORDINATE_SYSTEM)}\n\n'
                                f'\tRef obj name array, SPACECRAFT: {self.gmat_base.GetRefObjectNameArray(gmat.SPACECRAFT)}\n'
                                f'\tRef obj name array, SPACE_POINT: {self.gmat_base.GetRefObjectNameArray(gmat.SPACE_POINT)}\n'
-                               f'\tRef obj name array, COORDINATE_SYSTEM: {self.gmat_base.GetRefObjectNameArray(gmat.COORDINATE_SYSTEM)}')\
+                               f'\tRef obj name array, COORDINATE_SYSTEM: {self.gmat_base.GetRefObjectNameArray(gmat.COORDINATE_SYSTEM)}') \
                 from ex
         return response
 
@@ -127,6 +134,7 @@ class Parameter:
                                # f'{gmat.ConfigManager.Instance().GetListOfAllItems()}'
                                f'') from ex
 
+
 # TODO: make a class for each type of StopCondition, e.g. ElapsedSecs, Apoapsis etc, that generates a
 #  properly-formed StopCondition of that type. Will help with code completion.
 # class StopParameter(Parameter):
@@ -143,3 +151,12 @@ class Parameter:
 # class ElapsedDays(StopParameter):
 #     def __init__(self):
 #         super().__init__()
+
+class Variable(Parameter):
+    def __init__(self, name: str, value: int = None):
+        super().__init__('Variable', name)
+
+        self.value = value if value else 0
+        self.SetStringParameter('Expression', str(self.value))
+
+        self.Initialize()

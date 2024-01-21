@@ -19,14 +19,16 @@ class Validator:
         return self.gmat_obj.CreateSystemParameter(param_created, name, manage)
 
     def FindObject(self, name: str):
-        return self.gmat_obj.FindObject(name)
+        self.SetSolarSystem(gmat.GetSolarSystem())
+        self.SetObjectMap(gpy.Moderator().GetConfiguredObjectMap())
+        return gpy.extract_gmat_obj(self).FindObject(name)
 
     def SetObjectMap(self, om: gmat.ObjectMap) -> bool:
-        return self.gmat_obj.SetObjectMap(om)
+        return gpy.extract_gmat_obj(self).SetObjectMap(om)
 
     def SetSolarSystem(self, ss: gmat.SolarSystem = gmat.GetSolarSystem()) -> bool:
-        return self.gmat_obj.SetSolarSystem(ss)
+        return gpy.extract_gmat_obj(self).SetSolarSystem(ss)
 
     def ValidateCommand(self, command: gpy.GmatCommand | gmat.GmatCommand):
-        return self.gmat_obj.ValidateCommand(gpy.extract_gmat_obj(command))
+        return gpy.extract_gmat_obj(self).ValidateCommand(gpy.extract_gmat_obj(command))
 

@@ -231,9 +231,17 @@ class Achieve(GmatCommand):
 
 
 class BeginFiniteBurn(GmatCommand):
-    def __init__(self, name: str):
+    def __init__(self, burn: gpy.FiniteBurn | gmat.FiniteBurn, spacecraft: gpy.Spacecraft | gmat.Spacecraft, name: str = ''):
         super().__init__('BeginFiniteBurn', name)
-        raise NotImplementedError
+
+        self.burn = burn
+        self.SetRefObjectName(gmat.FINITE_BURN, self.burn.GetName())
+
+        self.spacecraft = spacecraft
+        self.SetRefObjectName(gmat.SPACECRAFT, self.spacecraft.GetName())
+        self.burn.SetSpacecraftToManeuver(self.spacecraft)  # update FiniteBurn's associated Spacecraft
+
+        self.Initialize()
 
 
 class BeginMissionSequence(GmatCommand):
@@ -248,9 +256,13 @@ class BeginMissionSequence(GmatCommand):
 
 
 class EndFiniteBurn(GmatCommand):
-    def __init__(self, name: str):
+    def __init__(self, burn: gpy.FiniteBurn | gmat.FiniteBurn, name: str):
         super().__init__('EndFiniteBurn', name)
-        raise NotImplementedError
+
+        self.burn = burn
+        self.SetRefObjectName(gmat.FINITE_BURN, self.burn.GetName())
+
+        self.Initialize()
 
 
 class EndTarget(BranchCommand):
@@ -709,13 +721,28 @@ class Vary(SolverSequenceCommand):
                  initial_value: float | int = 1, perturbation: float | int = 0.0001, lower: float | int = 0.0,
                  upper: float | int = pi, max_step: float | int = 0.5, additive_scale_factor: float | int = 0.0,
                  multiplicative_scale_factor: float | int = 1.0):
+        user_created_def_ib = False
+        try:
+            # an object named DefaultIB existed before Vary's init created one, so assume it's user-owned
+            if gmat.GetObject('DefaultIB'):
+                user_created_def_ib = True
+        except AttributeError:
+            # DefaultIB wasn't found, so does not exist
+            pass
+
         super().__init__('Vary', name)
 
         self.solver = solver
         self.SetStringParameter('SolverName', self.solver.GetName())
 
         self.variable = variable
+        # By default, Variable param is set to the name of a default ImpulsiveBurn, which also creates the IB if it
+        # doesn't already exist. But we might not need the IB, so try to remove it.
+        if not user_created_def_ib:
+            gmat.Clear('DefaultIB')
+        # FIXME: why is Vary still looking for DefaultIB in exception?
         self.SetStringParameter('Variable', self.variable)
+        print(self.GetStringParameter('Variable'))
 
         if initial_value < lower:
             raise RuntimeError('initial_value is less than lower (minimum value) in Vary.__init__().'
