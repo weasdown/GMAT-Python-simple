@@ -172,11 +172,11 @@ class Spacecraft(GmatObject):
                                ['Name', 'Orbit', 'Hardware'])
 
         self.hardware: Spacecraft.SpacecraftHardware | None = None
-        self._tanks: Spacecraft.SpacecraftHardware.PropList | None = None
-        self._thrusters: Spacecraft.SpacecraftHardware.PropList | None = None
+        self.tanks: Spacecraft.SpacecraftHardware.PropList | None = None
+        self.thrusters: Spacecraft.SpacecraftHardware.PropList | None = None
 
-        self._orbit = None
-        self._dry_mass = self.GetField('DryMass')
+        self.orbit = None
+        self.dry_mass = self.GetField('DryMass')
 
         gpy.Initialize()
         self.Initialize()
@@ -268,11 +268,19 @@ class Spacecraft(GmatObject):
         return self.hardware
 
     def update_orbit(self, orbit: OrbitState):
-        self._orbit = orbit
+        self.orbit = orbit
         pass
 
-    def GetState(self) -> list[float]:
-        self.gmat_obj = self.GetObject()  # update Spacecraft's gmat_obj with latest data (e.g. from mission run)
+    def GetState(self, state_type: str = 'Current') -> list[float]:
+        # update Spacecraft's gmat_obj with latest data (e.g. from mission run)
+        self.gmat_obj = self.GetObject()
+
+        allowed_state_types: list[str] = list(gpy.OrbitState().allowed_state_elements.keys())
+        if state_type != 'Current':
+            if state_type not in allowed_state_types:
+                raise AttributeError(f'Given state_type is invalid. Valid options are: '
+                                     f'{[state for state in allowed_state_types]}')
+            self.SetField('DisplayStateType', state_type)
 
         state: list[float | None] = [None] * 6
         for i in range(13, 19):
@@ -294,7 +302,7 @@ class Spacecraft(GmatObject):
 
     @Thrusters.setter
     def Thrusters(self, thrusters: Spacecraft.SpacecraftHardware.PropList):
-        self._thrusters = thrusters
+        self.thrusters = thrusters
 
     @property
     def ChemicalThrusters(self):
@@ -310,7 +318,7 @@ class Spacecraft(GmatObject):
 
     @Tanks.setter
     def Tanks(self, tanks: Spacecraft.SpacecraftHardware.PropList):
-        self._tanks = tanks
+        self.tanks = tanks
 
     @property
     def ChemicalTanks(self):
@@ -442,7 +450,7 @@ class Thruster(GmatObject):
         self.tanks: list[ChemicalTank | ElectricTank] | None = None
         self._decrement_mass = self.decrement_mass
 
-        gpy.Initialize()
+        # gpy.Initialize()
         self.Initialize()
 
     def __repr__(self):
@@ -506,7 +514,7 @@ class Thruster(GmatObject):
 class ChemicalThruster(Thruster):
     def __init__(self, name: str):
         super().__init__('ChemicalThruster', name)
-        gpy.Initialize()
+        # gpy.Initialize()
         self.Initialize()
 
     @classmethod
@@ -519,7 +527,7 @@ class ChemicalThruster(Thruster):
 class ElectricThruster(Thruster):
     def __init__(self, name: str):
         super().__init__('ElectricThruster', name)
-        gpy.Initialize()
+        # gpy.Initialize()
         self.Initialize()
 
     @classmethod

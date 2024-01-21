@@ -462,9 +462,10 @@ class OrbitState:
             #  and src/base/coordsystem/CoordinateSystem.cpp/CreateLocalCoordinateSystem
             self._name = name
             super().__init__('CoordinateSystem', self._name)
-            self.origin = origin
-            self.axes = axes
-            self.gmat_obj = gmat.Construct('CoordinateSystem', self._name, self.origin, self.axes)
+            self.origin: str = origin
+            self.axes: str = axes
+            self.gmat_obj: gmat.CoordinateSystem = gmat.Construct('CoordinateSystem',
+                                                                  self._name, self.origin, self.axes)
 
             self._allowed_values = {'Axes': ['MJ2000Eq', 'MJ2000Ec', 'ICRF',
                                              'MODEq', 'MODEc', 'TODEq', 'TODEc', 'MOEEq', 'MOEEc', 'TOEEq', 'TOEEc',
@@ -476,6 +477,7 @@ class OrbitState:
                                     }
             self._allowed_values['Primary'] = self._allowed_values['Origin']
             self.axes = OrbitState.CoordinateSystem.Axes(axes, axes)
+            self.origin: gmat.Planet = gmat.GetObject(origin)
 
             self.central_body = central_body
 
@@ -530,7 +532,7 @@ class OrbitState:
             return GmatObject.Help(self.gmat_obj)
 
     def __init__(self, **kwargs):
-        self._allowed_state_elements = {
+        self.allowed_state_elements = {
             'Cartesian': {'X', 'Y', 'Z', 'VX', 'VY', 'VZ'},
             'Keplerian': {'SMA', 'ECC', 'INC', 'RAAN', 'AOP', 'TA'},
             'ModifiedKeplerian': {'RadApo', 'RadPer', 'INC', 'RAAN', 'AOP', 'TA'},
@@ -553,11 +555,11 @@ class OrbitState:
                                 'BrouwerLongRAAN', 'BrouwerLongAOP', 'BrouwerLongMA'}
         }
         # TODO complete self._allowed_values - see pg 599 of GMAT User Guide (currently missing Planetodetic)
-        self._allowed_values = {'display_state_type': list(self._allowed_state_elements.keys()),
+        self._allowed_values = {'display_state_type': list(self.allowed_state_elements.keys()),
                                 # TODO: get names of any other user-defined coordinate systems and add to allowlist
                                 'coord_sys': CoordSystems(),
                                 # TODO: define valid state_type values - using display_state_type ones for now
-                                'state_type': list(self._allowed_state_elements.keys()),
+                                'state_type': list(self.allowed_state_elements.keys()),
                                 }
 
         # TODO complete this list
@@ -587,16 +589,16 @@ class OrbitState:
         if 'display_state_type' not in kwargs:
             self._display_state_type = 'Cartesian'
         else:  # state_type is specified but may not be valid
-            if kwargs['display_state_type'] not in list(self._allowed_state_elements.keys()):
+            if kwargs['display_state_type'] not in list(self.allowed_state_elements.keys()):
                 # invalid display_state_type was given
                 raise SyntaxError(f'Invalid display_state_type parameter given: {kwargs["display_state_type"]}\n'
-                                  f'Valid values are: {self._allowed_state_elements.keys()}')
+                                  f'Valid values are: {self.allowed_state_elements.keys()}')
             else:
                 self._display_state_type = kwargs['display_state_type']
             fields_remaining.remove('display_state_type')
 
         # Set key parameters to value in kwargs, or None if not specified
-        # TODO: add validity checking of other kwargs against StateType
+        # TODO: add validity checking of other kwargs against DisplayStateType
         for param in fields_remaining:
             if param in kwargs:  # arguments must be without leading underscores
                 setattr(self, f'_{param}', kwargs[param])
@@ -616,14 +618,14 @@ class OrbitState:
         instance_attrs = self.__dict__.copy()  # get a copy of the instance's current attributes
 
         # remove attributes that are just for internal class use and shouldn't be applied to a spacecraft
-        for attr in ('_allowed_state_elements', '_allowed_values', '_gmat_fields', '_key_param_defaults', '_sc'):
+        for attr in ('allowed_state_elements', '_allowed_values', '_gmat_fields', '_key_param_defaults', '_sc'):
             instance_attrs.pop(attr)
 
         attrs_to_set.extend(list(instance_attrs))
 
         # extend attrs_to_set with the elements corresponding to the current state_type
         try:  # state_type is recognized
-            elements_for_given_state_type = self._allowed_state_elements[self._display_state_type]
+            elements_for_given_state_type = self.allowed_state_elements[self._display_state_type]
             attrs_to_set.extend(elements_for_given_state_type)
         except KeyError:  # state_type attribute invalid
             raise AttributeError(f'Invalid state_type set as attribute: {self._display_state_type}')

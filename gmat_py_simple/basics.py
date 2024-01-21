@@ -18,18 +18,6 @@ class GmatObject:
         self.gmat_obj.SetSolarSystem(gmat.GetSolarSystem())
         self.was_propagated = False
 
-    # @staticmethod
-    # def Construct(obj_type: str, name: str, *args):
-    #     """
-    #     Make a GMAT object when Construct takes more than two arguments (e.g. for CoordinateSystem)
-    #     :param obj_type:
-    #     :param name:
-    #     :param args:
-    #     :return:
-    #     """
-    #     print(f"Running gmat.Construct({obj_type}, {name}, *{args})")
-    #     # return gmat.Construct(obj_type, name, *args)
-
     @staticmethod
     def epoch_to_datetime(epoch: str) -> datetime:
         return datetime.strptime(epoch, '%d %b %Y %H:%M:%S.%f')
@@ -98,12 +86,26 @@ class GmatObject:
     def GetParameterID(self, param_name: str) -> int:
         return gpy.extract_gmat_obj(self).GetParameterID(param_name)
 
+    def GetRefObject(self, type_id: int, name: str) -> gmat.GmatBase:
+        return gpy.extract_gmat_obj(self).GetRefObject(type_id, name)
+
+    def GetRefObjectName(self, type_id: int) -> str:
+        return gpy.extract_gmat_obj(self).GetRefObjectName(type_id)
+
+    def GetRefObjectNameArray(self, type_id: int) -> tuple[str]:
+        return gpy.extract_gmat_obj(self).GetRefObjectNameArray(type_id)
+
+    def GetRefObjectTypeArray(self) -> tuple[int]:
+        return gpy.extract_gmat_obj(self).GetRefObjectTypeArray()
+
+    def GetStringParameter(self, param: str | int) -> str:
+        if isinstance(param, str):
+            param = self.GetParameterID(param)
+        return gpy.extract_gmat_obj(self).GetStringParameter(param)
+
     def Help(self):
         # TODO: upgrade to get list of fields with utils.gmat_obj_field_list then print all fields/values
-
-        if not self.gmat_obj:
-            raise AttributeError(f'No GMAT object found for object {self.__name__} of type {type(self.__name__)}')
-        self.gmat_obj.Help()
+        return gpy.extract_gmat_obj(self).Help()
 
     def Initialize(self):
         try:
@@ -150,6 +152,9 @@ class GmatObject:
 
     def SetReference(self, ref):
         self.gmat_obj.SetReference(gpy.extract_gmat_obj(ref))
+
+    def SetRefObject(self, obj: gpy.GmatObject | gmat.GmatObject, type_id: int, name: str) -> bool:
+        return gpy.extract_gmat_obj(self).SetRefObject(gpy.extract_gmat_obj(obj), type_id, name)
 
     def SetSolarSystem(self, ss: gmat.SolarSystem = gmat.GetSolarSystem()) -> bool:
         return self.gmat_obj.SetSolarSystem(ss)
