@@ -115,6 +115,14 @@ class Spacecraft(GmatObject):
 
             # TODO: parse solar_power_system, nuclear_power_system, Imager
 
+            # parse solar power systems
+            try:
+                solar_power_systems: dict = hw['SolarPowerSystems']
+                sc_hardware.solar_power_system = SolarPowerSystem.from_dict(solar_power_systems)
+
+            except KeyError:
+                logging.info(f'No tanks found in Hardware dict parsing')
+
             return sc_hardware
 
         @property
@@ -278,6 +286,8 @@ class Spacecraft(GmatObject):
         self.chemical_tanks = self.hardware.chemical_tanks
         self.electric_tanks = self.hardware.electric_tanks
 
+        self.hardware.solar_power_system.attach_to_sat(self)
+
         return self.hardware
 
     def update_orbit(self, orbit: OrbitState):
@@ -341,7 +351,7 @@ class Spacecraft(GmatObject):
     def ElectricTanks(self):
         return self.hardware.ElectricTanks
 
-    def add_tanks(self, tanks: list[ChemicalTank | ElectricTank]):
+    def add_tanks(self, tanks: list[ChemicalTank | ElectricTank]) -> bool:
         """
         Add a tank object to a Spacecraft's list of Tanks.
 
@@ -360,8 +370,9 @@ class Spacecraft(GmatObject):
         current_tanks_list.extend(tanks_to_set)
         value = list_to_gmat_field_string(current_tanks_list)
         self.SetField('Tanks', value)
+        return True
 
-    def add_thrusters(self, thrusters: list[ChemicalThruster | ElectricThruster]):
+    def add_thrusters(self, thrusters: list[ChemicalThruster | ElectricThruster]) -> bool:
         current_thrusters_value: str = self.GetField('Thrusters')
         current_thrusters_list: list = gmat_field_string_to_list(current_thrusters_value)
 
@@ -370,6 +381,11 @@ class Spacecraft(GmatObject):
         current_thrusters_list.extend(thrusters_to_set)
         value = list_to_gmat_field_string(current_thrusters_list)
         self.SetField('Thrusters', value)
+        return True
+
+    def add_sps(self, solar_power_system: gpy.SolarPowerSystem | gmat.SolarPowerSystem) -> bool:
+        self.SetField('PowerSystem', solar_power_system.GetName())
+        return True
 
 
 class Tank(GmatObject):
@@ -463,7 +479,7 @@ class Thruster(GmatObject):
         self.tanks: list[ChemicalTank | ElectricTank] | None = None
         self._decrement_mass = self.decrement_mass
 
-        # self.Initialize()
+        self.Initialize()
 
     def __repr__(self):
         return f'A {self.thruster_type} with name {self.name}'
@@ -564,3 +580,44 @@ class ElectricThruster(Thruster):
     #                 self._mix_ratio = mix_ratio
     #     else:
     #         raise SyntaxError('All elements of mix_ratio must be of type int')
+
+
+class SolarPowerSystem(GmatObject):
+    def __init__(self, name: str):
+        super().__init__('SolarPowerSystem', name)
+
+        self.spacecraft = None
+
+        # TODO add parsing of each field under Help()
+        # self.Help()
+        pass
+
+    def __repr__(self):
+        return f'A SolarPowerSystem named "{self.GetName()}"'
+
+    def attach_to_sat(self, sat: gpy.Spacecraft | gmat.Spacecraft):
+        self.spacecraft = sat
+        self.spacecraft.add_sps(gpy.extract_gmat_obj(self))
+
+    @staticmethod
+    def from_dict(sps_dict: dict[str, Union[str, int, float]]):
+        try:
+            name = sps_dict['Name']
+        except KeyError:  # no name found - use default
+            name = 'DefaultSolarPowerSystem'
+        sps = SolarPowerSystem(name)
+
+        fields: list[str] = list(sps_dict.keys())
+        fields.remove('Name')
+
+        # TODO convert to sps.SetFields
+        for field in fields:
+            if field == 'Tanks':
+                sps.SetField('Tank', sps_dict[field])
+            else:
+                sps.SetField(field, sps_dict[field])
+            setattr(sps, field, sps_dict[field])
+
+        sps.Validate()
+
+        return sps

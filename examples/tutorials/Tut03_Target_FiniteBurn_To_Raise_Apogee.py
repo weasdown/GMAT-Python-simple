@@ -29,6 +29,8 @@ fb1 = gpy.FiniteBurn('FiniteBurn1', sat.thrusters.chemical[0])
 
 dc1 = gpy.DifferentialCorrector('DC1')
 
+vary1 = gpy.Vary('Vary Burn Duration', dc1, burn_dur.name, initial_value=200, upper=10000, max_step=100)
+
 print(f'Sat state before running: {sat.GetState()}')
 print(f"Epoch before running: {sat.GetField('Epoch')}")
 
@@ -38,7 +40,7 @@ mcs = [
     # Targeting sequence to adjust burn duration to achieve desired final orbit
     gpy.Target('Raise Apoapsis', dc1, exit_mode='SaveAndContinue', command_sequence=[
         # Vary the FiniteBurn duration to achieve an apoapsis with RMAG = 12000 km
-        gpy.Vary('Vary Burn Duration', dc1, burn_dur.name),
+        vary1,
         gpy.BeginFiniteBurn(fb1, sat, 'Turn Thruster On'),
         gpy.Propagate('Prop BurnDuration', sat, prop, (f'{sat.name}.ElapsedSecs', burn_dur.name)),
         gpy.EndFiniteBurn(fb1, 'Turn Thruster Off'),
