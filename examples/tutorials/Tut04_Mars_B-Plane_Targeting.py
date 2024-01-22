@@ -11,26 +11,47 @@ log_path = os.path.normpath(f'{os.getcwd()}/examples/logs/GMAT-Tut03-Log.txt')
 gmat.UseLogFile(log_path)
 gmat.EchoLogFile(False)  # set to True to view log output in console (e.g. live iteration results)
 
-sat_params = {
-    'Name': 'MAVEN',
-    'Hardware': {'Tanks': {'chemical': [{'Name': 'MainTank'}], },
-                 'Thrusters': {'chemical': [{'Name': 'ChemicalThruster1', 'Tanks': 'MainTank'}]},
-                 }
-}
-sat = gpy.Spacecraft.from_dict(sat_params)
-main_tank = gpy.ChemicalTank('TestTank', fuel_mass=1718, allow_negative_fuel_mass=False, fuel_density=1000, temperature=20, ref_temp=20, pressure=5000, volume=2, pressure_model='PressureRegulated')
-main_tank.Help()
+sat = gpy.Spacecraft('MAVEN')
+main_tank = gpy.ChemicalTank('TestTank', fuel_mass=1718, allow_negative_fuel_mass=False, fuel_density=1000,
+                             temperature=20, ref_temp=20, pressure=5000, volume=2, pressure_model='PressureRegulated')
+sat.add_tanks(main_tank)
 
-# Set parameters of thruster that will be used for FiniteBurn
-thruster_to_fire = sat.thrusters.chemical[0]  # select which thruster on the Spacecraft will be fired
-thruster_to_fire.SetField('DecrementMass', True)  # reduce the mass of fuel in ChemicalTank1 as it's burned
-thruster_to_fire.SetField('MixRatio', [1])  # all draining from one tank (ChemicalTank1, only one assigned to thruster)
-thruster_to_fire.SetField('C1', 1000)  # 1000 N thrust
+# Setup ForceModels and Propagators
+near_earth_fm = gpy.ForceModel('NearEarthFM', primary_bodies='Earth',
+                               gravity_field=gpy.ForceModel.GravityField(degree=8, order=8),
+                               point_masses=['Luna', 'Sun'],
+                               srp=True)
+near_earth = gpy.PropSetup('NearEarth',
+                           gator=gpy.PropSetup.Propagator('RungeKutta89'), fm=near_earth_fm,
+                           initial_step_size=600, accuracy=1e-13, min_step=0, max_step=600, max_step_attempts=50)
 
-prop = gpy.PropSetup('DefaultProp', gator=gpy.PropSetup.Propagator('RungeKutta89'),
-                     accuracy=9.999999999999999e-12)
+deep_space_fm = gpy.ForceModel('DeepSpaceFM', central_body='Sun', primary_bodies='Sun',
+                               point_masses=['Earth', 'Jupiter', 'Luna', 'Mars',
+                                             'Neptune', 'Saturn', 'Sun', 'Uranus',
+                                             'Venus'], srp=True)
+deep_space = gpy.PropSetup('DeepSpace',
+                           gator=gpy.PropSetup.Propagator('PrinceDormand78'), fm=deep_space_fm,
+                           initial_step_size=600, accuracy=1e-12, min_step=0, max_step=864000, max_step_attempts=50)
 
-# tcm = gpy.ImpulsiveBurn('TCM', decrement_mass=True, tanks=sat.tanks.chemical[0])
+mars_gravity_file = f'{gmat.FileManager.Instance().GetRootPath()}\\data\\gravity\\mars\\Mars50c.cof'
+# FIXME: primary_bodies not setting to Mars in FM init
+near_mars_fm = gpy.ForceModel('NearMarsFM', central_body='Mars', primary_bodies='Mars',
+                              gravity_field=gpy.ForceModel.GravityField(model='Mars-50C', degree=8, order=8,
+                                                                        gravity_file=mars_gravity_file),
+                              point_masses=['Sun'], srp=True)
+near_mars = gpy.PropSetup('NearMars',
+                          gator=gpy.PropSetup.Propagator('PrinceDormand78'), fm=near_mars_fm,
+                          initial_step_size=600, accuracy=1e-12, min_step=0, max_step=86400, max_step_attempts=50)
+
+near_mars_fm.Help()
+
+# Setup coordinate systems
+# FIXME: CoordinateSystems failing to build
+earth_vnb = gpy.OrbitState.CoordinateSystem('Earth_VNB', 'Earth', 'Earth', 'VNB')
+mars_vnb = gpy.OrbitState.CoordinateSystem('Mars_VNB', 'Mars', 'Mars', 'VNB')
+
+tcm = gpy.ImpulsiveBurn('TCM', coord_sys=earth_vnb, decrement_mass=True, tanks=main_tank, isp=300)
+moi = gpy.ImpulsiveBurn('MOI', coord_sys=mars_vnb, decrement_mass=True, tanks=main_tank, isp=300)
 
 dc1 = gpy.DifferentialCorrector('DC1')
 

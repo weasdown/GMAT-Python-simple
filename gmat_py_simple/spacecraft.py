@@ -355,7 +355,7 @@ class Spacecraft(GmatObject):
     def ElectricTanks(self):
         return self.hardware.ElectricTanks
 
-    def add_tanks(self, tanks: list[ChemicalTank | ElectricTank]) -> bool:
+    def add_tanks(self, tanks: gpy.Tank | list[gpy.Tank]) -> bool:
         """
         Add a tank object to a Spacecraft's list of Tanks.
 
@@ -370,8 +370,11 @@ class Spacecraft(GmatObject):
         current_tanks_list: list = gmat_field_string_to_list(current_tanks_value)
 
         # Add tanks by getting name of each tank, adding it to a list, then attaching this list to end of existing one
-        tanks_to_set: list = [tank.GetName() for tank in tanks]
-        current_tanks_list.extend(tanks_to_set)
+        if isinstance(tanks, gpy.Tank):
+            current_tanks_list = [tanks.GetName()]
+        else:
+            tanks_to_set: list = [tank.GetName() for tank in tanks]
+            current_tanks_list.extend(tanks_to_set)
         value = list_to_gmat_field_string(current_tanks_list)
         self.SetField('Tanks', value)
         return True
@@ -433,7 +436,10 @@ class Tank(GmatObject):
 
 
 class ChemicalTank(Tank):
-    def __init__(self, name: str, fuel_mass: int | float = 756, allow_negative_fuel_mass: bool = False, pressure: int | float = 1500, temperature: int | float = 20, ref_temp: int | float = 20, volume: int | float = 0.75, fuel_density: int | float = 1260, pressure_model: str = 'PressureRegulated'):
+    def __init__(self, name: str, fuel_mass: int | float = 756, allow_negative_fuel_mass: bool = False,
+                 pressure: int | float = 1500, temperature: int | float = 20, ref_temp: int | float = 20,
+                 volume: int | float = 0.75, fuel_density: int | float = 1260,
+                 pressure_model: str = 'PressureRegulated'):
         super().__init__('ChemicalTank', name)
 
         self.fuel_mass = self.GetRealParameter('FuelMass')  # kg

@@ -152,9 +152,15 @@ class ImpulsiveBurn(Burn):
         self.decrement_mass: bool = decrement_mass
         self.SetBooleanParameter('DecrementMass', self.decrement_mass)
 
-        self.tanks: list[str] = [tank.name for tank in tanks] if tanks is not None else None
+        if tanks is not None:
+            if isinstance(tanks, gpy.Tank):
+                self.tanks = tanks.GetName()
+            elif isinstance(tanks, list):
+                self.tanks: list[str] = [tank.GetName() for tank in tanks]
+        else:
+            self.tanks = None
         if self.tanks is not None:
-            self.SetStringParameter(self.gmat_obj.FUEL_TANK, str(self.tanks))
+            self.SetStringParameter(10, str(self.tanks))  # 10 for FUEL_TANK
 
         self.isp: int | float = isp
         self.SetRealParameter('Isp', self.isp)

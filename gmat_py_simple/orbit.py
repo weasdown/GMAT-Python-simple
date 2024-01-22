@@ -127,7 +127,9 @@ class ForceModel(GmatObject):
                 if not all([f in celestial_bodies for f in point_masses]):
                     raise SyntaxError(f'Not all strings in point_masses are valid celestial body names')
 
-                if self.gravity and (any(force in self.central_body for force in point_masses)):
+                if self.gravity and (any(f in self.central_body for f in point_masses)):
+                    # FIXME: breaks Tut04 DeepSpace FM
+                    # TODO don't assume Earth
                     raise SyntaxError(f'Point mass for {self.central_body} cannot be used because '
                                       f'{self.central_body} is already set as the central body')
 
@@ -144,23 +146,31 @@ class ForceModel(GmatObject):
         self._allowed_values = {'arg': 'value'}
         defaults = {'error_control': ['RSSStep'], 'point_masses': ['Earth'], 'primary_bodies': []}
 
-        self.central_body = central_body
-        self.SetField('CentralBody', self.central_body)
+        self.central_body = self.GetField('CentralBody')
+        if central_body is not None:
+            self.central_body = central_body
+            self.SetStringParameter('CentralBody', self.central_body)
 
         # TODO replace below with creation of GravityFields
         #  PrimaryBodies is alias for GravityFields as per page 162 of GMAT Architectucral Specification
-        self._primary_bodies = primary_bodies if primary_bodies else self.central_body
+        self.gravity = None
+        if primary_bodies is not None:
+            self.primary_bodies = primary_bodies
+            # self.Help()
+            # self.SetField('PrimaryBodies', self.primary_bodies)
+            # self._primary_bodies = primary_bodies if primary_bodies else self.central_body
+
+            # TODO don't setup gravity field if none specified - breaks interplanetary where grav field irrelevant
+            self.gravity = gravity_field
+            if gravity_field is not None:
+                if isinstance(gravity_field, ForceModel.GravityField):
+                    self.gravity: ForceModel.GravityField = gravity_field
+                else:
+                    raise TypeError(f'gravity_field type not recognized - {type(gravity_field).__name__}.'
+                                    f' Must be None or a gpy.ForceModel.GravityField')
+                self.AddForce(self.gravity)
 
         self._polyhedral_bodies = polyhedral_bodies
-
-        if not gravity_field:
-            self.gravity = self.GravityField()  # setup default field
-        elif isinstance(gravity_field, ForceModel.GravityField):
-            self.gravity: ForceModel.GravityField = gravity_field
-        else:
-            raise TypeError(f'gravity_field type not recognized - {type(gravity_field).__name__}.'
-                            f' Must be None or a gpy.ForceModel.GravityField')
-        self.AddForce(self.gravity)
 
         self.point_mass_forces: list[ForceModel.PointMassForce] | None = None
         if not point_masses:
@@ -383,9 +393,12 @@ class PropSetup(GmatObject):  # variable called prop in GMAT Python examples
     class Propagator(GmatObject):  # variable called gator in GMAT Python examples
         # Labelled in GMAT GUI as "Integrator"
         def __init__(self, integrator: str = 'PrinceDormand78', name: str = 'Prop', **kwargs):
+            # TODO: change **kwargs to proper parsing here (for usability)
+            # TODO: add parsing of rest of arguments (see defaults in User Guide)
             integrator_allowed_types = ['RungeKutta89', 'PrinceDormand78', 'PrinceDormand45', 'RungeKutta68',
                                         'RungeKutta56', 'AdamsBashforthMoulton', 'SPK', 'Code500', 'STK', 'CCSDS-OEM'
-                                        'PrinceDormand853', 'RungeKutta4', 'SPICESGP4']
+                                                                                                          'PrinceDormand853',
+                                        'RungeKutta4', 'SPICESGP4']
             if integrator in integrator_allowed_types:
                 self.integrator = integrator
             else:
@@ -399,7 +412,8 @@ class PropSetup(GmatObject):  # variable called prop in GMAT Python examples
             gpy.Initialize()
 
     def __init__(self, name: str, fm: ForceModel = None, gator: PropSetup.Propagator = None,
-                 initial_step_size: int = 60, accuracy: int | float = 1e-12, min_step: int = 0):
+                 initial_step_size: int = 60, accuracy: int | float = 1e-12, min_step: int = 0, max_step: int = 2700,
+                 max_step_attempts: int = 50, stop_if_accuracy_violated: bool = True):
         # TODO add other args as per pg 449 (PDF pg 458) of User Guide
         super().__init__('PropSetup', name)
         self.force_model = fm if fm else ForceModel()
@@ -408,17 +422,29 @@ class PropSetup(GmatObject):  # variable called prop in GMAT Python examples
 
         gpy.Initialize()
 
-        if initial_step_size:
+        if initial_step_size is not None:
             self.initial_step_size = initial_step_size
             self.SetField('InitialStepSize', self.initial_step_size)
 
-        if accuracy:
+        if accuracy is not None:
             self.accuracy = accuracy
             self.SetField('Accuracy', self.accuracy)
 
-        if min_step:
+        if min_step is not None:
             self.min_step = min_step
             self.SetField('MinStep', self.min_step)
+
+        if max_step is not None:
+            self.max_step = max_step
+            self.SetField('MaxStep', self.max_step)
+
+        if max_step_attempts is not None:
+            self.max_step_attempts = max_step_attempts
+            self.SetField('MaxStepAttempts', self.max_step_attempts)
+
+        if stop_if_accuracy_violated is not None:
+            self.stop_if_accuracy_violated = stop_if_accuracy_violated
+            self.SetField('StopIfAccuracyIsViolated', self.stop_if_accuracy_violated)
 
         self.SetReference(self.force_model)
         self.psm = self.GetPropStateManager()
@@ -493,8 +519,6 @@ class OrbitState:
             #                                  f'Must provide one of: {valid_values}')
             #     except KeyError:  # not in kwargs
             #         setattr(self, f'_{attr}', defaults[attr])  # set attribute's default value
-
-
 
             # TODO parse Origin parameter
             # print(f'Currently allowed Origin values:\n{self._allowed_values["Origin"]}')
@@ -655,7 +679,7 @@ class OrbitState:
             o_s._display_state_type = orbit_dict['DisplayStateType']  # get display_state_type from dict (required)
             orbit_dict.pop('DisplayStateType')  # remove DisplayStateType so we don't try setting it again later
         except KeyError:
-            try:   # maybe the user used the old name, StateType, instead of DisplayStateType
+            try:  # maybe the user used the old name, StateType, instead of DisplayStateType
                 o_s._display_state_type = orbit_dict['StateType']
                 orbit_dict.pop('StateType')  # remove StateType so we don't try setting it again later
             except KeyError:
