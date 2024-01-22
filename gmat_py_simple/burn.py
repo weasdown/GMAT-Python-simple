@@ -32,9 +32,12 @@ class Burn(GmatObject):
         return gpy.extract_gmat_obj(self).GetEpochAtLastFire()
         # raise NotImplementedError
 
-    def GetTotalAcceleration(self) -> float:
+    def GetTotalAcceleration(self) -> list[float]:
+        """
+        Return a 3-element vector of current acceleration if IsFiring is True.
+        :return:
+        """
         return gpy.extract_gmat_obj(self).GetTotalAcceleration()
-        # raise NotImplementedError
 
     def GetTotalMassFlowRate(self) -> float:
         return gpy.extract_gmat_obj(self).GetTotalMassFlowRate()
@@ -62,10 +65,16 @@ class FiniteBurn(Burn):
 
         # Set default spacecraft as the burn's spacecraft to maneuver, as a placeholder
         # This is later updated by any BeginFiniteBurn commands that call this burn
-        sat = gpy.Moderator().GetDefaultSpacecraft()
-        self.SetSpacecraftToManeuver(sat)
+        # sat = gpy.Moderator().GetDefaultSpacecraft()
+        # self.spacecraft = sat
+        # self.SetRefObject(self.spacecraft, gmat.SPACECRAFT, self.spacecraft.GetName())
+        # self.SetSpacecraftToManeuver(sat)
+        # self.SetStringParameter('SpacecraftName', self.spacecraft.GetName())
 
-        self.Initialize()
+        # print(self.gmat_obj.GetRefObjectNameArray(gmat.SPACECRAFT))
+        # gpy.CustomHelp(self)
+
+        # self.Initialize()
 
 
 class FiniteThrust(GmatObject):  # TODO tidy: consider making subclass of FiniteBurn

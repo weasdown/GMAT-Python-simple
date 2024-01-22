@@ -243,13 +243,16 @@ class Moderator:
 
             for p in propagate_commands:
                 p.sat.was_propagated = True  # mark sat as propagated so GetState uses runtime values
-                p.sat.gmat_obj = gmat.GetObject(p.sat.GetName())  # update sat gmat_obj post-run
+                p.sat.gmat_obj = gpy.GmatObject.GetObject(p.sat)  # update sat gmat_obj post-run
 
             for t in target_commands:
                 solver = t.solver
+                solver.was_propagated = True
+                solver.gmat_obj = gpy.GmatObject.GetObject(solver)
                 solver_status = solver.GetIntegerParameter('IntegerSolverStatus')
                 if solver_status != 0:  # solver failed
-                    raise RuntimeError(f'Solver {solver.GetName()} failed to converge. Returned code {solver_status}: '
+                    raise RuntimeError(f'{solver.gmat_obj.GetTypeName()} "{solver.GetName()}" failed to converge. '
+                                       f'Returned code {solver_status}: '
                                        f'{gmat.GmatGlobal.Instance().GetSolverStatusString(solver.GetName())}')
 
             for m in maneuver_commands:
@@ -283,6 +286,7 @@ class Moderator:
         print('\nRunning mission...')
         run_mission_return = gpy.extract_gmat_obj(self).RunMission()
         if run_mission_return == 1:  # Mission run complete
+            # TODO uncomment (inhibited for debugging)
             update_command_objs_post_run(mission_command_sequence)
             print(f'Mission run complete!\n')
             return run_mission_return

@@ -117,11 +117,11 @@ class Spacecraft(GmatObject):
 
             # parse solar power systems
             try:
-                solar_power_systems: dict = hw['SolarPowerSystems']
+                solar_power_systems: dict = hw['SolarPowerSystem']  # TODO change to 'SolarPowerSystem' (no s)
                 sc_hardware.solar_power_system = SolarPowerSystem.from_dict(solar_power_systems)
 
             except KeyError:
-                logging.info(f'No tanks found in Hardware dict parsing')
+                logging.info(f'No SolarPowerSystem found in Hardware dict parsing')
 
             return sc_hardware
 
@@ -187,6 +187,8 @@ class Spacecraft(GmatObject):
         self.thrusters: Spacecraft.SpacecraftHardware.PropList | None = None
         self.chemical_thrusters = None  # FIXME - not being updated by from_dict()
         self.electric_thrusters = None  # FIXME - not being updated by from_dict()
+
+        self.solar_power_system = None
 
         self.orbit = None
         self.dry_mass = self.GetField('DryMass')
@@ -286,7 +288,9 @@ class Spacecraft(GmatObject):
         self.chemical_tanks = self.hardware.chemical_tanks
         self.electric_tanks = self.hardware.electric_tanks
 
-        self.hardware.solar_power_system.attach_to_sat(self)
+        self.solar_power_system = self.hardware.solar_power_system
+        if self.solar_power_system is not None:
+            self.hardware.solar_power_system.attach_to_sat(self)
 
         return self.hardware
 

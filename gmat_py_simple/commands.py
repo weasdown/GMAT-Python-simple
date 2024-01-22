@@ -23,8 +23,8 @@ class GmatCommand:
         self.SetGlobalObjectMap(gpy.Sandbox().GetGlobalObjectMap())
         self.SetSolarSystem(gmat.GetSolarSystem())
 
-        # Excluded object types must have key parameters set before they are initialised
-        if not isinstance(self, gpy.Target | gpy.EndTarget | gpy.Achieve | gpy.Vary):
+        # Excluded object types must have key parameters set before they are initialized
+        if not isinstance(self, (gpy.Target, gpy.EndTarget, gpy.Achieve)):
             try:
                 self.Initialize()
             except Exception as ex:
@@ -241,11 +241,13 @@ class BeginFiniteBurn(GmatCommand):
     def __init__(self, burn: gpy.FiniteBurn | gmat.FiniteBurn, spacecraft: gpy.Spacecraft | gmat.Spacecraft, name: str = ''):
         super().__init__('BeginFiniteBurn', name)
 
+        # Assign the user-provided FiniteBurn to this command
         self.burn = burn
         self.SetRefObjectName(gmat.FINITE_BURN, self.burn.GetName())
 
+        # Assign the user-provided Spacecraft to the FiniteBurn
         self.spacecraft = spacecraft
-        self.SetRefObjectName(gmat.SPACECRAFT, self.spacecraft.GetName())
+        self.burn.SetRefObject(self.spacecraft, gmat.SPACECRAFT, self.spacecraft.GetName())
         self.burn.SetSpacecraftToManeuver(self.spacecraft)  # update FiniteBurn's associated Spacecraft
 
         self.Initialize()
@@ -266,6 +268,7 @@ class EndFiniteBurn(GmatCommand):
     def __init__(self, burn: gpy.FiniteBurn | gmat.FiniteBurn, name: str):
         super().__init__('EndFiniteBurn', name)
 
+        # Assign the user-provided FiniteBurn to this command
         self.burn = burn
         self.SetRefObjectName(gmat.FINITE_BURN, self.burn.GetName())
 
@@ -728,7 +731,10 @@ class Vary(SolverSequenceCommand):
                  initial_value: float | int = 1, perturbation: float | int = 0.0001, lower: float | int = 0.0,
                  upper: float | int = pi, max_step: float | int = 0.5, additive_scale_factor: float | int = 0.0,
                  multiplicative_scale_factor: float | int = 1.0):
+
         user_created_def_ib = False
+        def_ib_name = 'DefaultIB'
+        def_ib_ele_name = 'DefaultIB.Element1'
         try:
             # an object named DefaultIB existed before Vary's init created one, so assume it's user-owned
             if gmat.GetObject('DefaultIB'):
@@ -738,25 +744,13 @@ class Vary(SolverSequenceCommand):
             pass
 
         super().__init__('Vary', name)
-        self.Initialize()
 
         self.solver = solver
+        self.SetRefObject(self.solver, gmat.SOLVER, self.solver.GetName())
         self.SetStringParameter('SolverName', self.solver.GetName())
-        self.SetRefObject(self.solver, gmat.SOLVER)
 
         self.variable = variable
-
-            # self.SetRefObjectName(gmat.PARAMETER, self.variable)
-            # variable_obj = gpy.Moderator().GetParameter(self.variable)
-            # print(type(variable_obj))
-            # self.SetRefObject(variable_obj, gmat.PARAMETER)
-            # self.Initialize()
-            # gpy.Initialize()
-
-        # FIXME: why is Vary still looking for DefaultIB in exception?
         self.SetStringParameter('Variable', self.variable)
-        print(self.GetStringParameter('Variable'))
-        print(self.GetStringParameter('SolverName'))
 
         if initial_value < lower:
             raise RuntimeError('initial_value is less than lower (minimum value) in Vary.__init__().'
@@ -788,55 +782,18 @@ class Vary(SolverSequenceCommand):
         self.multiplicative_scale_factor = multiplicative_scale_factor
         self.SetStringParameter('MultiplicativeScaleFactor', str(self.multiplicative_scale_factor))
 
-        # print(gmat.SolverSequenceCommand.Initialize(self.gmat_obj))
-        # self.Initialize()
-
-        # By default, Variable param is set to the name of a default ImpulsiveBurn, which also creates the IB if it
-        # doesn't already exist. But we might not need the IB, so try to remove it.
-        # print(self.GetStringParameter('Variable'))
-        if not user_created_def_ib:
-            # gpy.Moderator().RemoveObject(gmat.IMPULSIVE_BURN, 'DefaultIB', del_only_if_not_used=False)
-            gmat.Clear('DefaultIB')
-            self.RenameRefObject(gmat.PARAMETER, 'DefaultIB', self.variable)
-            # self.solver.UpdateSolverGoal(0, 123123)
-
-            # ! SetSolverVariables() not needed - already set during object creation !
-            # Line 1321 of Vary.cpp: variableID = solver->SetSolverVariables(varData, variableName);
-            #  varData is a 6-element array (lines 1307-1312 of Vary.cpp):
-            #     // scale by using Eq. 13.5 of Architecture document
-            #     varData[0] = (varData[5] + asf) / msf;
-            #     varData[1] = (perturbation->EvaluateReal()) / msf;         // pert
-            #     varData[2] = (minval + asf) / msf;  // minimum
-            #     varData[3] = (maxval + asf) / msf;  // maximum
-            #     varData[4] = (variableMaximumStep->EvaluateReal()) / msf;  // largest step
-            # self.gmat_obj.SetSolverVariables(f'TestSat.Earth.RMAG', '')
-
-            # Ported from lines 1308-1312 of Vary.cpp in source
-            var_data: list = [None] * 6
-            var_data[5] = initial_value
-            var_data[0] = (var_data[5] + self.additive_scale_factor) / self.multiplicative_scale_factor
-            var_data[1] = perturbation / self.multiplicative_scale_factor
-            var_data[2] = (self.lower + self.additive_scale_factor) / self.multiplicative_scale_factor
-            var_data[3] = (self.upper + self.additive_scale_factor) / self.multiplicative_scale_factor
-            var_data[4] = self.max_step / self.multiplicative_scale_factor
-
-            self.solver.gmat_obj.RefreshSolverVariables(var_data, self.variable)  # FIXME
-
         self.SetSolarSystem()
         self.SetObjectMap(gpy.Moderator().GetConfiguredObjectMap())
         self.SetGlobalObjectMap(gpy.Sandbox().GetGlobalObjectMap())
 
-        print(self.GetGeneratingString())
-        CustomHelp(self.solver)  # FIXME: solver still has DefaultIB.Element1 in Variables
-        # CustomHelp(self)
-        # print(self.solver.GetStringParameter('Variables'))
-
         self.Initialize()
-        # print(gmat.SolverSequenceCommand.Initialize(self.gmat_obj))
-        pass
+
+        # If a DefaultIB object exists and the user didn't create it, GMAT did while building this command - delete it
+        if not user_created_def_ib:
+            gmat.Clear(def_ib_name)
 
     def RenameRefObject(self, type_id: int, old_name: str, new_name: str) -> bool:
         return gpy.extract_gmat_obj(self).RenameRefObject(type_id, old_name, new_name)
 
-    def SetRefObject(self, obj: gmat.GmatBase, type_id: int) -> bool:
-        return gpy.extract_gmat_obj(self).SetRefObject(gpy.extract_gmat_obj(obj), type_id)
+    def SetRefObject(self, obj: gmat.GmatBase, type_id: int, name: str) -> bool:
+        return gpy.extract_gmat_obj(self).SetRefObject(gpy.extract_gmat_obj(obj), type_id, name)

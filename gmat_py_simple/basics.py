@@ -56,7 +56,7 @@ class GmatObject:
             param = self.GetParameterID(param)
         return gpy.extract_gmat_obj(self).GetIntegerParameter(param)
 
-    def GetObject(self):
+    def GetObject(self: gpy.GmatObject):
         """
         Return the latest version of an object so its state info is up-to-date
         :return:

@@ -18,7 +18,7 @@ sat_params = {
                            'electric': [{'Name': 'ElectricTank1'}]},
                  'Thrusters': {'chemical': [{'Name': 'ChemicalThruster1', 'Tanks': 'ChemicalTank1'}],
                                'electric': [{'Name': 'ElectricThruster1', 'Tanks': 'ElectricTank1'}]},
-                 'SolarPowerSystems': {'Name': 'SolarPowerSystem1'},
+                 'SolarPowerSystem': {'Name': 'SolarPowerSystem1'},
                  }
 }
 sat = gpy.Spacecraft.from_dict(sat_params)
@@ -29,12 +29,11 @@ prop = gpy.PropSetup('DefaultProp', gator=gpy.PropSetup.Propagator('RungeKutta89
 fb1 = gpy.FiniteBurn('FiniteBurn1', sat.thrusters.electric[0])
 
 print(f'Sat state before running: {sat.GetState()}')
-print(f"Epoch before running: {sat.GetField('Epoch')}")
+print(f"Epoch before running: {sat.GetEpoch()}")
 
 # Mission Command Sequence
 mcs = [
     gpy.BeginFiniteBurn(fb1, sat, 'Turn Thruster On'),
-    # TODO reset to 10 days
     gpy.Propagate('Prop 10 days', sat, prop, (f'{sat.name}.ElapsedDays', 10)),
     gpy.EndFiniteBurn(fb1, 'Turn Thruster Off'),
 ]
@@ -46,6 +45,3 @@ print(f'Epoch after running: {sat.GetField("Epoch")}')
 
 script_path = os.path.normpath(f'{os.getcwd()}/examples/scripts/Tut02-SimpleOrbitTransfer.script')
 gmat.SaveScript(script_path)
-
-# sat.Help()
-# print(sat.hardware)
