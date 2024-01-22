@@ -91,12 +91,15 @@ class GmatObject:
     def GetParameterID(self, param_name: str) -> int:
         return gpy.extract_gmat_obj(self).GetParameterID(param_name)
 
-    def GetParameterType(self, param: str | int) -> str:
+    def GetParameterType(self, param: str | int) -> int:
         if isinstance(param, str):
             param = self.GetParameterID(param)
-        type_id: int = gpy.extract_gmat_obj(self).GetParameterType(param)
-        type_string: str = gpy.utils.GetTypeNameFromID(type_id)
-        return type_string
+        return gpy.extract_gmat_obj(self).GetParameterType(param)
+
+    def GetParameterTypeString(self, param: str | int) -> str:
+        if isinstance(param, str):
+            param = self.GetParameterID(param)
+        return gpy.extract_gmat_obj(self).GetParameterTypeString(param)
 
     def GetRealParameter(self, param: str | int) -> float:
         if isinstance(param, str):

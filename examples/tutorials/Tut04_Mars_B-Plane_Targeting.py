@@ -17,21 +17,21 @@ main_tank = gpy.ChemicalTank('TestTank', fuel_mass=1718, allow_negative_fuel_mas
 sat.add_tanks(main_tank)
 
 # Setup ForceModels and Propagators
-near_earth_fm = gpy.ForceModel('NearEarthFM', primary_bodies='Earth',
-                               gravity_field=gpy.ForceModel.GravityField(degree=8, order=8),
-                               point_masses=['Luna', 'Sun'],
-                               srp=True)
-near_earth = gpy.PropSetup('NearEarth',
-                           gator=gpy.PropSetup.Propagator('RungeKutta89'), fm=near_earth_fm,
-                           initial_step_size=600, accuracy=1e-13, min_step=0, max_step=600, max_step_attempts=50)
-
-deep_space_fm = gpy.ForceModel('DeepSpaceFM', central_body='Sun', primary_bodies='Sun',
-                               point_masses=['Earth', 'Jupiter', 'Luna', 'Mars',
-                                             'Neptune', 'Saturn', 'Sun', 'Uranus',
-                                             'Venus'], srp=True)
-deep_space = gpy.PropSetup('DeepSpace',
-                           gator=gpy.PropSetup.Propagator('PrinceDormand78'), fm=deep_space_fm,
-                           initial_step_size=600, accuracy=1e-12, min_step=0, max_step=864000, max_step_attempts=50)
+# near_earth_fm = gpy.ForceModel('NearEarthFM', primary_bodies='Earth',
+#                                gravity_field=gpy.ForceModel.GravityField(degree=8, order=8),
+#                                point_masses=['Luna', 'Sun'],
+#                                srp=True)
+# near_earth = gpy.PropSetup('NearEarth',
+#                            gator=gpy.PropSetup.Propagator('RungeKutta89'), fm=near_earth_fm,
+#                            initial_step_size=600, accuracy=1e-13, min_step=0, max_step=600, max_step_attempts=50)
+#
+# deep_space_fm = gpy.ForceModel('DeepSpaceFM', central_body='Sun', primary_bodies='Sun',
+#                                point_masses=['Earth', 'Jupiter', 'Luna', 'Mars',
+#                                              'Neptune', 'Saturn', 'Sun', 'Uranus',
+#                                              'Venus'], srp=True)
+# deep_space = gpy.PropSetup('DeepSpace',
+#                            gator=gpy.PropSetup.Propagator('PrinceDormand78'), fm=deep_space_fm,
+#                            initial_step_size=600, accuracy=1e-12, min_step=0, max_step=864000, max_step_attempts=50)
 
 mars_gravity_file = f'{gmat.FileManager.Instance().GetRootPath()}\\data\\gravity\\mars\\Mars50c.cof'
 # FIXME: primary_bodies not setting to Mars in FM init

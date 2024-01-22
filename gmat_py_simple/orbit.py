@@ -93,8 +93,8 @@ class PhysicalModel(GmatObject):
 
 
 class ForceModel(GmatObject):
-    def __init__(self, name: str = 'DefaultProp_ForceModel', central_body: str = 'Earth', primary_bodies=None,
-                 polyhedral_bodies: list = None, gravity_field: GravityField = None,
+    def __init__(self, name: str = 'DefaultProp_ForceModel', central_body: str = 'Earth',
+                 primary_bodies: str | list[str] = None, polyhedral_bodies: list = None, gravity_field: GravityField = None,
                  point_masses: str | list[str] | PointMassForce = None, drag: DragForce = None,
                  srp: bool | SolarRadiationPressure = False, relativistic_correction: bool = False,
                  error_control: list = None, user_defined: list[str] = None):
@@ -155,10 +155,22 @@ class ForceModel(GmatObject):
         #  PrimaryBodies is alias for GravityFields as per page 162 of GMAT Architectucral Specification
         self.gravity = None
         if primary_bodies is not None:
+            if isinstance(primary_bodies, str):
+                primary_bodies = [primary_bodies]
             self.primary_bodies = primary_bodies
+
+            primary_bodies_objs = [gmat.Planet(body_name) for body_name in self.primary_bodies]
+            for body_obj in primary_bodies_objs:
+                prim_bod_id = self.GetParameterID("PrimaryBodies")
+                print(f'PrimaryBodies param: ID {prim_bod_id}, type: {self.GetParameterTypeString(prim_bod_id)}')
+                print(f'body_obj type: {body_obj.GetTypeName()}, IsOfType CelestialBody: {body_obj.IsOfType("CelestialBody")}')
+                self.SetStringParameter(3, body_obj.GetName())  # 3 for BODY_NAME
+                self.SetRefObject(body_obj, gmat.CELESTIAL_BODY, body_obj.GetName())
             # self.Help()
             # self.SetField('PrimaryBodies', self.primary_bodies)
             # self._primary_bodies = primary_bodies if primary_bodies else self.central_body
+            self.Initialize()
+            self.Help()
 
             # TODO don't setup gravity field if none specified - breaks interplanetary where grav field irrelevant
             self.gravity = gravity_field
@@ -173,9 +185,7 @@ class ForceModel(GmatObject):
         self._polyhedral_bodies = polyhedral_bodies
 
         self.point_mass_forces: list[ForceModel.PointMassForce] | None = None
-        if not point_masses:
-            self.SetField('PointMasses', [])
-        else:
+        if point_masses is not None:
             self.point_mass_forces = validate_point_masses(point_masses)  # raises exception if point_masses invalid
             for force in self.point_mass_forces:
                 self.AddForce(force)
