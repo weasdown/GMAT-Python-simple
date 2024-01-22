@@ -34,60 +34,6 @@ class GmatCommand:
     def AddToMCS(self) -> bool:
         return gpy.Moderator().AppendCommand(self)
 
-    # def ClearDefaultObjects(self):
-    #     command_type = self.GetTypeName()
-    #     if command_type != 'Propagate':
-    #         raise RuntimeError('ClearDefaultObjects() only works on Propagate commands')
-    #     else:
-    #         set_before = set(gmat.ConfigManager.Instance().GetListOfAllItems())
-    #         print(f'\nCM list of all before clearing: {set_before}\n')
-    #         sat_name = gpy.Moderator().GetDefaultSpacecraft().GetName()
-    #         # Find which objs exist that would be made during CreateDefaultCommand('Propagate'). Then we won't try to
-    #         # remove them later, as they're being used by other objects (e.g. DefaultProp_ForceModel by a PropSetup)
-    #         pgate_def_obj_names = ['DefaultProp_ForceModel', f'{sat_name}.A1ModJulian', f'{sat_name}.ElapsedSecs']
-    #         existing_pgate_objs = []
-    #         for obj_name in pgate_def_obj_names:
-    #             try:
-    #                 gmat.GetObject(obj_name)
-    #                 # GetObject worked, so object already exists and must not be deleted - add to list
-    #                 existing_pgate_objs.append(obj_name)
-    #
-    #             # object doesn't yet exist in GMAT, so can safely be deleted after CreateDefaultCommand('Propagate')
-    #             except AttributeError as ex:
-    #                 pass
-    #
-    #         for def_name in pgate_def_obj_names:  # clear objects that are safe to clear
-    #             if def_name in existing_pgate_objs:  # skip object if it already exists (so is used by another object)
-    #                 pass
-    #             else:
-    #                 print(f'\nClearing {def_name}...\n')
-    #                 gmat.Clear(def_name)  # remove the object from GMAT
-    #
-    #         # self.gmat_obj is of type <class 'gmat_py.GmatCommand'> so far
-    #         self.gmat_obj = eval(f'gmat.{command_type}()')  # convert to gmat_py.Propagate that supports ClearObject()
-    #
-    #         # Also clear the lists of Spacecraft, Formations and StopConditions referenced in the Propagate command
-    #         self.gmat_obj.ClearObject(gmat.SPACECRAFT)
-    #         self.gmat_obj.ClearObject(gmat.FORMATION)
-    #         self.gmat_obj.ClearObject(gmat.STOP_CONDITION)
-    #
-    #         commands = gmat.GetCommands()
-    #         print('\nCommand list:')
-    #         print(''.join([f'Name: {command.GetName()}, type: {command.GetTypeName()}\n' for command in commands]))
-    #
-    #         gmat.Sandbox().AddCommand(self.gmat_obj)
-    #         self.gmat_obj = gmat.GetObject(self.name)
-    #
-    #         set_after = set(gmat.ConfigManager.Instance().GetListOfAllItems())
-    #         print(f'\nCM list of all after clearing: {set_after}\n')
-    #         print(f'Object(s) removed: {set_before - set_after}')
-    #
-    #         gmat.ShowObjects()
-    #
-    #         return self.gmat_obj
-    #         pass
-    #         # gpy.Initialize()
-
     def GeneratingString(self):
         print(self.GetGeneratingString())
 
@@ -431,12 +377,6 @@ class Propagate(GmatCommand):
                 param = gpy.Validator().FindObject(stop_var)
                 param.SetRefObjectName(gmat.SPACECRAFT, sat_name)  # attach Spacecraft to Parameter
 
-        # @classmethod
-        # def from_user_stop_cond(cls, sat: gpy.Spacecraft | gmat.Spacecraft, user_stop_cond: tuple | str,
-        #                         gmat_obj: gmat.GmatBase = None) -> Propagate.StopCondition:
-        #     stop_cond: Propagate.StopCondition = cls(sat, stop_cond=user_stop_cond, gmat_obj=gmat_obj)
-        #     return stop_cond
-
         def GetStringParameter(self, param_name: str) -> str:
             return self.gmat_obj.GetStringParameter(param_name)
 
@@ -464,7 +404,6 @@ class Propagate(GmatCommand):
             stop_var_elements = stop_var.split('.')
             num_stop_var_elements = len(stop_var_elements)
             if num_stop_var_elements == 2:
-                # print('2 elements found in StopCond parse')
                 sat_name, parameter = stop_var.split('.')
                 if sat_name != self.sat.name:
                     raise RuntimeError(
@@ -478,7 +417,6 @@ class Propagate(GmatCommand):
                 body = coord_sys_obj.GetField('Origin')
 
             elif num_stop_var_elements == 3:
-                # print('3 elements found in StopCond parse')
                 sat_name, body, parameter = stop_var.split('.')
                 if sat_name != self.sat.name:
                     raise RuntimeError(
@@ -500,11 +438,6 @@ class Propagate(GmatCommand):
             epoch_param_type = 'A1ModJulian'
             epoch_var = f'{sat_from_stop_cond}.{epoch_param_type}'
 
-            # non_sat_goals = ['Apoapsis', 'Periapsis']
-            # for g in non_sat_goals:
-            #     if g in goal:
-            #         goal = goal[len(self.sat_name)+1:]  # remove sat name from front of goal
-
             goalless = False
             goalless_params = ['Apoapsis', 'Periapsis']  # TODO: complete list
 
@@ -512,26 +445,6 @@ class Propagate(GmatCommand):
             if any(x in stop_var for x in goalless_params):
                 goalless = True
                 stop_param_type = stop_var_elements[len(stop_var_elements) - 1]  # e.g. 'Periapsis'
-                # goal = 0  # TODO remove [- [len(self.sat_name) + 1:]  # remove sat_name, e.g. 'Earth.Periapsis']
-
-            # self.stop_param_type = stop_param_type
-            # self.stop_var = stop_var
-            #
-            # self.epoch_param_type = epoch_param_type
-            # self.epoch_var = epoch_var
-            #
-            # # self.goal_param_type = goal_param_type
-            # # self.goal = goal
-            # self.goalless = goalless
-            #
-            # self.body = body
-
-            # # TODO remove hard-coding (debugging only)
-            # epoch_var = 'TestSat.A1ModJulian'
-            # epoch_param_type = 'A1ModJulian'
-            # stop_param_type = 'Periapsis'
-            # stop_var = 'TestSat.Earth.Periapsis'
-            # goal = 60
 
             return stop_param_type, stop_var, epoch_param_type, epoch_var, goal, goalless, body
 
