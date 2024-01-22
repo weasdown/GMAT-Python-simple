@@ -433,13 +433,54 @@ class Tank(GmatObject):
 
 
 class ChemicalTank(Tank):
-    def __init__(self, name: str):
+    def __init__(self, name: str, fuel_mass: int | float = 756, allow_negative_fuel_mass: bool = False, pressure: int | float = 1500, temperature: int | float = 20, ref_temp: int | float = 20, volume: int | float = 0.75, fuel_density: int | float = 1260, pressure_model: str = 'PressureRegulated'):
         super().__init__('ChemicalTank', name)
 
-    # def __init__(self, tank: Tank):
-    #     name = tank.Name
-    #     sc = tank.Spacecraft
-    #     self.Tank = super().__init__(name, sc, 'ChemicalTank')
+        self.fuel_mass = self.GetRealParameter('FuelMass')  # kg
+        if fuel_mass is not None:
+            self.fuel_mass = fuel_mass
+            self.SetRealParameter('FuelMass', self.fuel_mass)
+
+        self.allow_negative_fuel_mass = self.GetBooleanParameter('AllowNegativeFuelMass')  # Boolean
+        if allow_negative_fuel_mass is not None:
+            self.allow_negative_fuel_mass = allow_negative_fuel_mass
+            self.SetBooleanParameter('AllowNegativeFuelMass', self.allow_negative_fuel_mass)
+
+        self.pressure = self.GetRealParameter('Pressure')  # kPa
+        if pressure is not None:
+            self.pressure = pressure
+            self.SetRealParameter('Pressure', self.pressure)
+
+        self.temperature = self.GetRealParameter('Temperature')  # Celsius
+        if temperature is not None:
+            self.temperature = temperature
+            self.SetRealParameter('Temperature', self.temperature)
+
+        self.ref_temp = self.GetRealParameter('RefTemperature')  # Celsius
+        if ref_temp is not None:
+            self.ref_temp = ref_temp
+            self.SetRealParameter('RefTemperature', self.ref_temp)
+
+        # Volume
+        self.volume = self.GetRealParameter('Volume')  # m^3
+        if volume is not None:
+            self.volume = volume
+            self.SetRealParameter('Volume', self.volume)
+
+        # Fuel density
+        self.fuel_density = self.GetRealParameter('FuelDensity')  # kg/m^3
+        if fuel_density is not None:
+            self.fuel_density = fuel_density
+            self.SetRealParameter('FuelDensity', self.fuel_density)
+
+        # Pressure Model
+        self.pressure_model = self.GetStringParameter('PressureModel')  # string
+        allowed_pressure_models = ['PressureRegulated', 'BlowDown']
+        if pressure_model is not None:
+            if pressure_model not in allowed_pressure_models:
+                raise AttributeError(f'Invalid pressure model specified for {self.GetTypeName()} {self.name}. Must be one of: {allowed_pressure_models}')
+            self.pressure_model = pressure_model
+            self.SetStringParameter('PressureModel', self.pressure_model)
 
     @classmethod
     def from_dict(cls, cp_tank_dict: dict):

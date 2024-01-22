@@ -154,7 +154,6 @@ class ImpulsiveBurn(Burn):
 
         self.tanks: list[str] = [tank.name for tank in tanks] if tanks is not None else None
         if self.tanks is not None:
-            # self.SetField('Tanks', self.tanks)
             self.SetStringParameter(self.gmat_obj.FUEL_TANK, str(self.tanks))
 
         self.isp: int | float = isp

@@ -26,6 +26,11 @@ class GmatObject:
     def from_gmat_obj(cls, obj):
         return cls(type(obj).__name__, obj.GetName())
 
+    def GetBooleanParameter(self, param: str | int) -> bool:
+        if isinstance(param, str):
+            param = self.GetParameterID(param)
+        return gpy.extract_gmat_obj(self).GetBooleanParameter(param)
+
     def GetEpoch(self, as_datetime: bool = False) -> str | datetime:
         self.gmat_obj = self.GetObject()  # update object's gmat_obj with latest data (e.g. from mission run)
         epoch_str: str = self.GetField('Epoch')
@@ -114,6 +119,9 @@ class GmatObject:
         if isinstance(param, str):
             param = self.GetParameterID(param)
         return gpy.extract_gmat_obj(self).GetStringParameter(param)
+
+    def GetTypeName(self) -> str:
+        return gpy.extract_gmat_obj(self).GetTypeName()
 
     def Help(self):
         # TODO: upgrade to get list of fields with utils.gmat_obj_field_list then print all fields/values
