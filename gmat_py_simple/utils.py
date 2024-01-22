@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import gmat_py_simple
+import gmat_py_simple as gpy
 from load_gmat import gmat
 
 import sys
@@ -299,8 +299,7 @@ def rvector6_to_list(rv6) -> list[float | int]:
 
 
 def gmat_obj_field_list(gmat_obj):
-    if 'gmat_py_simple' in str(type(gmat_obj)):
-        gmat_obj = gmat_obj.gmat_obj
+    gmat_obj = gpy.extract_gmat_obj(gmat_obj)
 
     fields = []
     for i in range(gmat_obj.GetParameterCount()):

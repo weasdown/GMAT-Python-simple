@@ -18,18 +18,6 @@ class GmatObject:
         self.gmat_obj.SetSolarSystem(gmat.GetSolarSystem())
         self.was_propagated = False
 
-    # @staticmethod
-    # def Construct(obj_type: str, name: str, *args):
-    #     """
-    #     Make a GMAT object when Construct takes more than two arguments (e.g. for CoordinateSystem)
-    #     :param obj_type:
-    #     :param name:
-    #     :param args:
-    #     :return:
-    #     """
-    #     print(f"Running gmat.Construct({obj_type}, {name}, *{args})")
-    #     # return gmat.Construct(obj_type, name, *args)
-
     @staticmethod
     def epoch_to_datetime(epoch: str) -> datetime:
         return datetime.strptime(epoch, '%d %b %Y %H:%M:%S.%f')
@@ -63,7 +51,12 @@ class GmatObject:
         """
         return self.gmat_obj.GetGeneratingString()
 
-    def GetObject(self):
+    def GetIntegerParameter(self, param: str | int) -> int:
+        if isinstance(param, str):
+            param = self.GetParameterID(param)
+        return gpy.extract_gmat_obj(self).GetIntegerParameter(param)
+
+    def GetObject(self: gpy.GmatObject):
         """
         Return the latest version of an object so its state info is up-to-date
         :return:
@@ -90,22 +83,56 @@ class GmatObject:
             raise SyntaxError(f"Required field 'name' not provided when building {type(obj_type).__name__} object")
         return name
 
+    def GetParameterID(self, param_name: str) -> int:
+        return gpy.extract_gmat_obj(self).GetParameterID(param_name)
+
+    def GetParameterType(self, param: str | int) -> str:
+        if isinstance(param, str):
+            param = self.GetParameterID(param)
+        type_id: int = gpy.extract_gmat_obj(self).GetParameterType(param)
+        type_string: str = gpy.utils.GetTypeNameFromID(type_id)
+        return type_string
+
+    def GetRealParameter(self, param: str | int) -> float:
+        if isinstance(param, str):
+            param = self.GetParameterID(param)
+        return gpy.extract_gmat_obj(self).GetRealParameter(param)
+
+    def GetRefObject(self, type_id: int, name: str) -> gmat.GmatBase:
+        return gpy.extract_gmat_obj(self).GetRefObject(type_id, name)
+
+    def GetRefObjectName(self, type_id: int) -> str:
+        return gpy.extract_gmat_obj(self).GetRefObjectName(type_id)
+
+    def GetRefObjectNameArray(self, type_id: int) -> tuple[str]:
+        return gpy.extract_gmat_obj(self).GetRefObjectNameArray(type_id)
+
+    def GetRefObjectTypeArray(self) -> tuple[int]:
+        return gpy.extract_gmat_obj(self).GetRefObjectTypeArray()
+
+    def GetStringParameter(self, param: str | int) -> str:
+        if isinstance(param, str):
+            param = self.GetParameterID(param)
+        return gpy.extract_gmat_obj(self).GetStringParameter(param)
+
     def Help(self):
         # TODO: upgrade to get list of fields with utils.gmat_obj_field_list then print all fields/values
-
-        if not self.gmat_obj:
-            raise AttributeError(f'No GMAT object found for object {self.__name__} of type {type(self.__name__)}')
-        self.gmat_obj.Help()
+        return gpy.extract_gmat_obj(self).Help()
 
     def Initialize(self):
         try:
-            return self.gmat_obj.Initialize()
+            return gpy.extract_gmat_obj(self).Initialize()
         except Exception as ex:
-            raise RuntimeError(f'{type(self).__name__} named "{self.name}" failed to Initialize - see GMAT exception '
-                               f'above') from ex
+            raise RuntimeError(f'{type(self).__name__} named "{self.name}" failed to Initialize - see exception '
+                               f'below:\n\t{ex}') from ex
 
     def IsInitialized(self):
         return self.gmat_obj.IsInitialized()
+
+    def SetBooleanParameter(self, param: str | int, value: bool) -> bool:
+        if isinstance(param, str):
+            param = self.GetParameterID(param)
+        return gpy.extract_gmat_obj(self).SetBooleanParameter(param, value)
 
     def SetField(self, field: str, val: str | int | float | bool | list):
         """
@@ -134,17 +161,30 @@ class GmatObject:
     def SetName(self, name: str):
         self.gmat_obj.SetName(name)
 
-    def SetOnOffParameter(self, field: str, OnOff: str):
-        if (OnOff == 'On') or (OnOff == 'Off'):
-            self.gmat_obj.SetOnOffParameter(field, OnOff)
+    def SetOnOffParameter(self, field: str, on_off: str):
+        if (on_off == 'On') or (on_off == 'Off'):
+            self.gmat_obj.SetOnOffParameter(field, on_off)
         else:
-            raise SyntaxError(f'Invalid argument OnOff - {OnOff} - must be "On" or "Off"')
+            raise SyntaxError(f'Invalid argument OnOff - {on_off} - must be "On" or "Off"')
+
+    def SetRealParameter(self, param: str | int, value: int | float) -> bool:
+        if isinstance(param, str):
+            param = self.GetParameterID(param)
+        return gpy.extract_gmat_obj(self).SetRealParameter(param, value)
 
     def SetReference(self, ref):
         self.gmat_obj.SetReference(gpy.extract_gmat_obj(ref))
 
+    def SetRefObject(self, obj: gpy.GmatObject | gmat.GmatObject, type_id: int, name: str) -> bool:
+        return gpy.extract_gmat_obj(self).SetRefObject(gpy.extract_gmat_obj(obj), type_id, name)
+
     def SetSolarSystem(self, ss: gmat.SolarSystem = gmat.GetSolarSystem()) -> bool:
         return self.gmat_obj.SetSolarSystem(ss)
+
+    def SetStringParameter(self, param: str | int, value: str) -> bool:
+        if isinstance(param, str):
+            param = self.GetParameterID(param)
+        return gpy.extract_gmat_obj(self).SetStringParameter(param, value)
 
     def Validate(self) -> bool:
         try:

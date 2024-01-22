@@ -12,85 +12,132 @@ class GmatCommand:
         self.command_type: str = command_type
 
         mod = gpy.Moderator()
-        self.gmat_obj = mod.CreateDefaultCommand(self.command_type)  # type <class 'gmat_py.GmatCommand'>
+        self.gmat_obj = mod.CreateDefaultCommand(self.command_type)
+        # TODO convert all GmatCommand creation to the native Python form e.g. gmat.Propagate() if appropriate
 
         # Set GMAT object's name
         self.name: str = name
-        current_comms_of_type = gmat.GetCommands(self.command_type)
         self.gmat_obj.SetName(name)  # set obj name, as CreateDefaultCommand does not (Jira issue GMT-8095)
 
         self.SetObjectMap(mod.GetConfiguredObjectMap())
         self.SetGlobalObjectMap(gpy.Sandbox().GetGlobalObjectMap())
         self.SetSolarSystem(gmat.GetSolarSystem())
 
-        gmat.Initialize()
-        self.Initialize()
+        # Excluded object types must have key parameters set before they are initialized
+        if not isinstance(self, (gpy.Target, gpy.EndTarget, gpy.Achieve)):
+            try:
+                self.Initialize()
+            except Exception as ex:
+                raise RuntimeError(f'{self.command_type} command named "{self.name}" failed to initialize in '
+                                   f'GmatCommand.__init__() - see exception below:\n\t{ex}') from ex
 
     def AddToMCS(self) -> bool:
         return gpy.Moderator().AppendCommand(self)
 
-    def ClearDefaultObjects(self):
-        command_type = self.GetTypeName()
-        if command_type != 'Propagate':
-            raise RuntimeError('ClearDefaultObjects() only works on Propagate commands')
-        else:
-            set_before = set(gmat.ConfigManager.Instance().GetListOfAllItems())
-            print(f'\nCM list of all before clearing: {set_before}\n')
-            sat_name = gpy.Moderator().GetDefaultSpacecraft().GetName()
-            # Find which objs exist that would be made during CreateDefaultCommand('Propagate'). Then we won't try to
-            # remove them later, as they're being used by other objects (e.g. DefaultProp_ForceModel by a PropSetup)
-            pgate_def_obj_names = ['DefaultProp_ForceModel', f'{sat_name}.A1ModJulian', f'{sat_name}.ElapsedSecs']
-            existing_pgate_objs = []
-            for obj_name in pgate_def_obj_names:
-                try:
-                    gmat.GetObject(obj_name)
-                    # GetObject worked, so object already exists and must not be deleted - add to list
-                    existing_pgate_objs.append(obj_name)
+    # def ClearDefaultObjects(self):
+    #     command_type = self.GetTypeName()
+    #     if command_type != 'Propagate':
+    #         raise RuntimeError('ClearDefaultObjects() only works on Propagate commands')
+    #     else:
+    #         set_before = set(gmat.ConfigManager.Instance().GetListOfAllItems())
+    #         print(f'\nCM list of all before clearing: {set_before}\n')
+    #         sat_name = gpy.Moderator().GetDefaultSpacecraft().GetName()
+    #         # Find which objs exist that would be made during CreateDefaultCommand('Propagate'). Then we won't try to
+    #         # remove them later, as they're being used by other objects (e.g. DefaultProp_ForceModel by a PropSetup)
+    #         pgate_def_obj_names = ['DefaultProp_ForceModel', f'{sat_name}.A1ModJulian', f'{sat_name}.ElapsedSecs']
+    #         existing_pgate_objs = []
+    #         for obj_name in pgate_def_obj_names:
+    #             try:
+    #                 gmat.GetObject(obj_name)
+    #                 # GetObject worked, so object already exists and must not be deleted - add to list
+    #                 existing_pgate_objs.append(obj_name)
+    #
+    #             # object doesn't yet exist in GMAT, so can safely be deleted after CreateDefaultCommand('Propagate')
+    #             except AttributeError as ex:
+    #                 pass
+    #
+    #         for def_name in pgate_def_obj_names:  # clear objects that are safe to clear
+    #             if def_name in existing_pgate_objs:  # skip object if it already exists (so is used by another object)
+    #                 pass
+    #             else:
+    #                 print(f'\nClearing {def_name}...\n')
+    #                 gmat.Clear(def_name)  # remove the object from GMAT
+    #
+    #         # self.gmat_obj is of type <class 'gmat_py.GmatCommand'> so far
+    #         self.gmat_obj = eval(f'gmat.{command_type}()')  # convert to gmat_py.Propagate that supports ClearObject()
+    #
+    #         # Also clear the lists of Spacecraft, Formations and StopConditions referenced in the Propagate command
+    #         self.gmat_obj.ClearObject(gmat.SPACECRAFT)
+    #         self.gmat_obj.ClearObject(gmat.FORMATION)
+    #         self.gmat_obj.ClearObject(gmat.STOP_CONDITION)
+    #
+    #         commands = gmat.GetCommands()
+    #         print('\nCommand list:')
+    #         print(''.join([f'Name: {command.GetName()}, type: {command.GetTypeName()}\n' for command in commands]))
+    #
+    #         gmat.Sandbox().AddCommand(self.gmat_obj)
+    #         self.gmat_obj = gmat.GetObject(self.name)
+    #
+    #         set_after = set(gmat.ConfigManager.Instance().GetListOfAllItems())
+    #         print(f'\nCM list of all after clearing: {set_after}\n')
+    #         print(f'Object(s) removed: {set_before - set_after}')
+    #
+    #         gmat.ShowObjects()
+    #
+    #         return self.gmat_obj
+    #         pass
+    #         # gpy.Initialize()
 
-                # object doesn't yet exist in GMAT, so can safely be deleted after CreateDefaultCommand('Propagate')
-                except AttributeError as ex:
-                    pass
+    def GeneratingString(self):
+        print(self.GetGeneratingString())
 
-            for def_name in pgate_def_obj_names:  # clear objects that are safe to clear
-                if def_name in existing_pgate_objs:  # skip object if it already exists (so is used by another object)
-                    pass
-                else:
-                    print(f'\nClearing {def_name}...\n')
-                    gmat.Clear(def_name)  # remove the object from GMAT
-                    # if def_name == 'DefaultProp_ForceModel':  # gmat.ODE_MODEL
-                    #     gpy.Moderator().RemoveObject(gmat.ODE_MODEL, def_name)
-                    # else:  # gmat.PARAMETER
-                    #     gpy.Moderator().RemoveObject(gmat.PARAMETER, def_name)
+    def GetGeneratingString(self, mode: int = gmat.NO_COMMENTS, prefix: str = '', use_name: str = 'self.name') -> str:
+        use_name = self.name
+        return self.gmat_obj.GetGeneratingString(mode, prefix, use_name)
 
-            # self.gmat_obj is of type <class 'gmat_py.GmatCommand'> so far
-            self.gmat_obj = eval(f'gmat.{command_type}()')  # convert to gmat_py.Propagate that supports ClearObject()
+    def GetField(self, field: str) -> str:
+        return self.gmat_obj.GetField(field)
 
-            # Also clear the lists of Spacecraft, Formations and StopConditions referenced in the Propagate command
-            self.gmat_obj.ClearObject(gmat.SPACECRAFT)
-            self.gmat_obj.ClearObject(gmat.FORMATION)
-            self.gmat_obj.ClearObject(gmat.STOP_CONDITION)
+    def GetMissionSummary(self):
+        return self.gmat_obj.GetStringParameter('MissionSummary')
 
-            commands = gmat.GetCommands()
-            print('\nCommand list:')
-            print(''.join([f'Name: {command.GetName()}, type: {command.GetTypeName()}\n' for command in commands]))
+    def GetName(self) -> str:
+        return gpy.extract_gmat_obj(self).GetName()
 
-            name = self.name
-            def_pgate_name = 'Propagate'
+    def GetNext(self):
+        return gpy.extract_gmat_obj(self).GetNext()
 
-            # gmat.ShowObjects()
+    def GetParameterID(self, param_name: str) -> int:
+        return gpy.extract_gmat_obj(self).GetParameterID(param_name)
 
-            gmat.Sandbox().AddCommand(self.gmat_obj)
-            self.gmat_obj = gmat.GetObject(self.name)
+    def GetParameterType(self, param: str | int) -> int:
+        if isinstance(param, str):
+            param = self.GetParameterID(param)
+        type_id: int = gpy.extract_gmat_obj(self).GetParameterType(param)
+        # type_string: str = gpy.utils.GetTypeNameFromID(type_id)
+        return type_id
 
-            set_after = set(gmat.ConfigManager.Instance().GetListOfAllItems())
-            print(f'\nCM list of all after clearing: {set_after}\n')
-            print(f'Object(s) removed: {set_before - set_after}')
+    def GetRefObject(self, type_id: int, name: str, index: int = 0):
+        return self.gmat_obj.GetRefObject(type_id, name, index)
 
-            gmat.ShowObjects()
+    def GetRefObjectName(self, type_int: int) -> str:
+        return self.gmat_obj.GetRefObjectName(type_int)
 
-            return self.gmat_obj
-            pass
-            # gpy.Initialize()
+    def GetStringArrayParameter(self, param: str | int) -> tuple:
+        if isinstance(param, str):
+            param = self.GetParameterID(param)
+        return gpy.extract_gmat_obj(self).GetStringArrayParameter(param)
+
+    def GetStringParameter(self, param: str | int) -> str:
+        if isinstance(param, str):
+            param = self.GetParameterID(param)
+        return gpy.extract_gmat_obj(self).GetStringParameter(param)
+
+    def GetTypeName(self) -> str:
+        return extract_gmat_obj(self).GetTypeName()
+
+    def Help(self):
+        gpy.extract_gmat_obj(self).Help()
 
     def Initialize(self) -> bool:
         try:
@@ -99,47 +146,25 @@ class GmatCommand:
                 raise RuntimeError('Non-true response from Initialize()')
             return resp
 
-        # except SystemExit as sys_ex:
-        #     raise RuntimeError(f'Initialize command for {self.__name__} attempted SystemExit - {sys_ex}')
         except Exception as ex:
             raise RuntimeError(f'Initialize failed for {type(self).__name__} named "{self.name}". See GMAT error below:'
-                               f'\n\t{str(ex).replace("\n", "")}') from ex
+                               f'\n\tGMAT internal exception/error: {str(ex).replace("\n", "")}') from ex
 
-    def GeneratingString(self):
-        print(self.GetGeneratingString())
-
-    def GetGeneratingString(self) -> str:
-        return self.gmat_obj.GetGeneratingString()
-
-    def GetField(self, field: str) -> str:
-        return self.gmat_obj.GetField(field)
-
-    def GetMissionSummary(self):
-        return self.gmat_obj.GetStringParameter('MissionSummary')
-
-    def GetRefObject(self, type_id: int, name: str, index: int = 0):
-        return self.gmat_obj.GetRefObject(type_id, name, index)
-
-    def GetRefObjectName(self, type_int: int) -> str:
-        return self.gmat_obj.GetRefObjectName(type_int)
-
-    def GetName(self) -> str:
-        return self.gmat_obj.GetName()
-
-    def GetTypeName(self) -> str:
-        return extract_gmat_obj(self).GetTypeName()
-
-    def Help(self):
-        self.gmat_obj.Help()
-
-    def SetBooleanParameter(self, param_name: str, value: bool) -> bool:
-        return self.gmat_obj.SetBooleanParameter(param_name, value)
+    def SetBooleanParameter(self, param: str | int, value: bool) -> bool:
+        if isinstance(param, str):
+            param = self.GetParameterID(param)
+        return gpy.extract_gmat_obj(self).SetBooleanParameter(param, value)
 
     def SetField(self, field: str, value) -> bool:
         return self.gmat_obj.SetField(field, value)
 
     def SetGlobalObjectMap(self, gom: gmat.ObjectMap) -> bool:
         return extract_gmat_obj(self).SetGlobalObjectMap(gom)
+
+    def SetIntegerParameter(self, param: str | int, value: int) -> bool:
+        if isinstance(param, str):
+            param = self.GetParameterID(param)
+        return gpy.extract_gmat_obj(self).SetIntegerParameter(param, value)
 
     def SetName(self, name: str) -> bool:
         self.name = name
@@ -148,17 +173,16 @@ class GmatCommand:
     def SetObjectMap(self, om: gmat.ObjectMap) -> bool:
         return extract_gmat_obj(self).SetObjectMap(om)
 
-    def SetRefObject(self, obj, type_int: int, obj_name: str) -> bool:
-        return extract_gmat_obj(self).SetRefObject(extract_gmat_obj(obj), type_int, obj_name)
-
     def SetRefObjectName(self, type_id: int, name: str) -> bool:
-        return self.gmat_obj.SetRefObjectName(type_id, name)
+        return gpy.extract_gmat_obj(self).SetRefObjectName(type_id, name)
 
     def SetSolarSystem(self, ss: gmat.SolarSystem = gmat.GetSolarSystem()) -> bool:
         return extract_gmat_obj(self).SetSolarSystem(ss)
 
-    def SetStringParameter(self, param_name: str, value: str) -> bool:
-        return self.gmat_obj.SetStringParameter(param_name, value)
+    def SetStringParameter(self, param: str | int, value: str) -> bool:
+        if isinstance(param, str):
+            param = self.GetParameterID(param)
+        return gpy.extract_gmat_obj(self).SetStringParameter(param, value)
 
     def Validate(self) -> bool:
         try:
@@ -167,81 +191,102 @@ class GmatCommand:
             raise RuntimeError(f'{type(self).__name__} named "{self.name}" failed to Validate') from ex
 
 
-# class BranchCommand(GmatCommand):
-#     def __init__(self, command_type: str, name: str):
-#         super().__init__(command_type, name)
+class BranchCommand(GmatCommand):
+    def __init__(self, command_type: str, name: str):
+        super().__init__(command_type, name)
+        self.command_sequence = []
+
+    def AddBranch(self, command: gpy.GmatCommand | gmat.GmatCommand, which: int = 0):
+        """
+        No return value.
+        :param command:
+        :param which:
+        """
+        gpy.extract_gmat_obj(self).AddBranch(gpy.extract_gmat_obj(command), which)
+
+    def Append(self, command: gpy.GmatCommand | gmat.GmatCommand) -> bool:
+        command_gmat_obj = gpy.extract_gmat_obj(command)
+        return gpy.extract_gmat_obj(self).Append(command_gmat_obj)
 
 
 class Achieve(GmatCommand):
-    def __init__(self, name: str, solver: gpy.DifferentialCorrector, goal: str, value: int | float,
-                 tolerance: float | int = 0.1):
+    def __init__(self, name: str, solver: gpy.DifferentialCorrector | gmat.DifferentialCorrector,
+                 variable: str, value: int | float, tolerance: float | int = 0.1):
         super().__init__('Achieve', name)
 
-        self.solver = solver
-        self.SetField('TargeterName', self.solver.name)
-        # type_array = self.gmat_obj.GetRefObjectTypeArray()
-        # print(f'{type_array[0]}: {gpy.GetTypeNameFromID(type_array[0])}')
-        # print(f'Ref object name array: {self.gmat_obj.GetRefObjectNameArray(127)}')
-        self.SetRefObject(self.solver.gmat_obj, gmat.SOLVER, self.solver.name)
+        self.solver: gpy.DifferentialCorrector | gmat.DifferentialCorrector = solver
+        self.SetStringParameter('TargeterName', self.solver.GetName())
+        self.SetRefObject(self.solver, gmat.SOLVER, self.solver.GetName())
 
-        self.goal = goal
-        self.SetField('Goal', self.goal)
+        self.variable = variable
+        self.SetStringParameter('Goal', self.variable)
 
         self.value = value
-        self.SetField('GoalValue', str(self.value))
+        self.SetStringParameter('GoalValue', str(self.value))
 
         self.tolerance = tolerance
-        self.SetField('Tolerance', str(self.tolerance))
-
-        # TODO: try the following:
-        self.solver.gmat_obj.UpdateSolverGoal(0, self.value)
-
-        # TODO bugfix: Exception thrown during self.solver.Initialize(): gmat_py.APIException: Solver subsystem
-        #  exception: Targeter cannot initialize: No goals or variables are set.
-        # self.solver.Initialize()
+        self.SetStringParameter('Tolerance', str(self.tolerance))
 
         self.SetSolarSystem()
         self.SetObjectMap(gpy.Moderator().GetConfiguredObjectMap())
         self.SetGlobalObjectMap(gpy.Sandbox().GetGlobalObjectMap())
 
-        # TODO bugfix: Exception thrown during initialize: gmat_py.APIException: Command Exception: Targeter not
-        #  initialized for Achieve command "Achieve DC1(DefaultSC.Earth.RMAG = 42165.0, {Tolerance = 0.1});"
-        #  Caused by targeter parameter in Achieve being null
-
-        gpy.Initialize()
         self.Initialize()
+
+    def SetRefObject(self, obj, type_int: int, obj_name: str = '') -> bool:
+        return extract_gmat_obj(self).SetRefObject(extract_gmat_obj(obj), type_int, obj_name)
 
 
 class BeginFiniteBurn(GmatCommand):
-    def __init__(self, name: str):
+    def __init__(self, burn: gpy.FiniteBurn | gmat.FiniteBurn, spacecraft: gpy.Spacecraft | gmat.Spacecraft, name: str = ''):
         super().__init__('BeginFiniteBurn', name)
-        raise NotImplementedError
+
+        # Assign the user-provided FiniteBurn to this command
+        self.burn = burn
+        self.SetRefObjectName(gmat.FINITE_BURN, self.burn.GetName())
+
+        # Assign the user-provided Spacecraft to the FiniteBurn
+        self.spacecraft = spacecraft
+        self.burn.SetRefObject(self.spacecraft, gmat.SPACECRAFT, self.spacecraft.GetName())
+        self.burn.SetSpacecraftToManeuver(self.spacecraft)  # update FiniteBurn's associated Spacecraft
+
+        self.Initialize()
 
 
 class BeginMissionSequence(GmatCommand):
     def __init__(self):
-        # TODO: uncomment to get all items initialized (handling in Tut02 for now)
-        gpy.Initialize()  # initialize GMAT so objects are in place for use in command sequence
-
         super().__init__('BeginMissionSequence', 'BeginMissionSequenceCommand')
 
         self.SetSolarSystem()
         self.SetObjectMap(gpy.Moderator().GetConfiguredObjectMap())
         self.SetGlobalObjectMap(gpy.Sandbox().GetGlobalObjectMap())
 
-        gpy.Initialize()
         self.Initialize()
 
 
 class EndFiniteBurn(GmatCommand):
-    def __init__(self, name: str):
+    def __init__(self, burn: gpy.FiniteBurn | gmat.FiniteBurn, name: str):
         super().__init__('EndFiniteBurn', name)
-        raise NotImplementedError
+
+        # Assign the user-provided FiniteBurn to this command
+        self.burn = burn
+        self.SetRefObjectName(gmat.FINITE_BURN, self.burn.GetName())
+
+        self.Initialize()
 
 
-class EndTarget(GmatCommand):
-    def __init__(self, name: str):
+class EndTarget(BranchCommand):
+    def __init__(self, parent_target: gpy.Target, name: str = None):
+        if name is None:
+            name = f'EndTarget_{parent_target.GetName()}'
+
         super().__init__('EndTarget', name)
+
+    def Insert(self, command: gpy.GmatCommand | gmat.GmatCommand,
+               prev: gpy.GmatCommand | gmat.GmatCommand = None) -> bool:
+        command = gpy.extract_gmat_obj(command)
+        prev = gpy.extract_gmat_obj(prev) if prev is not None else None
+        return gpy.extract_gmat_obj(self).Insert(command, prev)
 
 
 class Maneuver(GmatCommand):
@@ -256,20 +301,6 @@ class Maneuver(GmatCommand):
         :param backprop:
         """
 
-        # TODO: remove below docstring when no longer needed
-        """
-        In Moderator.cpp/CreateDefaultCommand/try...
-            else if (type == "Maneuver")
-          {
-             // set burn
-             id = cmd->GetParameterID("Burn");
-             cmd->SetStringParameter(id, GetDefaultBurn("ImpulsiveBurn")->GetName());
-             
-             // set spacecraft
-             id = cmd->GetParameterID("Spacecraft");
-             cmd->SetStringParameter(id, GetDefaultSpacecraft()->GetName());
-         """
-
         super().__init__('Maneuver', name)
 
         self.burn = burn
@@ -277,6 +308,7 @@ class Maneuver(GmatCommand):
 
         self.spacecraft = spacecraft
         self.SetStringParameter(self.gmat_obj.GetParameterID('Spacecraft'), self.spacecraft.name)
+        self.burn.SetSpacecraftToManeuver(self.spacecraft)  # update burn's assigned spacecraft
 
         self.backprop = backprop
         self.SetBooleanParameter(self.gmat_obj.GetParameterID('BackProp'), self.backprop)
@@ -285,7 +317,6 @@ class Maneuver(GmatCommand):
         self.SetObjectMap(gpy.Moderator().GetConfiguredObjectMap())
         self.SetGlobalObjectMap(gpy.Sandbox().GetGlobalObjectMap())
 
-        gpy.Initialize()
         self.Initialize()
 
 
@@ -400,14 +431,11 @@ class Propagate(GmatCommand):
                 param = gpy.Validator().FindObject(stop_var)
                 param.SetRefObjectName(gmat.SPACECRAFT, sat_name)  # attach Spacecraft to Parameter
 
-        @classmethod
-        def from_user_stop_cond(cls, sat: gpy.Spacecraft | gmat.Spacecraft, user_stop_cond: tuple | str,
-                                gmat_obj: gmat.GmatBase = None) -> Propagate.StopCondition:
-            # if gmat_obj:
-            stop_cond: Propagate.StopCondition = cls(sat, stop_cond=user_stop_cond, gmat_obj=gmat_obj)
-            # else:
-            #     stop_cond: Propagate.StopCondition = cls(sat, stop_cond=user_stop_cond)
-            return stop_cond
+        # @classmethod
+        # def from_user_stop_cond(cls, sat: gpy.Spacecraft | gmat.Spacecraft, user_stop_cond: tuple | str,
+        #                         gmat_obj: gmat.GmatBase = None) -> Propagate.StopCondition:
+        #     stop_cond: Propagate.StopCondition = cls(sat, stop_cond=user_stop_cond, gmat_obj=gmat_obj)
+        #     return stop_cond
 
         def GetStringParameter(self, param_name: str) -> str:
             return self.gmat_obj.GetStringParameter(param_name)
@@ -438,6 +466,10 @@ class Propagate(GmatCommand):
             if num_stop_var_elements == 2:
                 # print('2 elements found in StopCond parse')
                 sat_name, parameter = stop_var.split('.')
+                if sat_name != self.sat.name:
+                    raise RuntimeError(
+                        f'Name of satellite given in StopCondition "{stop_cond}" ({sat_name}) does'
+                        f' not match name for Propagate\'s satellite ({self.sat_name})')
                 stop_var = '.'.join([sat_name, parameter])
 
                 # Get body from satellite's coordinate system
@@ -447,10 +479,10 @@ class Propagate(GmatCommand):
 
             elif num_stop_var_elements == 3:
                 # print('3 elements found in StopCond parse')
-                sat_from_stop_cond, body, parameter = stop_var.split('.')
-                if sat_from_stop_cond != self.sat_name:
+                sat_name, body, parameter = stop_var.split('.')
+                if sat_name != self.sat.name:
                     raise RuntimeError(
-                        f'Name of satellite given in StopCondition "{stop_cond}" ({sat_from_stop_cond}) does'
+                        f'Name of satellite given in StopCondition "{stop_cond}" ({sat_name}) does'
                         f' not match name for Propagate\'s satellite ({self.sat_name})')
 
             else:
@@ -518,7 +550,7 @@ class Propagate(GmatCommand):
         prop_ref_name = self.GetRefObjectName(gmat.PROP_SETUP)
         sat_ref_name = self.GetRefObjectName(gmat.SPACECRAFT)
 
-        self.prop = self.GetRefObject(gmat.PROP_SETUP, prop_ref_name)
+        self.prop = self.GetRefObject(gmat.PROP_SETUP, prop_ref_name)  # use default PropSetup initially
         # apply any user-provided PropSetup
         if prop:
             self.prop = prop
@@ -530,10 +562,7 @@ class Propagate(GmatCommand):
         # apply any user-provided Spacecraft
         if sat:
             self.sat = sat
-            # if sat_ref_name != self.sat.GetName():
             self.SetRefObjectName(gmat.SPACECRAFT, self.sat.GetName())
-            # self.SetObject(self.sat.GetName(), gmat.SPACECRAFT)
-            # self.TakeAction('SetStopSpacecraft', self.sat.GetName())
 
         self.stop_cond = self.GetGmatObject(gmat.STOP_CONDITION)
         # apply any user-provided stop condition
@@ -559,7 +588,6 @@ class Propagate(GmatCommand):
 
         elif isinstance(stop_cond, str):  # e.g. 'Sat.Earth.Apoapsis'
             stop_var = stop_cond
-            sat_from_stop_cond, body, parameter = stop_var.split('.')
             goal = str(stop_var)
 
         else:
@@ -600,11 +628,6 @@ class Propagate(GmatCommand):
         epoch_param_type = 'A1ModJulian'
         epoch_var = f'{self.sat.GetName()}.{epoch_param_type}'
 
-        # non_sat_goals = ['Apoapsis', 'Periapsis']
-        # for g in non_sat_goals:
-        #     if g in goal:
-        #         goal = goal[len(self.sat_name)+1:]  # remove sat name from front of goal
-
         goalless = False
         goalless_params = ['Apoapsis', 'Periapsis']  # TODO: complete list
 
@@ -619,18 +642,6 @@ class Propagate(GmatCommand):
             # goal already parsed above
             goal_param_type = stop_param_type
 
-        # self.stop_param_type = stop_param_type
-        # self.stop_var = stop_var
-        #
-        # self.epoch_param_type = epoch_param_type
-        # self.epoch_var = epoch_var
-        #
-        # self.goal_param_type = goal_param_type
-        # self.goal = goal
-        # self.goalless = goalless
-        #
-        # self.body = body
-
         return stop_param_type, stop_var, epoch_param_type, epoch_var, goal_param_type, goal, goalless, body
 
     def SetObject(self, obj_name: str, type_int: int):
@@ -641,6 +652,7 @@ class Propagate(GmatCommand):
 
     def TakeAction(self, action: str, action_data: str) -> bool:
         return extract_gmat_obj(self).TakeAction(action, action_data)
+
 
 # class PropagateMulti(Propagate):
 #     # TODO: consider making this a nested/inner class of Propagate, so would call Propagate.Multi()
@@ -660,102 +672,128 @@ class Propagate(GmatCommand):
 #         super().__init__(name, prop, sat, stop_cond, synchronized)
 
 
-class SolverBranchCommand:
-    def __init__(self):
-        pass
+class SolverBranchCommand(BranchCommand):
+    def __init__(self, command_type: str, name: str):
+        super().__init__(command_type, name)
 
 
-class Target(GmatCommand):
-    def __init__(self, name: str, solver: gpy.DifferentialCorrector, solve_mode: str = 'Solve',
-                 exit_mode: str = 'SaveAndContinue', command_sequence: list[GmatCommand] = None):
+class SolverSequenceCommand(GmatCommand):
+    def __init__(self, command_type: str, name: str):
+        super().__init__(command_type, name)
+
+
+class Target(SolverBranchCommand):
+    def __init__(self, name: str, solver: gpy.DifferentialCorrector | gmat.DifferentialCorrector,
+                 solve_mode: str = 'Solve', exit_mode: str = 'SaveAndContinue',
+                 command_sequence: list[gpy.GmatCommand] = None, show_progress_window: bool = False):
+        if command_sequence is None:
+            # Make sure the command sequence includes at least an EndTarget command
+            command_sequence = [gpy.EndTarget(self, f'EndTarget for Target "{self.name}"')]
+
         super().__init__('Target', name)
-        # 'Show Progress Window' argument not implemented (for now) - seems to be a GUI-only option
-
-        """
-        Parameters:
-            Covariance: Rmatrix
-            Comment: String
-            Summary: String
-            MissionSummary: String
-            Targeter: String
-        """
-
-        """
-        From Moderator.CreateDefaultCommand, Target:
-        // set DifferentCorrector
-        Solver *solver = GetDefaultBoundaryValueSolver();
-        id = cmd->GetParameterID("Targeter");
-        cmd->SetStringParameter(id, solver->GetName());
-        """
-
-        self.run_mission_configured = False  # used in RunMission to track whether Target already setup
-
-        self.solver = solver
-        self.SetStringParameter('Targeter', self.solver.name)
-        self.SetRefObjectName(gmat.SOLVER, self.solver.name)
-
-        self.solve_mode = solve_mode
-        self.SetField('SolveMode', self.solve_mode)
-
-        self.exit_mode = exit_mode
-        # TODO: type for ExitMode field must be "Reference Array" - see User Guide pg 813 (PDF pg 822)
-        # self.SetField('ExitMode', self.exit_mode)
-        print(self.gmat_obj.GetParameterID('ExitMode'))
 
         self.command_sequence = command_sequence
 
+        # Get default solver then replace if the user has provided a solver object
+        self.def_solver_name = self.GetRefObjectName(gmat.SOLVER)
+        self.solver = gmat.GetObject(self.def_solver_name)
+        if solver:
+            self.solver: gpy.DifferentialCorrector | gmat.DifferentialCorrector = solver
+            new_solver_name = self.solver.GetName()
+            self.SetStringParameter('Targeter', new_solver_name)
+
+        self.solve_mode = solve_mode
+        self.SetStringParameter('SolveMode', self.solve_mode)
+
+        self.exit_mode = exit_mode
+        self.SetStringParameter('ExitMode', self.exit_mode)
+
+        self.command_sequence: list[gpy.GmatCommand] = command_sequence
+
+        self.show_progress_window = show_progress_window
+        self.SetBooleanParameter('ShowProgressWindow', self.show_progress_window)
+
         self.SetSolarSystem()
         self.SetObjectMap(gpy.Moderator().GetConfiguredObjectMap())
         self.SetGlobalObjectMap(gpy.Sandbox().GetGlobalObjectMap())
 
-        print(self.GetGeneratingString())
+        # # Make sure the final item in the command sequence is an EndTarget object
+        if not isinstance(command_sequence[-1], gmat.EndTarget | gpy.EndTarget):
+            command_sequence.append(gpy.EndTarget(self))
 
-        self.Initialize()
+        # Add each of Target's sub-commands to the mission sequence
+        for command in self.command_sequence:
+            self.Append(gpy.extract_gmat_obj(command))
 
-    def ApplyCorrections(self):
-        raise NotImplementedError
 
-
-class Vary(GmatCommand):
-    def __init__(self, name: str, solver: gpy.DifferentialCorrector, variable: str,
+class Vary(SolverSequenceCommand):
+    def __init__(self, name: str, solver: gpy.DifferentialCorrector | gmat.DifferentialCorrector, variable: str,
                  initial_value: float | int = 1, perturbation: float | int = 0.0001, lower: float | int = 0.0,
                  upper: float | int = pi, max_step: float | int = 0.5, additive_scale_factor: float | int = 0.0,
                  multiplicative_scale_factor: float | int = 1.0):
+
+        user_created_def_ib = False
+        def_ib_name = 'DefaultIB'
+        def_ib_ele_name = 'DefaultIB.Element1'
+        try:
+            # an object named DefaultIB existed before Vary's init created one, so assume it's user-owned
+            if gmat.GetObject('DefaultIB'):
+                user_created_def_ib = True
+        except AttributeError:
+            # DefaultIB wasn't found, so does not exist
+            pass
+
         super().__init__('Vary', name)
 
         self.solver = solver
-        self.SetField('SolverName', self.solver.name)
-        self.SetRefObject(self.solver.gmat_obj, gmat.SOLVER, self.solver.name)
+        self.SetRefObject(self.solver, gmat.SOLVER, self.solver.GetName())
+        self.SetStringParameter('SolverName', self.solver.GetName())
 
         self.variable = variable
-        self.SetField('Variable', self.variable)
+        self.SetStringParameter('Variable', self.variable)
+
+        if initial_value < lower:
+            raise RuntimeError('initial_value is less than lower (minimum value) in Vary.__init__().'
+                               f'\n- initial_value:\t{initial_value}'
+                               f'\n- lower:\t\t\t{lower}')
+        if initial_value > upper:
+            raise RuntimeError('initial_value is greater than upper (maximum value) in Vary.__init__().'
+                               f'\n- initial_value:\t{initial_value}'
+                               f'\n- upper:\t\t\t{upper}')
 
         self.initial_value = initial_value
-        self.SetField('InitialValue', str(self.initial_value))
+        self.SetStringParameter('InitialValue', str(self.initial_value))
 
         self.perturbation = perturbation
-        self.SetField('Perturbation', str(self.perturbation))
+        self.SetStringParameter('Perturbation', str(self.perturbation))
 
         self.lower = lower
-        self.SetField('Lower', str(self.lower))
+        self.SetStringParameter('Lower', str(self.lower))
 
         self.upper = upper
-        self.SetField('Upper', str(self.upper))
+        self.SetStringParameter('Upper', str(self.upper))
 
         self.max_step = max_step
-        self.SetField('MaxStep', str(self.max_step))
+        self.SetStringParameter('MaxStep', str(self.max_step))
 
         self.additive_scale_factor = additive_scale_factor
-        self.SetField('AdditiveScaleFactor', str(self.additive_scale_factor))
+        self.SetStringParameter('AdditiveScaleFactor', str(self.additive_scale_factor))
 
         self.multiplicative_scale_factor = multiplicative_scale_factor
-        self.SetField('MultiplicativeScaleFactor', str(self.multiplicative_scale_factor))
+        self.SetStringParameter('MultiplicativeScaleFactor', str(self.multiplicative_scale_factor))
 
         self.SetSolarSystem()
         self.SetObjectMap(gpy.Moderator().GetConfiguredObjectMap())
         self.SetGlobalObjectMap(gpy.Sandbox().GetGlobalObjectMap())
 
-        # if not self.Validate():
-        #     raise RuntimeError(f'Vary command {self.name} failed to Validate')
-
         self.Initialize()
+
+        # If a DefaultIB object exists and the user didn't create it, GMAT did while building this command - delete it
+        if not user_created_def_ib:
+            gmat.Clear(def_ib_name)
+
+    def RenameRefObject(self, type_id: int, old_name: str, new_name: str) -> bool:
+        return gpy.extract_gmat_obj(self).RenameRefObject(type_id, old_name, new_name)
+
+    def SetRefObject(self, obj: gmat.GmatBase, type_id: int, name: str) -> bool:
+        return gpy.extract_gmat_obj(self).SetRefObject(gpy.extract_gmat_obj(obj), type_id, name)
