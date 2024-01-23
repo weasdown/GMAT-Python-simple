@@ -201,11 +201,7 @@ class ForceModel(GmatObject):
                                     f' Must be None or a gpy.ForceModel.GravityField')
 
         if self.gravity is not None:
-            self.gravity.Help()
-            self.Help()
-            self.AddForce(self.gravity)
-
-        self.Help()
+            self.AddForce(self.gravity)  # add the GravityField to the ForceModel within GMAT
 
         self._polyhedral_bodies = polyhedral_bodies
 
