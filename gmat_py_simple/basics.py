@@ -145,6 +145,11 @@ class GmatObject:
             param = self.GetParameterID(param)
         return gpy.extract_gmat_obj(self).SetBooleanParameter(param, value)
 
+    def SetIntegerParameter(self, param: str | int, value: int) -> bool:
+        if isinstance(param, str):
+            param = self.GetParameterID(param)
+        return gpy.extract_gmat_obj(self).SetIntegerParameter(param, value)
+
     def SetField(self, field: str, val: str | int | float | bool | list):
         """
         Set a field in the Object's GMAT model.
@@ -201,7 +206,8 @@ class GmatObject:
         try:
             return self.gmat_obj.Validate()
         except Exception as ex:
-            raise RuntimeError(f'{type(self).__name__} named "{self.name}" failed to Validate - see GMAT exception above') \
+            raise RuntimeError(
+                f'{type(self).__name__} named "{self.name}" failed to Validate - see GMAT exception above') \
                 from ex
 
     @property
@@ -211,5 +217,4 @@ class GmatObject:
     @name.setter
     def name(self, new_name: str):
         self._name = new_name
-        self.gmat_obj.SetName(new_name)
-
+        gpy.extract_gmat_obj(self).SetName(new_name)

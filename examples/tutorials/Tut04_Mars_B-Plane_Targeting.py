@@ -33,17 +33,14 @@ sat.add_tanks(main_tank)
 #                            gator=gpy.PropSetup.Propagator('PrinceDormand78'), fm=deep_space_fm,
 #                            initial_step_size=600, accuracy=1e-12, min_step=0, max_step=864000, max_step_attempts=50)
 
-mars_gravity_file = f'{gmat.FileManager.Instance().GetRootPath()}\\data\\gravity\\mars\\Mars50c.cof'
-# FIXME: primary_bodies not setting to Mars in FM init
-near_mars_fm = gpy.ForceModel('NearMarsFM', central_body='Mars', primary_bodies='Mars',
-                              gravity_field=gpy.ForceModel.GravityField(model='Mars-50C', degree=8, order=8,
-                                                                        gravity_file=mars_gravity_file),
+mars_gravity_file = f'{gmat.FileManager.Instance().GetRootPath()}data\\gravity\\mars\\Mars50c.cof'
+near_mars_fm = gpy.ForceModel('NearMarsFM', central_body='Mars', primary_body='Mars',
+                              gravity_field=gpy.ForceModel.GravityField(body='Mars', model='Mars-50C', degree=8,
+                                                                        order=8, gravity_file=mars_gravity_file),
                               point_masses=['Sun'], srp=True)
 near_mars = gpy.PropSetup('NearMars',
                           gator=gpy.PropSetup.Propagator('PrinceDormand78'), fm=near_mars_fm,
                           initial_step_size=600, accuracy=1e-12, min_step=0, max_step=86400, max_step_attempts=50)
-
-near_mars_fm.Help()
 
 # Setup coordinate systems
 # FIXME: CoordinateSystems failing to build

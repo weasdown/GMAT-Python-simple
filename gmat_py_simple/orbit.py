@@ -94,7 +94,7 @@ class PhysicalModel(GmatObject):
 
 class ForceModel(GmatObject):
     def __init__(self, name: str = 'DefaultProp_ForceModel', central_body: str = 'Earth',
-                 primary_bodies: str | list[str] = None, polyhedral_bodies: list = None, gravity_field: GravityField = None,
+                 primary_body: str = None, polyhedral_bodies: list = None, gravity_field: GravityField = None,
                  point_masses: str | list[str] | PointMassForce = None, drag: DragForce = None,
                  srp: bool | SolarRadiationPressure = False, relativistic_correction: bool = False,
                  error_control: list = None, user_defined: list[str] = None):
@@ -151,28 +151,47 @@ class ForceModel(GmatObject):
             self.central_body = central_body
             self.SetStringParameter('CentralBody', self.central_body)
 
+        self.gravity = gravity_field
+
         # TODO replace below with creation of GravityFields
         #  PrimaryBodies is alias for GravityFields as per page 162 of GMAT Architectucral Specification
-        self.gravity = None
-        if primary_bodies is not None:
-            if isinstance(primary_bodies, str):
-                primary_bodies = [primary_bodies]
-            self.primary_bodies = primary_bodies
+        # self.gravity = None
+        # if primary_bodies is not None:
+        #     if isinstance(primary_bodies, str):
+        #         primary_bodies = [primary_bodies]
+        #     self.primary_bodies = primary_bodies
+        #
+        #     primary_bodies_objs = [gmat.Planet(body_name) for body_name in self.primary_bodies]
+        #     for body_obj in primary_bodies_objs:
+        #         prim_bod_param_id = self.GetParameterID("PrimaryBodies")
+        #         print(f'PrimaryBodies param: ID {prim_bod_param_id}, type: {self.GetParameterTypeString(prim_bod_param_id)}')
+        #         print(f'body_obj type: {body_obj.GetTypeName()}, IsOfType CelestialBody: {body_obj.IsOfType("CelestialBody")}')
+        #         # grav_fields = [self.GravityField()]
+        #         self.SetStringParameter(3, body_obj.GetName())  # 3 for BODY_NAME
+        #         self.SetRefObject(body_obj, gmat.CELESTIAL_BODY, body_obj.GetName())
+        #     # self.Help()
+        #     # self.SetField('PrimaryBodies', self.primary_bodies)
+        #     # self._primary_bodies = primary_bodies if primary_bodies else self.central_body
+        #     self.Initialize()
+        #     self.Help()
 
-            primary_bodies_objs = [gmat.Planet(body_name) for body_name in self.primary_bodies]
-            for body_obj in primary_bodies_objs:
-                prim_bod_id = self.GetParameterID("PrimaryBodies")
-                print(f'PrimaryBodies param: ID {prim_bod_id}, type: {self.GetParameterTypeString(prim_bod_id)}')
-                print(f'body_obj type: {body_obj.GetTypeName()}, IsOfType CelestialBody: {body_obj.IsOfType("CelestialBody")}')
-                self.SetStringParameter(3, body_obj.GetName())  # 3 for BODY_NAME
-                self.SetRefObject(body_obj, gmat.CELESTIAL_BODY, body_obj.GetName())
-            # self.Help()
-            # self.SetField('PrimaryBodies', self.primary_bodies)
-            # self._primary_bodies = primary_bodies if primary_bodies else self.central_body
-            self.Initialize()
-            self.Help()
+        # TODO don't setup gravity field if none specified - breaks interplanetary where grav field irrelevant
+        self.primary_body: str = primary_body
+        if self.primary_body is not None:
+            if self.gravity is not None and (self.primary_body != self.gravity.body):
+                raise AttributeError(
+                    f'If a primary_body and gravity_field are both specified, the primary_body must be '
+                    f'equal to the gravity_field\'s body. Specified primary_body and gravity_field: '
+                    f'{self.primary_body} and {self.gravity.body}')
 
-            # TODO don't setup gravity field if none specified - breaks interplanetary where grav field irrelevant
+            allowed_primaries = gpy.utils.CelestialBodies()
+            if self.primary_body not in allowed_primaries:
+                raise AttributeError(f'Specified primary_body "{self.primary_body}" is not recognized. Please use one '
+                                     f'of the following:\n{allowed_primaries}')
+            # elif self.gravity is None:
+            #     self.gravity = self.GravityField(body=self.primary_body)
+
+        else:  # self.primary_body is None
             self.gravity = gravity_field
             if gravity_field is not None:
                 if isinstance(gravity_field, ForceModel.GravityField):
@@ -180,7 +199,13 @@ class ForceModel(GmatObject):
                 else:
                     raise TypeError(f'gravity_field type not recognized - {type(gravity_field).__name__}.'
                                     f' Must be None or a gpy.ForceModel.GravityField')
-                self.AddForce(self.gravity)
+
+        if self.gravity is not None:
+            self.gravity.Help()
+            self.Help()
+            self.AddForce(self.gravity)
+
+        self.Help()
 
         self._polyhedral_bodies = polyhedral_bodies
 
@@ -232,7 +257,8 @@ class ForceModel(GmatObject):
         return f'ForceModel with name {self.name}'
 
     def AddForce(self, force: PhysicalModel):
-        self.gmat_obj.AddForce(force.gmat_obj)
+        # No return from GMAT
+        gpy.extract_gmat_obj(self).AddForce(gpy.extract_gmat_obj(force))
 
     class PrimaryBody:
         # TODO complete arguments
@@ -328,33 +354,55 @@ class ForceModel(GmatObject):
 
     class GravityField(PhysicalModel):
         # TODO change parent class back to HarmonicField if appropriate
-        def __init__(self, model: str = 'JGM-2', degree: int = 4, order: int = 4, stm_limit: int = 100,
-                     gravity_file: str = 'JGM2.cof', tide_file: str = None, tide_model: str = None):
-            super().__init__('GravityField', 'Grav')
-            self._model = model
+        def __init__(self, name: str = None, body: str = 'Earth', model: str = 'JGM-2', degree: int = 4,
+                     order: int = 4, stm_limit: int = 100, gravity_file: str = 'JGM2.cof', tide_file: str = None,
+                     tide_model: str = None):
+            if name is None:
+                name = f'GravField_{body}_{model}_{degree}_{order}'
+            super().__init__('GravityField', name)
 
-            self._degree = degree
-            self.SetField('Degree', self._degree)
+            self.body = body
+            self.SetStringParameter(3, self.body)  # 3 for BODY_NAME
 
-            self._order = order
-            self.SetField('Order', self._order)
+            allowed_models = {'Sun': [None, 'Other'], 'Venus': [None, 'MGNP-180U', 'Other'],
+                              'Earth': [None, 'JGM-2', 'JGM-3', 'EGM-96', 'Other'], 'Mars': [None, 'Mars-50C', 'Other'],
+                              'Jupiter': [None, 'Other'], 'Saturn': [None, 'Other'], 'Uranus': [None, 'Other'],
+                              'Neptune': [None, 'Other'], 'Pluto': [None, 'Other'], 'Luna': [None, 'LP-165', 'Other']}
+            # check whether the specified model is defined for the specified body
+            self.model = model
+            if self.model is not None:
+                if model == 'Other':
+                    # TODO: add support for 'Other' model option (user would pass a path to a model file)
+                    raise NotImplementedError
+                elif model not in allowed_models[self.body]:
+                    raise AttributeError(f'Specified model "{self.model}" is not recognized for body "{self.body}". '
+                                         f'Valid models for that body are:\n\t{allowed_models[self.body]}')
 
-            self._stm_limit = stm_limit
-            self.SetField('StmLimit', self._stm_limit)
+            self.degree = degree
+            self.SetIntegerParameter('Degree', int(self.degree))
 
-            self._gravity_file = gravity_file
-            self.SetField('PotentialFile', self._gravity_file)
+            self.order = order
+            self.SetIntegerParameter('Order', self.order)
 
-            self._tide_file = tide_file
-            if self._tide_file:
-                self.SetField('TideFile', self._tide_file)
+            # self.gmat_obj = gmat.GravityField(self.name, self.body, self.degree, self.order)
+            # self.gpy_obj = gpy.GmatObject.from_gmat_obj(self.gmat_obj)
+
+            self.stm_limit = stm_limit
+            self.SetIntegerParameter('StmLimit', self.stm_limit)
+
+            self.gravity_file = gravity_file
+            self.SetStringParameter('PotentialFile', self.gravity_file)
+
+            self.tide_file = tide_file
+            if self.tide_file:
+                self.SetStringParameter('TideFile', self.tide_file)
 
             if tide_model:
                 if tide_model not in [None, 'Solid', 'SolidAndPole']:
                     raise SyntaxError('Invalid tide_model given - must be None, "Solid" or "SolidAndPole"')
                 else:
                     self._tide_model = tide_model
-                    self.SetField('TideModel', self._tide_model)
+                    self.SetStringParameter('TideModel', self._tide_model)
 
     class ODEModel(PhysicalModel):
         def __init__(self, name: str):
