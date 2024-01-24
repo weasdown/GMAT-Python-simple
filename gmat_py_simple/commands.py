@@ -165,6 +165,13 @@ class Achieve(GmatCommand):
         self.variable = variable
         self.SetStringParameter('Goal', self.variable)
 
+        # Make Parameter for Goal if one doesn't already exist
+        mod = gpy.Moderator()
+        if not mod.GetParameter(self.variable):
+            # param_type is the final element of the self.variable string, e.g. Periapsis for Sat.Earth.Periapsis
+            param_type = self.variable.split('.')[-1]
+            mod.CreateParameter(param_type, self.variable)
+
         self.value = value
         self.SetStringParameter('GoalValue', str(self.value))
 
@@ -176,6 +183,8 @@ class Achieve(GmatCommand):
         self.SetGlobalObjectMap(gpy.Sandbox().GetGlobalObjectMap())
 
         self.Initialize()
+        # gpy.Initialize()
+        # self.Initialize()
 
     def SetRefObject(self, obj, type_int: int, obj_name: str = '') -> bool:
         return extract_gmat_obj(self).SetRefObject(extract_gmat_obj(obj), type_int, obj_name)
@@ -481,7 +490,7 @@ class Propagate(GmatCommand):
         if user_stop_cond:
             self.user_stop_cond = user_stop_cond
             # update default StopCondition with user-provided values by converting to wrapper StopCondition
-            self.stop_cond = self.StopCondition(self.sat, self.user_stop_cond, self.stop_cond)
+            self.stop_cond = self.StopCondition(self.sat, stop_cond=self.user_stop_cond, gmat_obj=self.stop_cond)
             self.TakeAction('Clear', 'StopCondition')  # clear existing StopCond to replace it
             self.SetRefObject(extract_gmat_obj(self.stop_cond), gmat.STOP_CONDITION, self.stop_cond.name)
 

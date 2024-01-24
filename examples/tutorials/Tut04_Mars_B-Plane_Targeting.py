@@ -58,6 +58,8 @@ dc1 = gpy.DifferentialCorrector('DC1')
 print(f'Sat state before running: {sat.GetState()}')
 print(f"Epoch before running: {sat.GetField('Epoch')}")
 
+achieve_bdott = gpy.Achieve('Achieve BdotT', dc1, f'{sat.name}.{mars_inertial.name}.BdotT', 0)
+
 # Mission Command Sequence
 mcs = [
     # Target Mars' B-plane
@@ -74,7 +76,7 @@ mcs = [
         # TODO set correct propagator
         gpy.Propagate('Prop 280 days', sat, deep_space, (f'{sat.name}.ElapsedDays', 280)),
         gpy.Propagate('Prop to Mars Periapsis', sat, near_mars, f'{sat.name}.Earth.Periapsis'),
-        gpy.Achieve('Achieve BdotT', dc1, f'{sat.name}.{mars_inertial.name}.BdotT', 0),
+        achieve_bdott,  # TODO revert to whole command once debugged
         gpy.Achieve('Achieve BdotR', dc1, f'{sat.name}.{mars_inertial.name}.BdotR', -7000)
     ]),
     # Capture into Mars orbit
@@ -90,7 +92,8 @@ mcs = [
     gpy.Propagate('Prop for 1 day', sat, near_mars, (f'{sat.name}.ElapsedDays', 1)),
 ]
 
-# FIXME: MAVEN.MarsInertial.BdotT/BdotR params not being created but unnecessary ones are - check StopCondition init
+# FIXME: MAVEN.MarsInertial.BdotT/BdotR params not being created but unnecessary ones are - add to Achieve?
+print(achieve_bdott.Help())
 gmat.ShowObjects()
 
 gpy.RunMission(mcs)  # Run the mission
