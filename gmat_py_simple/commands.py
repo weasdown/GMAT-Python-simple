@@ -168,9 +168,81 @@ class Achieve(GmatCommand):
         # Make Parameter for Goal if one doesn't already exist
         mod = gpy.Moderator()
         if not mod.GetParameter(self.variable):
-            # param_type is the final element of the self.variable string, e.g. Periapsis for Sat.Earth.Periapsis
-            param_type = self.variable.split('.')[-1]
-            mod.CreateParameter(param_type, self.variable)
+            param_eles = self.variable.split('.')
+            param_type = param_eles[-1]
+            new_param = gpy.Parameter(param_type, self.variable)
+
+            for ele in param_eles:
+                if ele in gpy.SpacecraftObjs():
+                    new_param.SetRefObjectName(gmat.SPACECRAFT, ele)
+                    new_param.SetRefObject(gmat.GetObject(ele), gmat.SPACECRAFT)
+
+                if ele in gpy.CoordSystems():
+                    new_param.SetRefObjectName(gmat.COORDINATE_SYSTEM, ele)
+                    cs = gmat.GetObject(ele)
+                    new_param.SetRefObject(cs, gmat.COORDINATE_SYSTEM)
+
+                    # Also update the Parameter's SPACE_POINT
+                    body = cs.GetField('Origin')
+                    new_param.SetRefObjectName(gmat.SPACE_POINT, body)
+                    new_param.SetRefObject(gmat.GetObject(body), gmat.SPACE_POINT)
+                    pass
+
+            new_param.SetSolarSystem(gmat.GetSolarSystem())
+            new_param.Initialize()
+            new_param.Help()
+            pass
+        #     # param_type is the final element of the self.variable string, e.g. Periapsis for Sat.Earth.Periapsis
+        #     param_eles = self.variable.split('.')
+        #     param_type = param_eles[-1]
+            # new_param = gpy.Parameter(param_type, self.variable)
+            # for ele in param_eles:
+            #     body = 'Earth'
+            #     cs = 'EarthMJ2000Eq'
+            #     if ele in gpy.CelestialBodies():  # a CelestialBody is given, so need to set it as a ref object
+            #         # TODO: test this
+            #         body = ele
+            #
+            #     if ele in gpy.CoordSystems():
+            #         cs = ele
+            #
+            #     pass
+                # new_param.SetRefObjectName(gmat.SPACE_POINT, body)
+                # new_param.SetRefObjectName(gmat.COORDINATE_SYSTEM, cs)
+                # new_param.Help()
+                # print(new_param.gmat_base.GetRefObjectTypeArray())
+                # new_param.SetRefObjectName(gmat.CELESTIAL_BODY, ele)
+
+            #     if ele in gpy.CoordSystems():  # a CoordinateSystem is given, so need to set it as a ref object
+            #         # TODO remove (debugging only)
+            #         test_bddot = gmat.Construct('BdotT', 'TestBdotT')
+            #         test_bddot.SetRefObjectName(gmat.SPACECRAFT, 'MAVEN')
+            #         # test_bddot.SetReference(gmat.GetObject('MAVEN'))
+            #         # print(gpy.Moderator().gmat_obj.GetListOfFactoryItems(gmat.PARAMETER))
+            #         # test_bddot.RenameRefObject(gmat.COORDINATE_SYSTEM, 'EarthMJ2000Eq', ele)
+            #         test_bddot.SetRefObjectName(gmat.COORDINATE_SYSTEM, ele)
+            #         cs = gmat.GetObject(ele)
+            #         test_bddot.SetRefObject(cs, gmat.COORDINATE_SYSTEM, cs.GetName())
+            #
+            #         # test_bddot.SetRefObjectName(gmat.SPACECRAFT, 'MAVEN')
+            #         test_bddot.SetRefObject(gmat.GetObject('MAVEN'), gmat.SPACECRAFT, 'MAVEN')
+            #
+            #         test_bddot.SetSolarSystem(gmat.GetSolarSystem())
+            #         # gmat.Initialize()
+            #         mod = gpy.Moderator().gmat_obj
+            #         mod.SetParameterRefObject(test_bddot, 'BdotT', cs.GetName(), '', '', 1)
+            #         test_bddot.Help()
+            #         test_bddot.Initialize()
+            #
+            #         new_param.SetRefObjectName(gmat.COORDINATE_SYSTEM, ele)
+            #         # new_param.SetStringParameter(new_param.GetParameterID('CoordinateSystem'), ele)
+            #         # new_param.SetRefObject(gmat.GetObject(ele), gmat.COORDINATE_SYSTEM)
+            #         new_param.Help()
+            #         pass
+            #
+            # for body in gpy.CelestialBodies():
+            #     if body in self.variable:
+            #         new_param.SetRefObject(gmat.Planet(body), gmat.COORDINATE_SYSTEM)
 
         self.value = value
         self.SetStringParameter('GoalValue', str(self.value))

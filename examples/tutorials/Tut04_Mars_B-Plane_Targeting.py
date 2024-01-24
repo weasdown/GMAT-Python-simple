@@ -11,7 +11,7 @@ import os
 
 log_path = os.path.normpath(f'{os.getcwd()}/examples/logs/GMAT-Tut04-Log.txt')
 gmat.UseLogFile(log_path)
-gmat.EchoLogFile(False)  # set to True to view log output in console (e.g. live iteration results)
+gmat.EchoLogFile(True)  # set to True to view log output in console (e.g. live iteration results)
 
 sat = gpy.Spacecraft('MAVEN')
 main_tank = gpy.ChemicalTank('TestTank', fuel_mass=1718, allow_negative_fuel_mass=False, fuel_density=1000,
@@ -93,7 +93,12 @@ mcs = [
 ]
 
 # FIXME: MAVEN.MarsInertial.BdotT/BdotR params not being created but unnecessary ones are - add to Achieve?
-print(achieve_bdott.Help())
+# new_param = gpy.Parameter('BdotT', 'MAVEN.MarsInertial.BdotT')
+# new_param.SetRefObjectName(gmat.SPACECRAFT, sat.GetName())
+# new_param.SetRefObject(gpy.extract_gmat_obj(sat), gmat.SPACECRAFT)
+# new_param.SetSolarSystem(gmat.GetSolarSystem())
+# new_param.Initialize()
+
 gmat.ShowObjects()
 
 gpy.RunMission(mcs)  # Run the mission
