@@ -260,7 +260,7 @@ class Achieve(GmatCommand):
             #         new_param.SetRefObject(gmat.Planet(body), gmat.COORDINATE_SYSTEM)
 
         self.value = value
-        print(self.SetStringParameter('GoalValue', str(self.value)))
+        self.SetStringParameter('GoalValue', str(self.value))
 
         self.tolerance = tolerance
         self.SetStringParameter('Tolerance', str(self.tolerance))

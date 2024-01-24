@@ -234,12 +234,12 @@ class Moderator:
                         target_commands.append(command)
 
                     # Check for any Propagate or Maneuver sub-commands, which need updating too
-                    for sub_com in com.command_sequence:
-                        if isinstance(sub_com, gpy.Propagate):
-                            propagate_commands.append(sub_com)
+                    for sub in com.command_sequence:
+                        if isinstance(sub, gpy.Propagate):
+                            propagate_commands.append(sub)
 
-                        if isinstance(sub_com, gpy.Maneuver):
-                            maneuver_commands.append(sub_com)
+                        if isinstance(sub, gpy.Maneuver):
+                            maneuver_commands.append(sub)
 
             for p in propagate_commands:
                 p.sat.was_propagated = True  # mark sat as propagated so GetState uses runtime values
@@ -282,11 +282,6 @@ class Moderator:
             gpy.Validator().ValidateCommand(command)
             command.Initialize()
             mod.AppendCommand(command)
-            # TODO remove (debugging only)
-            print(command.GetGeneratingString())
-            if isinstance(command, gpy.BranchCommand):
-                for sub_com in command.command_sequence:
-                    print(sub_com.GetGeneratingString())
 
         print('\nRunning mission...')
         run_mission_return = gpy.extract_gmat_obj(self).RunMission()

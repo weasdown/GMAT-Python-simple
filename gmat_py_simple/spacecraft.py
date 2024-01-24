@@ -71,7 +71,9 @@ class Spacecraft(GmatObject):
                         cp_tanks_objs.append(ChemicalTank.from_dict(cp_tank))
                     sc_hardware.Tanks.chemical = cp_tanks_objs
                 except KeyError:
-                    raise
+                    raise KeyError(f'No ChemicalTank found for Spacecraft {sc.name}')
+                except TypeError:
+                    raise KeyError(f'No ChemicalTank found for Spacecraft {sc.name}')
 
                 # parse ElectricTanks
                 try:
@@ -298,9 +300,19 @@ class Spacecraft(GmatObject):
         self.orbit = orbit
         pass
 
-    def GetState(self, state_type: str = 'Current') -> list[float]:
-        # update Spacecraft's gmat_obj with latest data (e.g. from mission run)
+    def GetState(self, state_type: str = 'Current', coord_sys: str = 'EarthMJ2000Eq') -> list[float]:
+        # Update Spacecraft's gmat_obj with latest data (e.g. from mission run)
         self.gmat_obj = self.GetObject()
+
+        # Update coordinate system
+        # FIXME: coord sys field set, but orbit elements not updating
+        # self.SetStringParameter('CoordinateSystem', coord_sys)
+        # if self.was_propagated:
+        #     self.gmat_obj = self.GetObject()
+        #     self.Initialize()
+        #     gmat.Initialize()
+        #     gmat.Update(self.GetName())
+        # self.GetObject()
 
         allowed_state_types: list[str] = list(gpy.OrbitState().allowed_state_elements.keys())
         if state_type != 'Current':

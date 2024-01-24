@@ -11,10 +11,27 @@ import os
 
 log_path = os.path.normpath(f'{os.getcwd()}/examples/logs/GMAT-Tut04-Log.txt')
 gmat.UseLogFile(log_path)
-gmat.EchoLogFile(True)  # set to True to view log output in console (e.g. live iteration results)
+gmat.EchoLogFile(False)  # set to True to view log output in console (e.g. live iteration results)
 
-sat = gpy.Spacecraft('MAVEN')
-main_tank = gpy.ChemicalTank('TestTank', fuel_mass=1718, allow_negative_fuel_mass=False, fuel_density=1000,
+sat_params = {
+    'Name': 'MAVEN',
+    'Orbit': {
+        'CoordinateSystem': 'EarthMJ2000Eq',
+        'DateFormat': 'UTCGregorian',
+        'Epoch': '18 Nov 2013 20:26:24.315',
+        'DisplayStateType': 'Keplerian',
+        'ECC': 1.202872548116186,
+        'SMA': -32593.21599272774,  # km
+        'INC': 28.80241266404144,  # degrees
+        'RAAN': 173.9693759331483,  # degrees
+        'AOP': 240.9696529532762,  # degrees
+        'TA': 359.946553377841  # degrees
+    },
+    'Hardware': {'Tanks': [{'Name': 'TestTank', 'FuelMass': '1718'}]}
+}
+sat = gpy.Spacecraft.from_dict(sat_params)
+# Create tank separately, so we can refer to it later (TODO: and as ImpulsiveBurn only accepts Tank objs, not names)
+main_tank = gpy.ChemicalTank('MainTank', fuel_mass=1718, allow_negative_fuel_mass=False, fuel_density=1000,
                              temperature=20, ref_temp=20, pressure=5000, volume=2, pressure_model='PressureRegulated')
 sat.add_tanks(main_tank)
 
@@ -62,11 +79,9 @@ print(f"Epoch before running: {sat.GetField('Epoch')}")
 mcs = [
     # Target Mars' B-plane
     gpy.Target('Target desire B-plane coordinates', dc1, exit_mode='SaveAndContinue', command_sequence=[
-        # TODO set correct propagator
         gpy.Propagate('Prop 3 days', sat, near_earth, (f'{sat.name}.ElapsedDays', 3)),
         gpy.Propagate('Prop 12 days to TCM', sat, deep_space, (f'{sat.name}.ElapsedDays', 12)),
         # Vary the Trajectory Correction Maneuver (TCM) elements
-        # TODO set correct values
         gpy.Vary('Vary TCM.V', dc1, variable=f'{tcm.name}.Element1', initial_value=0.003937696373137754,
                  perturbation=0.00001, lower=-10e300, upper=10e300, max_step=0.002),
         gpy.Vary('Vary TCM.N', dc1, variable=f'{tcm.name}.Element2', initial_value=0.006042317048292264,
@@ -74,17 +89,14 @@ mcs = [
         gpy.Vary('Vary TCM.B', dc1, variable=f'{tcm.name}.Element3', initial_value=-0.0006747125433520692,
                  perturbation=0.00001, lower=-10e300, upper=10e300, max_step=0.002),
         gpy.Maneuver('Apply TCM', tcm, sat),
-        # TODO set correct propagator
         gpy.Propagate('Prop 280 days', sat, deep_space, (f'{sat.name}.ElapsedDays', 280)),
         gpy.Propagate('Prop to Mars Periapsis', sat, near_mars, f'{sat.name}.Mars.Periapsis'),
         gpy.Achieve('Achieve BdotT', dc1, f'{sat.name}.{mars_inertial.name}.BdotT', 0, tolerance=0.00001),
         gpy.Achieve('Achieve BdotR', dc1, f'{sat.name}.{mars_inertial.name}.BdotR', -7000, tolerance=0.00001)
     ]),
     # Capture into Mars orbit
-    # TODO set correct sub-commands
     gpy.Target('Mars capture', dc1, exit_mode='SaveAndContinue', command_sequence=[
-        # Vary the burn duration to achieve an altitutde of 12000 km
-        # TODO set correct values
+        # Vary the burn duration to achieve an altitude of 12000 km
         gpy.Vary('Vary MOI.V', dc1, variable=f'{moi.name}.Element1', initial_value=-1.603439847094663,
                  perturbation=0.00001, lower=-10e300, upper=10e300, max_step=0.1),
         gpy.Maneuver('Apply MOI', moi, sat),
@@ -94,17 +106,12 @@ mcs = [
     gpy.Propagate('Prop for 1 day', sat, near_mars, (f'{sat.name}.ElapsedDays', 1)),
 ]
 
-# FIXME: MAVEN.MarsInertial.BdotT/BdotR params not being created but unnecessary ones are - add to Achieve?
-# new_param = gpy.Parameter('BdotT', 'MAVEN.MarsInertial.BdotT')
-# new_param.SetRefObjectName(gmat.SPACECRAFT, sat.GetName())
-# new_param.SetRefObject(gpy.extract_gmat_obj(sat), gmat.SPACECRAFT)
-# new_param.SetSolarSystem(gmat.GetSolarSystem())
-# new_param.Initialize()
-
 gpy.RunMission(mcs)  # Run the mission
 
-print(f'Sat state after running: {sat.GetState()}')
-print(f'Epoch after running: {sat.GetField("Epoch")}')
+print(f'Sat state after running: {sat.GetState(coord_sys=mars_inertial.name)}')
+print(f'Epoch after running: {sat.GetEpoch()}')
+
+# sat.Help()
 
 script_path = os.path.normpath(f'{os.getcwd()}/examples/scripts/Tut04_Mars_B-Plane_Targeting.script')
 gmat.SaveScript(script_path)
