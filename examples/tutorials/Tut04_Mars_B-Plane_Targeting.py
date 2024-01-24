@@ -73,7 +73,7 @@ moi = gpy.ImpulsiveBurn('MOI', coord_sys={'CoordinateSystem': 'Local', 'Origin':
 dc1 = gpy.DifferentialCorrector('DC1')
 
 print(f'Sat state before running: {sat.GetState()}')
-print(f"Epoch before running: {sat.GetField('Epoch')}")
+print(f"Epoch before running: {sat.GetEpoch()}")
 
 # Mission Command Sequence
 mcs = [
@@ -110,8 +110,6 @@ gpy.RunMission(mcs)  # Run the mission
 
 print(f'Sat state after running: {sat.GetState(coord_sys=mars_inertial.name)}')
 print(f'Epoch after running: {sat.GetEpoch()}')
-
-# sat.Help()
 
 script_path = os.path.normpath(f'{os.getcwd()}/examples/scripts/Tut04_Mars_B-Plane_Targeting.script')
 gmat.SaveScript(script_path)
