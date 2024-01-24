@@ -283,10 +283,10 @@ class Moderator:
             command.Initialize()
             mod.AppendCommand(command)
             # TODO remove (debugging only)
-            # print(command.GetGeneratingString())
-            # if isinstance(command, gpy.BranchCommand):
-            #     for sub_com in command.command_sequence:
-            #         print(sub_com.GetGeneratingString())
+            print(command.GetGeneratingString())
+            if isinstance(command, gpy.BranchCommand):
+                for sub_com in command.command_sequence:
+                    print(sub_com.GetGeneratingString())
 
         print('\nRunning mission...')
         run_mission_return = gpy.extract_gmat_obj(self).RunMission()

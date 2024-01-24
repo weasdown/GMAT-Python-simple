@@ -67,13 +67,16 @@ mcs = [
         gpy.Propagate('Prop 12 days to TCM', sat, deep_space, (f'{sat.name}.ElapsedDays', 12)),
         # Vary the Trajectory Correction Maneuver (TCM) elements
         # TODO set correct values
-        gpy.Vary('Vary TCM.V', dc1, variable=f'{tcm.name}.Element1', initial_value=0.003937696373137754, lower=-10e300, upper=10e300, max_step=0.002),
-        gpy.Vary('Vary TCM.N', dc1, variable=f'{tcm.name}.Element2', initial_value=0.006042317048292264, lower=-10e300, upper=10e300, max_step=0.002),
-        gpy.Vary('Vary TCM.B', dc1, variable=f'{tcm.name}.Element3', initial_value=-0.0006747125433520692, lower=-10e300, upper=10e300, max_step=0.002),
+        gpy.Vary('Vary TCM.V', dc1, variable=f'{tcm.name}.Element1', initial_value=0.003937696373137754,
+                 perturbation=0.00001, lower=-10e300, upper=10e300, max_step=0.002),
+        gpy.Vary('Vary TCM.N', dc1, variable=f'{tcm.name}.Element2', initial_value=0.006042317048292264,
+                 perturbation=0.00001, lower=-10e300, upper=10e300, max_step=0.002),
+        gpy.Vary('Vary TCM.B', dc1, variable=f'{tcm.name}.Element3', initial_value=-0.0006747125433520692,
+                 perturbation=0.00001, lower=-10e300, upper=10e300, max_step=0.002),
         gpy.Maneuver('Apply TCM', tcm, sat),
         # TODO set correct propagator
         gpy.Propagate('Prop 280 days', sat, deep_space, (f'{sat.name}.ElapsedDays', 280)),
-        gpy.Propagate('Prop to Mars Periapsis', sat, near_mars, f'{sat.name}.Earth.Periapsis'),
+        gpy.Propagate('Prop to Mars Periapsis', sat, near_mars, f'{sat.name}.Mars.Periapsis'),
         gpy.Achieve('Achieve BdotT', dc1, f'{sat.name}.{mars_inertial.name}.BdotT', 0, tolerance=0.00001),
         gpy.Achieve('Achieve BdotR', dc1, f'{sat.name}.{mars_inertial.name}.BdotR', -7000, tolerance=0.00001)
     ]),
@@ -82,7 +85,8 @@ mcs = [
     gpy.Target('Mars capture', dc1, exit_mode='SaveAndContinue', command_sequence=[
         # Vary the burn duration to achieve an altitutde of 12000 km
         # TODO set correct values
-        gpy.Vary('Vary MOI.V', dc1, variable=f'{moi.name}.Element1', initial_value=200, upper=10000, max_step=100),
+        gpy.Vary('Vary MOI.V', dc1, variable=f'{moi.name}.Element1', initial_value=-1.603439847094663,
+                 perturbation=0.00001, lower=-10e300, upper=10e300, max_step=0.1),
         gpy.Maneuver('Apply MOI', moi, sat),
         gpy.Propagate('Prop to Mars Apoapsis', sat, near_mars, f'{sat.name}.Mars.Apoapsis'),
         gpy.Achieve('Achieve RMAG', dc1, f'{sat.name}.Mars.RMAG', 12000),
