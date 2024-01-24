@@ -2,6 +2,8 @@
 # Achieve orbit around Mars with the MAVEN spacecraft by targeting Mars' B-plane on approach
 # Written by William Easdown Babb
 
+# TODO: THIS EXAMPLE IS CURRENTLY A WORK IN PROGRESS (WIP)
+
 from __future__ import annotations
 from load_gmat import gmat
 import gmat_py_simple as gpy
@@ -17,21 +19,21 @@ main_tank = gpy.ChemicalTank('TestTank', fuel_mass=1718, allow_negative_fuel_mas
 sat.add_tanks(main_tank)
 
 # Setup ForceModels and Propagators
-# near_earth_fm = gpy.ForceModel('NearEarthFM', primary_bodies='Earth',
-#                                gravity_field=gpy.ForceModel.GravityField(degree=8, order=8),
-#                                point_masses=['Luna', 'Sun'],
-#                                srp=True)
-# near_earth = gpy.PropSetup('NearEarth',
-#                            gator=gpy.PropSetup.Propagator('RungeKutta89'), fm=near_earth_fm,
-#                            initial_step_size=600, accuracy=1e-13, min_step=0, max_step=600, max_step_attempts=50)
-#
-# deep_space_fm = gpy.ForceModel('DeepSpaceFM', central_body='Sun', primary_bodies='Sun',
-#                                point_masses=['Earth', 'Jupiter', 'Luna', 'Mars',
-#                                              'Neptune', 'Saturn', 'Sun', 'Uranus',
-#                                              'Venus'], srp=True)
-# deep_space = gpy.PropSetup('DeepSpace',
-#                            gator=gpy.PropSetup.Propagator('PrinceDormand78'), fm=deep_space_fm,
-#                            initial_step_size=600, accuracy=1e-12, min_step=0, max_step=864000, max_step_attempts=50)
+near_earth_fm = gpy.ForceModel('NearEarthFM', primary_body='Earth',
+                               gravity_field=gpy.ForceModel.GravityField(degree=8, order=8),
+                               point_masses=['Luna', 'Sun'],
+                               srp=True)
+near_earth = gpy.PropSetup('NearEarth',
+                           gator=gpy.PropSetup.Propagator('RungeKutta89'), fm=near_earth_fm,
+                           initial_step_size=600, accuracy=1e-13, min_step=0, max_step=600, max_step_attempts=50)
+
+deep_space_fm = gpy.ForceModel('DeepSpaceFM', central_body='Sun', primary_body='Sun',
+                               point_masses=['Earth', 'Jupiter', 'Luna', 'Mars',
+                                             'Neptune', 'Saturn', 'Sun', 'Uranus',
+                                             'Venus'], srp=True)
+deep_space = gpy.PropSetup('DeepSpace',
+                           gator=gpy.PropSetup.Propagator('PrinceDormand78'), fm=deep_space_fm,
+                           initial_step_size=600, accuracy=1e-12, min_step=0, max_step=864000, max_step_attempts=50)
 
 mars_gravity_file = f'{gmat.FileManager.Instance().GetRootPath()}data\\gravity\\mars\\Mars50c.cof'
 near_mars_fm = gpy.ForceModel('NearMarsFM', central_body='Mars', primary_body='Mars',
@@ -42,13 +44,14 @@ near_mars = gpy.PropSetup('NearMars',
                           gator=gpy.PropSetup.Propagator('PrinceDormand78'), fm=near_mars_fm,
                           initial_step_size=600, accuracy=1e-12, min_step=0, max_step=86400, max_step_attempts=50)
 
-# Setup coordinate systems
-# FIXME: CoordinateSystems failing to build
-earth_vnb = gpy.OrbitState.CoordinateSystem('Earth_VNB', 'Earth', 'Earth', 'VNB')
-mars_vnb = gpy.OrbitState.CoordinateSystem('Mars_VNB', 'Mars', 'Mars', 'VNB')
+# Setup CoordinateSystems
+mars_inertial = gpy.OrbitState.CoordinateSystem('MarsInertial', 'Mars', 'BodyInertial')
 
-tcm = gpy.ImpulsiveBurn('TCM', coord_sys=earth_vnb, decrement_mass=True, tanks=main_tank, isp=300)
-moi = gpy.ImpulsiveBurn('MOI', coord_sys=mars_vnb, decrement_mass=True, tanks=main_tank, isp=300)
+# Setup ImpulsiveBurns
+tcm = gpy.ImpulsiveBurn('TCM', coord_sys={'CoordinateSystem': 'Local', 'Origin': 'Mars', 'Axes': 'VNB'},
+                        decrement_mass=True, tanks=main_tank)
+moi = gpy.ImpulsiveBurn('MOI', coord_sys={'CoordinateSystem': 'Local', 'Origin': 'Mars', 'Axes': 'VNB'},
+                        decrement_mass=True, tanks=main_tank)
 
 dc1 = gpy.DifferentialCorrector('DC1')
 
@@ -60,8 +63,8 @@ mcs = [
     # Target Mars' B-plane
     gpy.Target('Target desire B-plane coordinates', dc1, exit_mode='SaveAndContinue', command_sequence=[
         # TODO set correct propagator
-        gpy.Propagate('Prop 3 days', sat, prop, (f'{sat.name}.ElapsedDays', 3)),
-        gpy.Propagate('Prop 12 days to TCM', sat, prop, (f'{sat.name}.ElapsedDays', 12)),
+        gpy.Propagate('Prop 3 days', sat, near_earth, (f'{sat.name}.ElapsedDays', 3)),
+        gpy.Propagate('Prop 12 days to TCM', sat, deep_space, (f'{sat.name}.ElapsedDays', 12)),
         # Vary the Trajectory Correction Maneuver (TCM) elements
         # TODO set correct values
         gpy.Vary('Vary TCM.V', dc1, variable='TCM.Element1', initial_value=200, upper=10000, max_step=100),
@@ -69,8 +72,8 @@ mcs = [
         gpy.Vary('Vary TCM.B', dc1, variable='TCM.Element3', initial_value=200, upper=10000, max_step=100),
         gpy.Maneuver('Apply TCM', tcm, sat),
         # TODO set correct propagator
-        gpy.Propagate('Prop 280 days', sat, prop, (f'{sat.name}.ElapsedDays', 280)),
-        gpy.Propagate('Prop to Mars Periapsis', sat, prop, f'{sat.name}.Earth.Periapsis'),
+        gpy.Propagate('Prop 280 days', sat, deep_space, (f'{sat.name}.ElapsedDays', 280)),
+        gpy.Propagate('Prop to Mars Periapsis', sat, near_mars, f'{sat.name}.Earth.Periapsis'),
         gpy.Achieve('Achieve BdotT', dc1, f'{sat.name}.{mars_inertial.name}.BdotT', 0),
         gpy.Achieve('Achieve BdotR', dc1, f'{sat.name}.{mars_inertial.name}.BdotR', -7000)
     ]),
@@ -81,11 +84,14 @@ mcs = [
         # TODO set correct values
         gpy.Vary('Vary MOI.V', dc1, variable=f'{moi.name}.Element1', initial_value=200, upper=10000, max_step=100),
         gpy.Maneuver('Apply MOI', moi, sat),
-        gpy.Propagate('Prop to Mars Apoapsis', sat, prop, f'{sat.name}.Mars.Apoapsis'),
+        gpy.Propagate('Prop to Mars Apoapsis', sat, near_mars, f'{sat.name}.Mars.Apoapsis'),
         gpy.Achieve('Achieve RMAG', dc1, f'{sat.name}.Mars.RMAG', 12000, tolerance=0.1),
     ]),
-    gpy.Propagate('Prop for 1 day', sat, prop, (f'{sat.name}.ElapsedDays', 1)),
+    gpy.Propagate('Prop for 1 day', sat, near_mars, (f'{sat.name}.ElapsedDays', 1)),
 ]
+
+# FIXME: MAVEN.MarsInertial.BdotT/BdotR params not being created but unnecessary ones are - check StopCondition init
+gmat.ShowObjects()
 
 gpy.RunMission(mcs)  # Run the mission
 

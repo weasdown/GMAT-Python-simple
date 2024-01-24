@@ -538,49 +538,104 @@ class OrbitState:
         class Axes(GmatObject):
             def __init__(self, axes_type: str, name: str):
                 super().__init__(axes_type, name)
+                self.Initialize()
 
-        def __init__(self, name: str, origin: str = 'Earth', central_body: str = 'Earth',
-                     axes: str = 'MJ2000Eq', **kwargs):
+        def __init__(self, name: str, origin: str = 'Earth', axes: str = 'MJ2000Eq', primary: str = None,
+                     secondary: str = None, xaxis: str = None, yaxis: str = None, zaxis: str = None, epoch: str = None,
+                     alignment_vec_x: int = None, alignment_vec_y: int = None, alignment_vec_z: int = None,
+                     constraint_vec_x: int = None, constraint_vec_y: int = None, constraint_vec_z: int = None,
+                     constraint_ref_vec_x: int = None, constraint_ref_vec_y: int = None, constraint_ref_vec_z: int = None,
+                     constraint_coord_sys: str = None, ref_object: str = None
+                     ):
             # TODO: remove kwargs if possible, if not document as another 2do
             # TODO complete allowed values - see User Guide pages 335-339 (PDF pg 344-348)
             #  and src/base/coordsystem/CoordinateSystem.cpp/CreateLocalCoordinateSystem
-            self._name = name
-            super().__init__('CoordinateSystem', self._name)
-            self.origin: str = origin
-            self.axes: str = axes
-            self.gmat_obj: gmat.CoordinateSystem = gmat.Construct('CoordinateSystem',
-                                                                  self._name, self.origin, self.axes)
+            super().__init__('CoordinateSystem', name)
+            self.allowed_values = {'Axes': ['MJ2000Eq', 'MJ2000Ec', 'ICRF',
+                                            'MODEq', 'MODEc', 'TODEq', 'TODEc', 'MOEEq', 'MOEEc', 'TOEEq', 'TOEEc',
+                                            'ObjectReferenced', 'Equator', 'BodyFixed', 'BodyInertial',
+                                            'GSE', 'GSM', 'Topocentric', 'BodySpinSun'],
+                                   'CentralBody': CelestialBodies(),
+                                   'Origin': (CelestialBodies() + SpacecraftObjs() + LibrationPoints() + Barycenter()
+                                              + GroundStations()),
+                                   'AxesTypeSpecific': {
+                                       'ObjectReferenced': {
+                                           'Primary': (CelestialBodies() + SpacecraftObjs() + LibrationPoints() +
+                                                       Barycenter() + GroundStations()),
+                                           'Secondary': (CelestialBodies() + SpacecraftObjs() + LibrationPoints() +
+                                                         Barycenter() + GroundStations()),
+                                           'XAxis': ['R', 'V', 'N', '-R', '-V', '-N', None],
+                                           'YAxis': ['R', 'V', 'N', '-R', '-V', '-N', None],
+                                           'ZAxis': ['R', 'V', 'N', '-R', '-V', '-N', None],
+                                       },
+                                       'TOE': {
+                                           'Epoch': '21545'
+                                       },
+                                       'MOE': {
+                                           'Epoch': '21545'
+                                       },
+                                       'LocalAlignedConstrained': {
+                                           'AlignmentVectorX': 1,
+                                           'AlignmentVectorY': 0,
+                                           'AlignmentVectorZ': 0,
+                                           'ConstraintVectorX': 0,
+                                           'ConstraintVectorY': 0,
+                                           'ConstraintVectorZ': 1,
+                                           'ConstraintReferenceVectorX': 0,
+                                           'ConstraintReferenceVectorY': 0,
+                                           'ConstraintReferenceVectorZ': 1,
+                                           'ConstraintCoordinateSystem': 'EarthMJ2000Eq',
+                                           'ReferenceObject': (gpy.CelestialBodies() + gpy.SpacecraftObjs() +
+                                                               gpy.LibrationPoints() + gpy.Barycenter() +
+                                                               gpy.GroundStations())
+                                       }
+                                   },
+                                   }
 
-            self._allowed_values = {'Axes': ['MJ2000Eq', 'MJ2000Ec', 'ICRF',
-                                             'MODEq', 'MODEc', 'TODEq', 'TODEc', 'MOEEq', 'MOEEc', 'TOEEq', 'TOEEc',
-                                             'ObjectReferenced', 'Equator', 'BodyFixed', 'BodyInertial',
-                                             'GSE', 'GSM', 'Topocentric', 'BodySpinSun'],
-                                    'CentralBody': CelestialBodies(),
-                                    'Origin': [CelestialBodies() + SpacecraftObjs() + LibrationPoints() + Barycenter() +
-                                               GroundStations()],
-                                    }
-            self._allowed_values['Primary'] = self._allowed_values['Origin']
-            self.axes = OrbitState.CoordinateSystem.Axes(axes, axes)
-            self.origin: gmat.Planet = gmat.GetObject(origin)
+            # Parse origin argument
+            if origin not in self.allowed_values['Origin']:
+                raise AttributeError(f'Specified origin "{origin}" is not recognized. Please specify one of the '
+                                     f'following:\n\t{self.allowed_values["Origin"]}')
+            else:
+                self.origin = gmat.GetObject(origin)
 
-            self.central_body = central_body
+            # Parse axes argument
+            if axes not in self.allowed_values['Axes']:
+                raise AttributeError(f'Specified axes type "{axes}" is not recognized. Please specify one of the '
+                                     f'following:\n\t{self.allowed_values["Axes"]}')
+            else:
+                self.axes: str = axes
+                if self.axes in list(self.allowed_values['AxesTypeSpecific'].keys()):
+                    axes_specific_values = self.allowed_values['AxesTypeSpecific'][self.axes]
 
-            # defaults = {'axes': 'MJ2000Eq', 'central_body': 'Earth', 'origin': 'Earth'}
-            # for attr in list(defaults.keys()):
-            #     try:  # assume attr is in kwargs
-            #         val = kwargs[attr]
-            #         valid_values = self._allowed_values[attr]
-            #         if val in valid_values:
-            #             setattr(self, f'_{attr}', val)
-            #         else:
-            #             raise AttributeError(f'Invalid {attr} parameter provided - {val}\n'
-            #                                  f'Must provide one of: {valid_values}')
-            #     except KeyError:  # not in kwargs
-            #         setattr(self, f'_{attr}', defaults[attr])  # set attribute's default value
+                    # TODO set params/ref objs for all axes types
+                    if self.axes == 'ObjectReferenced':
+                        self.primary = primary
+                        self.secondary = secondary
+                        self.xaxis = xaxis
+                        self.yaxis = yaxis
+                        self.zaxis = zaxis
 
-            # TODO parse Origin parameter
-            # print(f'Currently allowed Origin values:\n{self._allowed_values["Origin"]}')
-            gpy.Initialize()
+                    elif self.axes == 'TOE' or self.axes == 'MOE':
+                        self.epoch = epoch
+
+                    elif self.axes == 'LocalAlignedConstrained':
+                        self.alignment_vec_x = alignment_vec_x
+                        self.alignment_vec_y = alignment_vec_y
+                        self.alignment_vec_z = alignment_vec_z
+                        self.constraint_vec_x = constraint_vec_x
+                        self.constraint_vec_y = constraint_vec_y
+                        self.constraint_vec_z = constraint_vec_z
+                        self.constraint_ref_vec_x = constraint_ref_vec_x
+                        self.constraint_ref_vec_y = constraint_ref_vec_y
+                        self.constraint_ref_vec_z = constraint_ref_vec_z
+                        self.constraint_coord_sys = constraint_coord_sys
+                        self.ref_object = ref_object
+
+            self.axes = OrbitState.CoordinateSystem.Axes(axes, f'{origin}_{axes}')
+            self.SetRefObject(self.axes, gmat.AXIS_SYSTEM, self.axes.name)
+
+            # gpy.Initialize()
             self.Initialize()
 
         def __repr__(self):
