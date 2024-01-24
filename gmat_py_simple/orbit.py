@@ -90,6 +90,7 @@ class AtmosphereModel(GmatObject):
 class PhysicalModel(GmatObject):
     def __init__(self, obj_type: str, name: str):
         super().__init__(obj_type, name)
+        # self.Initialize()
 
 
 class ForceModel(GmatObject):
@@ -177,7 +178,20 @@ class ForceModel(GmatObject):
 
         # TODO don't setup gravity field if none specified - breaks interplanetary where grav field irrelevant
         self.primary_body: str = primary_body
-        if self.primary_body is not None:
+        if self.primary_body is None:  # self.primary_body is None
+            self.gravity = gravity_field
+            if gravity_field is not None:
+                if isinstance(gravity_field, ForceModel.GravityField):
+                    self.gravity: ForceModel.GravityField = gravity_field
+                else:
+                    raise TypeError(f'gravity_field type not recognized - {type(gravity_field).__name__}.'
+                                    f' Must be None or a gpy.ForceModel.GravityField')
+            else:  # gravity_field and self.primary_body are both None - use default
+                # TODO: are there cases where we wouldn't want a PrimaryBody or GravityField?
+                self.primary_body = 'Earth'
+                self.gravity = self.GravityField()  # create default (Earth-based) GravityField
+
+        else:  # self.primary_body is not None
             if self.gravity is not None and (self.primary_body != self.gravity.body):
                 raise AttributeError(
                     f'If a primary_body and gravity_field are both specified, the primary_body must be '
@@ -188,17 +202,6 @@ class ForceModel(GmatObject):
             if self.primary_body not in allowed_primaries:
                 raise AttributeError(f'Specified primary_body "{self.primary_body}" is not recognized. Please use one '
                                      f'of the following:\n{allowed_primaries}')
-            # elif self.gravity is None:
-            #     self.gravity = self.GravityField(body=self.primary_body)
-
-        else:  # self.primary_body is None
-            self.gravity = gravity_field
-            if gravity_field is not None:
-                if isinstance(gravity_field, ForceModel.GravityField):
-                    self.gravity: ForceModel.GravityField = gravity_field
-                else:
-                    raise TypeError(f'gravity_field type not recognized - {type(gravity_field).__name__}.'
-                                    f' Must be None or a gpy.ForceModel.GravityField')
 
         if self.gravity is not None:
             self.AddForce(self.gravity)  # add the GravityField to the ForceModel within GMAT
@@ -253,7 +256,7 @@ class ForceModel(GmatObject):
         return f'ForceModel with name {self.name}'
 
     def AddForce(self, force: PhysicalModel):
-        # No return from GMAT
+        # Nothing returned from GMAT so no return from this method
         gpy.extract_gmat_obj(self).AddForce(gpy.extract_gmat_obj(force))
 
     class PrimaryBody:
@@ -464,41 +467,42 @@ class PropSetup(GmatObject):  # variable called prop in GMAT Python examples
             super().__init__(integrator, name)
 
             gpy.Initialize()
+            # self.Initialize()
 
     def __init__(self, name: str, fm: ForceModel = None, gator: PropSetup.Propagator = None,
                  initial_step_size: int = 60, accuracy: int | float = 1e-12, min_step: int = 0, max_step: int = 2700,
                  max_step_attempts: int = 50, stop_if_accuracy_violated: bool = True):
         # TODO add other args as per pg 449 (PDF pg 458) of User Guide
         super().__init__('PropSetup', name)
+
+        # Create a ForceModel and Propagator
         self.force_model = fm if fm else ForceModel()
         self.gator = gator if gator else PropSetup.Propagator()
         self.SetReference(self.gator)
 
-        gpy.Initialize()
-
         if initial_step_size is not None:
             self.initial_step_size = initial_step_size
-            self.SetField('InitialStepSize', self.initial_step_size)
+            self.SetRealParameter('InitialStepSize', self.initial_step_size)
 
         if accuracy is not None:
             self.accuracy = accuracy
-            self.SetField('Accuracy', self.accuracy)
+            self.SetRealParameter('Accuracy', self.accuracy)
 
         if min_step is not None:
             self.min_step = min_step
-            self.SetField('MinStep', self.min_step)
+            self.SetRealParameter('MinStep', self.min_step)
 
         if max_step is not None:
             self.max_step = max_step
-            self.SetField('MaxStep', self.max_step)
+            self.SetRealParameter('MaxStep', self.max_step)
 
         if max_step_attempts is not None:
             self.max_step_attempts = max_step_attempts
-            self.SetField('MaxStepAttempts', self.max_step_attempts)
+            self.SetIntegerParameter('MaxStepAttempts', self.max_step_attempts)
 
         if stop_if_accuracy_violated is not None:
             self.stop_if_accuracy_violated = stop_if_accuracy_violated
-            self.SetField('StopIfAccuracyIsViolated', self.stop_if_accuracy_violated)
+            self.SetBooleanParameter('StopIfAccuracyIsViolated', self.stop_if_accuracy_violated)
 
         self.SetReference(self.force_model)
         self.psm = self.GetPropStateManager()

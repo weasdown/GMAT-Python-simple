@@ -23,13 +23,13 @@ class GmatCommand:
         self.SetGlobalObjectMap(gpy.Sandbox().GetGlobalObjectMap())
         self.SetSolarSystem(gmat.GetSolarSystem())
 
-        # Excluded object types must have key parameters set before they are initialized
-        if not isinstance(self, (gpy.Target, gpy.EndTarget, gpy.Achieve)):
-            try:
-                self.Initialize()
-            except Exception as ex:
-                raise RuntimeError(f'{self.command_type} command named "{self.name}" failed to initialize in '
-                                   f'GmatCommand.__init__() - see exception below:\n\t{ex}') from ex
+        # # Excluded object types must have key parameters set before they are initialized
+        # if not isinstance(self, (gpy.Target, gpy.EndTarget, gpy.Achieve)):
+        #     try:
+        #         self.Initialize()
+        #     except Exception as ex:
+        #         raise RuntimeError(f'{self.command_type} command named "{self.name}" failed to initialize in '
+        #                            f'GmatCommand.__init__() - see exception below:\n\t{ex}') from ex
 
     def AddToMCS(self) -> bool:
         return gpy.Moderator().AppendCommand(self)
@@ -59,12 +59,10 @@ class GmatCommand:
     def GetParameterType(self, param: str | int) -> int:
         if isinstance(param, str):
             param = self.GetParameterID(param)
-        type_id: int = gpy.extract_gmat_obj(self).GetParameterType(param)
-        # type_string: str = gpy.utils.GetTypeNameFromID(type_id)
-        return type_id
+        return gpy.extract_gmat_obj(self).GetParameterType(param)
 
     def GetRefObject(self, type_id: int, name: str, index: int = 0):
-        return self.gmat_obj.GetRefObject(type_id, name, index)
+        return gpy.extract_gmat_obj(self).GetRefObject(type_id, name, index)
 
     def GetRefObjectName(self, type_int: int) -> str:
         return self.gmat_obj.GetRefObjectName(type_int)
@@ -458,6 +456,7 @@ class Propagate(GmatCommand):
                  user_stop_cond: tuple | str = None):
         # TODO add None as default for sat, prop, stop_cond and handle appropriately in __init__()
         super().__init__('Propagate', name)
+        self.Initialize()
 
         # Get names of Propagate's ref objects and extract the objects
         prop_ref_name = self.GetRefObjectName(gmat.PROP_SETUP)
