@@ -58,8 +58,6 @@ dc1 = gpy.DifferentialCorrector('DC1')
 print(f'Sat state before running: {sat.GetState()}')
 print(f"Epoch before running: {sat.GetField('Epoch')}")
 
-achieve_bdott = gpy.Achieve('Achieve BdotT', dc1, f'{sat.name}.{mars_inertial.name}.BdotT', 0)
-
 # Mission Command Sequence
 mcs = [
     # Target Mars' B-plane
@@ -69,15 +67,15 @@ mcs = [
         gpy.Propagate('Prop 12 days to TCM', sat, deep_space, (f'{sat.name}.ElapsedDays', 12)),
         # Vary the Trajectory Correction Maneuver (TCM) elements
         # TODO set correct values
-        gpy.Vary('Vary TCM.V', dc1, variable='TCM.Element1', initial_value=200, upper=10000, max_step=100),
-        gpy.Vary('Vary TCM.N', dc1, variable='TCM.Element2', initial_value=200, upper=10000, max_step=100),
-        gpy.Vary('Vary TCM.B', dc1, variable='TCM.Element3', initial_value=200, upper=10000, max_step=100),
+        gpy.Vary('Vary TCM.V', dc1, variable=f'{tcm.name}.Element1', initial_value=0.003937696373137754, lower=-10e300, upper=10e300, max_step=0.002),
+        gpy.Vary('Vary TCM.N', dc1, variable=f'{tcm.name}.Element2', initial_value=0.006042317048292264, lower=-10e300, upper=10e300, max_step=0.002),
+        gpy.Vary('Vary TCM.B', dc1, variable=f'{tcm.name}.Element3', initial_value=-0.0006747125433520692, lower=-10e300, upper=10e300, max_step=0.002),
         gpy.Maneuver('Apply TCM', tcm, sat),
         # TODO set correct propagator
         gpy.Propagate('Prop 280 days', sat, deep_space, (f'{sat.name}.ElapsedDays', 280)),
         gpy.Propagate('Prop to Mars Periapsis', sat, near_mars, f'{sat.name}.Earth.Periapsis'),
-        achieve_bdott,  # TODO revert to whole command once debugged
-        gpy.Achieve('Achieve BdotR', dc1, f'{sat.name}.{mars_inertial.name}.BdotR', -7000)
+        gpy.Achieve('Achieve BdotT', dc1, f'{sat.name}.{mars_inertial.name}.BdotT', 0, tolerance=0.00001),
+        gpy.Achieve('Achieve BdotR', dc1, f'{sat.name}.{mars_inertial.name}.BdotR', -7000, tolerance=0.00001)
     ]),
     # Capture into Mars orbit
     # TODO set correct sub-commands
@@ -87,7 +85,7 @@ mcs = [
         gpy.Vary('Vary MOI.V', dc1, variable=f'{moi.name}.Element1', initial_value=200, upper=10000, max_step=100),
         gpy.Maneuver('Apply MOI', moi, sat),
         gpy.Propagate('Prop to Mars Apoapsis', sat, near_mars, f'{sat.name}.Mars.Apoapsis'),
-        gpy.Achieve('Achieve RMAG', dc1, f'{sat.name}.Mars.RMAG', 12000, tolerance=0.1),
+        gpy.Achieve('Achieve RMAG', dc1, f'{sat.name}.Mars.RMAG', 12000),
     ]),
     gpy.Propagate('Prop for 1 day', sat, near_mars, (f'{sat.name}.ElapsedDays', 1)),
 ]
@@ -98,8 +96,6 @@ mcs = [
 # new_param.SetRefObject(gpy.extract_gmat_obj(sat), gmat.SPACECRAFT)
 # new_param.SetSolarSystem(gmat.GetSolarSystem())
 # new_param.Initialize()
-
-gmat.ShowObjects()
 
 gpy.RunMission(mcs)  # Run the mission
 

@@ -61,6 +61,11 @@ class GmatCommand:
             param = self.GetParameterID(param)
         return gpy.extract_gmat_obj(self).GetParameterType(param)
 
+    def GetParameterTypeString(self, param: str | int) -> str:
+        if isinstance(param, str):
+            param = self.GetParameterID(param)
+        return gpy.extract_gmat_obj(self).GetParameterTypeString(param)
+
     def GetRefObject(self, type_id: int, name: str, index: int = 0):
         return gpy.extract_gmat_obj(self).GetRefObject(type_id, name, index)
 
@@ -166,32 +171,42 @@ class Achieve(GmatCommand):
         self.SetStringParameter('Goal', self.variable)
 
         # Make Parameter for Goal if one doesn't already exist
-        mod = gpy.Moderator()
-        if not mod.GetParameter(self.variable):
+        if not gpy.Moderator().GetParameter(self.variable):
             param_eles = self.variable.split('.')
             param_type = param_eles[-1]
             new_param = gpy.Parameter(param_type, self.variable)
 
             for ele in param_eles:
-                if ele in gpy.SpacecraftObjs():
-                    new_param.SetRefObjectName(gmat.SPACECRAFT, ele)
-                    new_param.SetRefObject(gmat.GetObject(ele), gmat.SPACECRAFT)
-
                 if ele in gpy.CoordSystems():
+                    # print(f'Updating CS for {new_param.GetName()}')
+                    # Update the Parameter's COORDINATE_SYSTEM
                     new_param.SetRefObjectName(gmat.COORDINATE_SYSTEM, ele)
                     cs = gmat.GetObject(ele)
                     new_param.SetRefObject(cs, gmat.COORDINATE_SYSTEM)
 
                     # Also update the Parameter's SPACE_POINT
+                    # print(f'Updating CB for {new_param.GetName()}')
                     body = cs.GetField('Origin')
                     new_param.SetRefObjectName(gmat.SPACE_POINT, body)
                     new_param.SetRefObject(gmat.GetObject(body), gmat.SPACE_POINT)
-                    pass
+
+                if ele in gpy.SpacecraftObjs():
+                    # print(f'Updating S/C for {new_param.GetName()}')
+                    # Update the Parameter's SPACECRAFT
+                    new_param.SetRefObjectName(gmat.SPACECRAFT, ele)
+                    sc = gmat.GetObject(ele)
+                    new_param.SetRefObject(sc, gmat.SPACECRAFT)
+
+                if ele in gpy.CelestialBodies():
+                    # print(f'Updating CB for {new_param.GetName()}')
+                    # Update the Parameter's CELESTIAL_BODY (even if COORDINATE_SYSTEM not updated)
+                    new_param.SetRefObjectName(gmat.CELESTIAL_BODY, ele)
+                    new_param.SetRefObject(gmat.GetObject(ele), gmat.CELESTIAL_BODY)
 
             new_param.SetSolarSystem(gmat.GetSolarSystem())
             new_param.Initialize()
-            new_param.Help()
-            pass
+            # self.SetRefObject(new_param.gmat_base, gmat.PARAMETER)
+
         #     # param_type is the final element of the self.variable string, e.g. Periapsis for Sat.Earth.Periapsis
         #     param_eles = self.variable.split('.')
         #     param_type = param_eles[-1]
@@ -245,7 +260,7 @@ class Achieve(GmatCommand):
             #         new_param.SetRefObject(gmat.Planet(body), gmat.COORDINATE_SYSTEM)
 
         self.value = value
-        self.SetStringParameter('GoalValue', str(self.value))
+        print(self.SetStringParameter('GoalValue', str(self.value)))
 
         self.tolerance = tolerance
         self.SetStringParameter('Tolerance', str(self.tolerance))
@@ -255,6 +270,7 @@ class Achieve(GmatCommand):
         self.SetGlobalObjectMap(gpy.Sandbox().GetGlobalObjectMap())
 
         self.Initialize()
+        # print(self.GetGeneratingString())
         # gpy.Initialize()
         # self.Initialize()
 
@@ -784,6 +800,8 @@ class Vary(SolverSequenceCommand):
         # If a DefaultIB object exists and the user didn't create it, GMAT did while building this command - delete it
         if not user_created_def_ib:
             gmat.Clear(def_ib_name)
+
+        # print(self.GetGeneratingString())
 
     def RenameRefObject(self, type_id: int, old_name: str, new_name: str) -> bool:
         return gpy.extract_gmat_obj(self).RenameRefObject(type_id, old_name, new_name)
