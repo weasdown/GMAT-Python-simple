@@ -40,7 +40,7 @@ print(f"Epoch before running: {sat.GetField('Epoch')}")
 
 # Mission Command Sequence
 mcs = [gpy.BeginMissionSequence(),
-       gpy.Propagate('Prop To Periapsis', prop, sat, 'Sat.Earth.Periapsis')]
+       gpy.Propagate('Prop To Periapsis', sat, prop, 'Sat.Earth.Periapsis')]
 
 gpy.RunMission(mcs)  # Run the mission
 

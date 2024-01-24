@@ -12,7 +12,7 @@ gmat.EchoLogFile(False)  # set to True to view log output in console (e.g. live 
 
 sat = gpy.Spacecraft('DefaultSC')
 
-prop = gpy.PropSetup('DefaultProp', gator=gpy.PropSetup.Propagator('RungeKutta89'),
+prop = gpy.PropSetup('NonDefaultProp', gator=gpy.PropSetup.Propagator('RungeKutta89'),
                      accuracy=9.999999999999999e-12)
 
 toi = gpy.ImpulsiveBurn('TOI')

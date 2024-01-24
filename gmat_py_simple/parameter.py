@@ -80,18 +80,22 @@ class Parameter:
             if not response:
                 raise RuntimeError(f'SetRefObject() returned a non-true value: {response}')
         except Exception as ex:
-            raise RuntimeError(f'Parameter named "{self.name}" failed to SetRefObject with arguments:'
-                               f'\n\t- obj:         {obj}'
-                               f'\n\t- type_int:    {type_int} (gmat.{gpy.GetTypeNameFromID(type_int)})\n'
-                               f'\n\tRaised exception: {ex}\n'
-                               f'\tGMAT type: {self.GetTypeName()}\n'
-                               f'\tRef obj type array: {self.gmat_base.GetRefObjectTypeArray()}\n\n'
-                               f'\tRef obj array, SPACECRAFT: {self.gmat_base.GetRefObjectArray(gmat.SPACECRAFT)}\n'
-                               f'\tRef obj array, SPACE_POINT: {self.gmat_base.GetRefObjectArray(gmat.SPACE_POINT)}\n'
-                               f'\tRef obj array, COORDINATE_SYSTEM: {self.gmat_base.GetRefObjectArray(gmat.COORDINATE_SYSTEM)}\n\n'
-                               f'\tRef obj name array, SPACECRAFT: {self.gmat_base.GetRefObjectNameArray(gmat.SPACECRAFT)}\n'
-                               f'\tRef obj name array, SPACE_POINT: {self.gmat_base.GetRefObjectNameArray(gmat.SPACE_POINT)}\n'
-                               f'\tRef obj name array, COORDINATE_SYSTEM: {self.gmat_base.GetRefObjectNameArray(gmat.COORDINATE_SYSTEM)}') \
+            if 'GmatBase Exception Thrown' in str(ex):
+                pass
+            raise RuntimeError(f'Parameter named "{self.name}" failed to SetRefObject'
+                               # f' with arguments:'
+                               # f'\n\t- obj:         {obj}'
+                               # f'\n\t- type_int:    {type_int} (gmat.{gpy.GetTypeNameFromID(type_int)})\n'
+                               # f'\n\tRaised exception: {ex}\n'
+                               # f'\tGMAT type: {self.GetTypeName()}\n'
+                               # f'\tRef obj type array: {self.gmat_base.GetRefObjectTypeArray()}\n\n'
+                               # f'\tRef obj array, SPACECRAFT: {self.gmat_base.GetRefObjectArray(gmat.SPACECRAFT)}\n'
+                               # f'\tRef obj array, SPACE_POINT: {self.gmat_base.GetRefObjectArray(gmat.SPACE_POINT)}\n'
+                               # f'\tRef obj array, COORDINATE_SYSTEM: {self.gmat_base.GetRefObjectArray(gmat.COORDINATE_SYSTEM)}\n\n'
+                               # f'\tRef obj name array, SPACECRAFT: {self.gmat_base.GetRefObjectNameArray(gmat.SPACECRAFT)}\n'
+                               # f'\tRef obj name array, SPACE_POINT: {self.gmat_base.GetRefObjectNameArray(gmat.SPACE_POINT)}\n'
+                               # f'\tRef obj name array, COORDINATE_SYSTEM: {self.gmat_base.GetRefObjectNameArray(gmat.COORDINATE_SYSTEM)}'
+                               f'\nGMAT exception: {ex}') \
                 from ex
         return response
 
@@ -101,7 +105,7 @@ class Parameter:
         vdator.SetObjectMap(gmat.Moderator.Instance().GetConfiguredObjectMap())
 
         # GMAT's SetRefObjectName doesn't work on Swig Parameter object, only a GmatBase, so get GmatBase from Validator
-        self.gmat_base = gmat.Validator.Instance().FindObject(name)
+        self.gmat_base = gmat.Validator.Instance().FindObject(self.name)
         resp = self.gmat_base.SetRefObjectName(type_int, name)
         if not resp:
             raise RuntimeError(f'Parameter.SetRefObjectName() failed for Parameter {self.name} with arguments:'
@@ -112,13 +116,16 @@ class Parameter:
     def SetSolarSystem(self, ss: gmat.SolarSystem = gmat.GetSolarSystem()):
         return self.gmat_base.SetSolarSystem(ss)
 
-    def SetStringParameter(self, param_name: str, value: str) -> bool:
-        resp = self.gmat_base.SetStringParameter(param_name, value)
+    def SetStringParameter(self, param: str | int, value: str) -> bool:
+        if isinstance(param, str):
+            param = self.GetParameterID(param)
+        resp = gpy.extract_gmat_obj(self).SetStringParameter(param, value)
         if not resp:
             raise RuntimeError(f'Parameter.SetStringParameter() failed for parameter "{self.name}" of type '
                                f'{self.GetTypeName()} with arguments:'
-                               f'\n\t- param_name:  {param_name}'
+                               f'\n\t- param_name:  {param}'
                                f'\n\t- value:       {value}')
+        return resp
 
     def Validate(self) -> bool:
         try:

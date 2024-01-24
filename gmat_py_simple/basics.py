@@ -26,8 +26,14 @@ class GmatObject:
     def from_gmat_obj(cls, obj):
         return cls(type(obj).__name__, obj.GetName())
 
+    def GetBooleanParameter(self, param: str | int) -> bool:
+        if isinstance(param, str):
+            param = self.GetParameterID(param)
+        return gpy.extract_gmat_obj(self).GetBooleanParameter(param)
+
     def GetEpoch(self, as_datetime: bool = False) -> str | datetime:
         self.gmat_obj = self.GetObject()  # update object's gmat_obj with latest data (e.g. from mission run)
+        # FIXME: inaccurate for Mars in Tut04
         epoch_str: str = self.GetField('Epoch')
         if not as_datetime:
             return epoch_str
@@ -65,11 +71,16 @@ class GmatObject:
             if not self.was_propagated:  # sat not yet propagated
                 return gmat.GetObject(self._name)
             elif self.was_propagated:  # sat has been propagated - gmat.GetObject() would return incorrect values
+                if isinstance(self, gpy.Spacecraft):
+                    objs_to_update = [self.hardware.chemical_thrusters, self.hardware.chemical_tanks, self.hardware.electric_thrusters, self.hardware.electric_tanks]
+                    for hw_list in objs_to_update:
+                        for hw_item in hw_list:
+                            hw_item.GetObject()
                 return gmat.GetRuntimeObject(self._name)
 
         except AttributeError:  # object may not have a self.was_propagated attribute
             print(f'**Warning** Object {self.name} of type {self.gmat_obj.GetTypeName()} does not have an attribute '
-                  f'self.was_propagate. GetObject() is using gmat.GetObject() instead')
+                  f'self.was_propagated. GetObject() is using gmat.GetObject() instead')
             return gmat.GetObject(self._name)
 
     def GetName(self):
@@ -86,12 +97,15 @@ class GmatObject:
     def GetParameterID(self, param_name: str) -> int:
         return gpy.extract_gmat_obj(self).GetParameterID(param_name)
 
-    def GetParameterType(self, param: str | int) -> str:
+    def GetParameterType(self, param: str | int) -> int:
         if isinstance(param, str):
             param = self.GetParameterID(param)
-        type_id: int = gpy.extract_gmat_obj(self).GetParameterType(param)
-        type_string: str = gpy.utils.GetTypeNameFromID(type_id)
-        return type_string
+        return gpy.extract_gmat_obj(self).GetParameterType(param)
+
+    def GetParameterTypeString(self, param: str | int) -> str:
+        if isinstance(param, str):
+            param = self.GetParameterID(param)
+        return gpy.extract_gmat_obj(self).GetParameterTypeString(param)
 
     def GetRealParameter(self, param: str | int) -> float:
         if isinstance(param, str):
@@ -115,6 +129,9 @@ class GmatObject:
             param = self.GetParameterID(param)
         return gpy.extract_gmat_obj(self).GetStringParameter(param)
 
+    def GetTypeName(self) -> str:
+        return gpy.extract_gmat_obj(self).GetTypeName()
+
     def Help(self):
         # TODO: upgrade to get list of fields with utils.gmat_obj_field_list then print all fields/values
         return gpy.extract_gmat_obj(self).Help()
@@ -133,6 +150,11 @@ class GmatObject:
         if isinstance(param, str):
             param = self.GetParameterID(param)
         return gpy.extract_gmat_obj(self).SetBooleanParameter(param, value)
+
+    def SetIntegerParameter(self, param: str | int, value: int) -> bool:
+        if isinstance(param, str):
+            param = self.GetParameterID(param)
+        return gpy.extract_gmat_obj(self).SetIntegerParameter(param, value)
 
     def SetField(self, field: str, val: str | int | float | bool | list):
         """
@@ -190,7 +212,8 @@ class GmatObject:
         try:
             return self.gmat_obj.Validate()
         except Exception as ex:
-            raise RuntimeError(f'{type(self).__name__} named "{self.name}" failed to Validate - see GMAT exception above') \
+            raise RuntimeError(
+                f'{type(self).__name__} named "{self.name}" failed to Validate - see GMAT exception above') \
                 from ex
 
     @property
@@ -200,5 +223,4 @@ class GmatObject:
     @name.setter
     def name(self, new_name: str):
         self._name = new_name
-        self.gmat_obj.SetName(new_name)
-
+        gpy.extract_gmat_obj(self).SetName(new_name)

@@ -90,11 +90,12 @@ class AtmosphereModel(GmatObject):
 class PhysicalModel(GmatObject):
     def __init__(self, obj_type: str, name: str):
         super().__init__(obj_type, name)
+        # self.Initialize()
 
 
 class ForceModel(GmatObject):
-    def __init__(self, name: str = 'DefaultProp_ForceModel', central_body: str = 'Earth', primary_bodies=None,
-                 polyhedral_bodies: list = None, gravity_field: GravityField = None,
+    def __init__(self, name: str = 'DefaultProp_ForceModel', central_body: str = 'Earth',
+                 primary_body: str = None, polyhedral_bodies: list = None, gravity_field: GravityField = None,
                  point_masses: str | list[str] | PointMassForce = None, drag: DragForce = None,
                  srp: bool | SolarRadiationPressure = False, relativistic_correction: bool = False,
                  error_control: list = None, user_defined: list[str] = None):
@@ -127,7 +128,9 @@ class ForceModel(GmatObject):
                 if not all([f in celestial_bodies for f in point_masses]):
                     raise SyntaxError(f'Not all strings in point_masses are valid celestial body names')
 
-                if self.gravity and (any(force in self.central_body for force in point_masses)):
+                if self.gravity and (any(f in self.central_body for f in point_masses)):
+                    # FIXME: breaks Tut04 DeepSpace FM
+                    # TODO don't assume Earth
                     raise SyntaxError(f'Point mass for {self.central_body} cannot be used because '
                                       f'{self.central_body} is already set as the central body')
 
@@ -144,28 +147,69 @@ class ForceModel(GmatObject):
         self._allowed_values = {'arg': 'value'}
         defaults = {'error_control': ['RSSStep'], 'point_masses': ['Earth'], 'primary_bodies': []}
 
-        self.central_body = central_body
-        self.SetField('CentralBody', self.central_body)
+        self.central_body = self.GetField('CentralBody')
+        if central_body is not None:
+            self.central_body = central_body
+            self.SetStringParameter('CentralBody', self.central_body)
+
+        self.gravity = gravity_field
 
         # TODO replace below with creation of GravityFields
         #  PrimaryBodies is alias for GravityFields as per page 162 of GMAT Architectucral Specification
-        self._primary_bodies = primary_bodies if primary_bodies else self.central_body
+        # self.gravity = None
+        # if primary_bodies is not None:
+        #     if isinstance(primary_bodies, str):
+        #         primary_bodies = [primary_bodies]
+        #     self.primary_bodies = primary_bodies
+        #
+        #     primary_bodies_objs = [gmat.Planet(body_name) for body_name in self.primary_bodies]
+        #     for body_obj in primary_bodies_objs:
+        #         prim_bod_param_id = self.GetParameterID("PrimaryBodies")
+        #         print(f'PrimaryBodies param: ID {prim_bod_param_id}, type: {self.GetParameterTypeString(prim_bod_param_id)}')
+        #         print(f'body_obj type: {body_obj.GetTypeName()}, IsOfType CelestialBody: {body_obj.IsOfType("CelestialBody")}')
+        #         # grav_fields = [self.GravityField()]
+        #         self.SetStringParameter(3, body_obj.GetName())  # 3 for BODY_NAME
+        #         self.SetRefObject(body_obj, gmat.CELESTIAL_BODY, body_obj.GetName())
+        #     # self.Help()
+        #     # self.SetField('PrimaryBodies', self.primary_bodies)
+        #     # self._primary_bodies = primary_bodies if primary_bodies else self.central_body
+        #     self.Initialize()
+        #     self.Help()
+
+        # TODO don't setup gravity field if none specified - breaks interplanetary where grav field irrelevant
+        self.primary_body: str = primary_body
+        if self.primary_body is None:  # self.primary_body is None
+            self.gravity = gravity_field
+            if gravity_field is not None:
+                if isinstance(gravity_field, ForceModel.GravityField):
+                    self.gravity: ForceModel.GravityField = gravity_field
+                else:
+                    raise TypeError(f'gravity_field type not recognized - {type(gravity_field).__name__}.'
+                                    f' Must be None or a gpy.ForceModel.GravityField')
+            else:  # gravity_field and self.primary_body are both None - use default
+                # TODO: are there cases where we wouldn't want a PrimaryBody or GravityField?
+                self.primary_body = 'Earth'
+                self.gravity = self.GravityField()  # create default (Earth-based) GravityField
+
+        else:  # self.primary_body is not None
+            if self.gravity is not None and (self.primary_body != self.gravity.body):
+                raise AttributeError(
+                    f'If a primary_body and gravity_field are both specified, the primary_body must be '
+                    f'equal to the gravity_field\'s body. Specified primary_body and gravity_field: '
+                    f'{self.primary_body} and {self.gravity.body}')
+
+            allowed_primaries = gpy.utils.CelestialBodies()
+            if self.primary_body not in allowed_primaries:
+                raise AttributeError(f'Specified primary_body "{self.primary_body}" is not recognized. Please use one '
+                                     f'of the following:\n{allowed_primaries}')
+
+        if self.gravity is not None:
+            self.AddForce(self.gravity)  # add the GravityField to the ForceModel within GMAT
 
         self._polyhedral_bodies = polyhedral_bodies
 
-        if not gravity_field:
-            self.gravity = self.GravityField()  # setup default field
-        elif isinstance(gravity_field, ForceModel.GravityField):
-            self.gravity: ForceModel.GravityField = gravity_field
-        else:
-            raise TypeError(f'gravity_field type not recognized - {type(gravity_field).__name__}.'
-                            f' Must be None or a gpy.ForceModel.GravityField')
-        self.AddForce(self.gravity)
-
         self.point_mass_forces: list[ForceModel.PointMassForce] | None = None
-        if not point_masses:
-            self.SetField('PointMasses', [])
-        else:
+        if point_masses is not None:
             self.point_mass_forces = validate_point_masses(point_masses)  # raises exception if point_masses invalid
             for force in self.point_mass_forces:
                 self.AddForce(force)
@@ -212,7 +256,8 @@ class ForceModel(GmatObject):
         return f'ForceModel with name {self.name}'
 
     def AddForce(self, force: PhysicalModel):
-        self.gmat_obj.AddForce(force.gmat_obj)
+        # Nothing returned from GMAT so no return from this method
+        gpy.extract_gmat_obj(self).AddForce(gpy.extract_gmat_obj(force))
 
     class PrimaryBody:
         # TODO complete arguments
@@ -308,33 +353,55 @@ class ForceModel(GmatObject):
 
     class GravityField(PhysicalModel):
         # TODO change parent class back to HarmonicField if appropriate
-        def __init__(self, model: str = 'JGM-2', degree: int = 4, order: int = 4, stm_limit: int = 100,
-                     gravity_file: str = 'JGM2.cof', tide_file: str = None, tide_model: str = None):
-            super().__init__('GravityField', 'Grav')
-            self._model = model
+        def __init__(self, name: str = None, body: str = 'Earth', model: str = 'JGM-2', degree: int = 4,
+                     order: int = 4, stm_limit: int = 100, gravity_file: str = 'JGM2.cof', tide_file: str = None,
+                     tide_model: str = None):
+            if name is None:
+                name = f'GravField_{body}_{model}_{degree}_{order}'
+            super().__init__('GravityField', name)
 
-            self._degree = degree
-            self.SetField('Degree', self._degree)
+            self.body = body
+            self.SetStringParameter(3, self.body)  # 3 for BODY_NAME
 
-            self._order = order
-            self.SetField('Order', self._order)
+            allowed_models = {'Sun': [None, 'Other'], 'Venus': [None, 'MGNP-180U', 'Other'],
+                              'Earth': [None, 'JGM-2', 'JGM-3', 'EGM-96', 'Other'], 'Mars': [None, 'Mars-50C', 'Other'],
+                              'Jupiter': [None, 'Other'], 'Saturn': [None, 'Other'], 'Uranus': [None, 'Other'],
+                              'Neptune': [None, 'Other'], 'Pluto': [None, 'Other'], 'Luna': [None, 'LP-165', 'Other']}
+            # check whether the specified model is defined for the specified body
+            self.model = model
+            if self.model is not None:
+                if model == 'Other':
+                    # TODO: add support for 'Other' model option (user would pass a path to a model file)
+                    raise NotImplementedError
+                elif model not in allowed_models[self.body]:
+                    raise AttributeError(f'Specified model "{self.model}" is not recognized for body "{self.body}". '
+                                         f'Valid models for that body are:\n\t{allowed_models[self.body]}')
 
-            self._stm_limit = stm_limit
-            self.SetField('StmLimit', self._stm_limit)
+            self.degree = degree
+            self.SetIntegerParameter('Degree', int(self.degree))
 
-            self._gravity_file = gravity_file
-            self.SetField('PotentialFile', self._gravity_file)
+            self.order = order
+            self.SetIntegerParameter('Order', self.order)
 
-            self._tide_file = tide_file
-            if self._tide_file:
-                self.SetField('TideFile', self._tide_file)
+            # self.gmat_obj = gmat.GravityField(self.name, self.body, self.degree, self.order)
+            # self.gpy_obj = gpy.GmatObject.from_gmat_obj(self.gmat_obj)
+
+            self.stm_limit = stm_limit
+            self.SetIntegerParameter('StmLimit', self.stm_limit)
+
+            self.gravity_file = gravity_file
+            self.SetStringParameter('PotentialFile', self.gravity_file)
+
+            self.tide_file = tide_file
+            if self.tide_file:
+                self.SetStringParameter('TideFile', self.tide_file)
 
             if tide_model:
                 if tide_model not in [None, 'Solid', 'SolidAndPole']:
                     raise SyntaxError('Invalid tide_model given - must be None, "Solid" or "SolidAndPole"')
                 else:
                     self._tide_model = tide_model
-                    self.SetField('TideModel', self._tide_model)
+                    self.SetStringParameter('TideModel', self._tide_model)
 
     class ODEModel(PhysicalModel):
         def __init__(self, name: str):
@@ -383,9 +450,12 @@ class PropSetup(GmatObject):  # variable called prop in GMAT Python examples
     class Propagator(GmatObject):  # variable called gator in GMAT Python examples
         # Labelled in GMAT GUI as "Integrator"
         def __init__(self, integrator: str = 'PrinceDormand78', name: str = 'Prop', **kwargs):
+            # TODO: change **kwargs to proper parsing here (for usability)
+            # TODO: add parsing of rest of arguments (see defaults in User Guide)
             integrator_allowed_types = ['RungeKutta89', 'PrinceDormand78', 'PrinceDormand45', 'RungeKutta68',
                                         'RungeKutta56', 'AdamsBashforthMoulton', 'SPK', 'Code500', 'STK', 'CCSDS-OEM'
-                                        'PrinceDormand853', 'RungeKutta4', 'SPICESGP4']
+                                                                                                          'PrinceDormand853',
+                                        'RungeKutta4', 'SPICESGP4']
             if integrator in integrator_allowed_types:
                 self.integrator = integrator
             else:
@@ -397,28 +467,42 @@ class PropSetup(GmatObject):  # variable called prop in GMAT Python examples
             super().__init__(integrator, name)
 
             gpy.Initialize()
+            # self.Initialize()
 
     def __init__(self, name: str, fm: ForceModel = None, gator: PropSetup.Propagator = None,
-                 initial_step_size: int = 60, accuracy: int | float = 1e-12, min_step: int = 0):
+                 initial_step_size: int = 60, accuracy: int | float = 1e-12, min_step: int = 0, max_step: int = 2700,
+                 max_step_attempts: int = 50, stop_if_accuracy_violated: bool = True):
         # TODO add other args as per pg 449 (PDF pg 458) of User Guide
         super().__init__('PropSetup', name)
+
+        # Create a ForceModel and Propagator
         self.force_model = fm if fm else ForceModel()
         self.gator = gator if gator else PropSetup.Propagator()
         self.SetReference(self.gator)
 
-        gpy.Initialize()
-
-        if initial_step_size:
+        if initial_step_size is not None:
             self.initial_step_size = initial_step_size
-            self.SetField('InitialStepSize', self.initial_step_size)
+            self.SetRealParameter('InitialStepSize', self.initial_step_size)
 
-        if accuracy:
+        if accuracy is not None:
             self.accuracy = accuracy
-            self.SetField('Accuracy', self.accuracy)
+            self.SetRealParameter('Accuracy', self.accuracy)
 
-        if min_step:
+        if min_step is not None:
             self.min_step = min_step
-            self.SetField('MinStep', self.min_step)
+            self.SetRealParameter('MinStep', self.min_step)
+
+        if max_step is not None:
+            self.max_step = max_step
+            self.SetRealParameter('MaxStep', self.max_step)
+
+        if max_step_attempts is not None:
+            self.max_step_attempts = max_step_attempts
+            self.SetIntegerParameter('MaxStepAttempts', self.max_step_attempts)
+
+        if stop_if_accuracy_violated is not None:
+            self.stop_if_accuracy_violated = stop_if_accuracy_violated
+            self.SetBooleanParameter('StopIfAccuracyIsViolated', self.stop_if_accuracy_violated)
 
         self.SetReference(self.force_model)
         self.psm = self.GetPropStateManager()
@@ -454,51 +538,107 @@ class OrbitState:
         class Axes(GmatObject):
             def __init__(self, axes_type: str, name: str):
                 super().__init__(axes_type, name)
+                self.Initialize()
 
-        def __init__(self, name: str, origin: str = 'Earth', central_body: str = 'Earth',
-                     axes: str = 'MJ2000Eq', **kwargs):
+        def __init__(self, name: str, origin: str = 'Earth', axes: str = 'MJ2000Eq', primary: str = None,
+                     secondary: str = None, xaxis: str = None, yaxis: str = None, zaxis: str = None, epoch: str = None,
+                     alignment_vec_x: int = None, alignment_vec_y: int = None, alignment_vec_z: int = None,
+                     constraint_vec_x: int = None, constraint_vec_y: int = None, constraint_vec_z: int = None,
+                     constraint_ref_vec_x: int = None, constraint_ref_vec_y: int = None, constraint_ref_vec_z: int = None,
+                     constraint_coord_sys: str = None, ref_object: str = None
+                     ):
             # TODO: remove kwargs if possible, if not document as another 2do
             # TODO complete allowed values - see User Guide pages 335-339 (PDF pg 344-348)
             #  and src/base/coordsystem/CoordinateSystem.cpp/CreateLocalCoordinateSystem
-            self._name = name
-            super().__init__('CoordinateSystem', self._name)
-            self.origin: str = origin
-            self.axes: str = axes
-            self.gmat_obj: gmat.CoordinateSystem = gmat.Construct('CoordinateSystem',
-                                                                  self._name, self.origin, self.axes)
+            super().__init__('CoordinateSystem', name)
+            self.allowed_values = {'Axes': ['MJ2000Eq', 'MJ2000Ec', 'ICRF',
+                                            'MODEq', 'MODEc', 'TODEq', 'TODEc', 'MOEEq', 'MOEEc', 'TOEEq', 'TOEEc',
+                                            'ObjectReferenced', 'Equator', 'BodyFixed', 'BodyInertial',
+                                            'GSE', 'GSM', 'Topocentric', 'BodySpinSun'],
+                                   'CentralBody': CelestialBodies(),
+                                   'Origin': (CelestialBodies() + SpacecraftObjs() + LibrationPoints() + Barycenter()
+                                              + GroundStations()),
+                                   'AxesTypeSpecific': {
+                                       'ObjectReferenced': {
+                                           'Primary': (CelestialBodies() + SpacecraftObjs() + LibrationPoints() +
+                                                       Barycenter() + GroundStations()),
+                                           'Secondary': (CelestialBodies() + SpacecraftObjs() + LibrationPoints() +
+                                                         Barycenter() + GroundStations()),
+                                           'XAxis': ['R', 'V', 'N', '-R', '-V', '-N', None],
+                                           'YAxis': ['R', 'V', 'N', '-R', '-V', '-N', None],
+                                           'ZAxis': ['R', 'V', 'N', '-R', '-V', '-N', None],
+                                       },
+                                       'TOE': {
+                                           'Epoch': '21545'
+                                       },
+                                       'MOE': {
+                                           'Epoch': '21545'
+                                       },
+                                       'LocalAlignedConstrained': {
+                                           'AlignmentVectorX': 1,
+                                           'AlignmentVectorY': 0,
+                                           'AlignmentVectorZ': 0,
+                                           'ConstraintVectorX': 0,
+                                           'ConstraintVectorY': 0,
+                                           'ConstraintVectorZ': 1,
+                                           'ConstraintReferenceVectorX': 0,
+                                           'ConstraintReferenceVectorY': 0,
+                                           'ConstraintReferenceVectorZ': 1,
+                                           'ConstraintCoordinateSystem': 'EarthMJ2000Eq',
+                                           'ReferenceObject': (gpy.CelestialBodies() + gpy.SpacecraftObjs() +
+                                                               gpy.LibrationPoints() + gpy.Barycenter() +
+                                                               gpy.GroundStations())
+                                       }
+                                   },
+                                   }
 
-            self._allowed_values = {'Axes': ['MJ2000Eq', 'MJ2000Ec', 'ICRF',
-                                             'MODEq', 'MODEc', 'TODEq', 'TODEc', 'MOEEq', 'MOEEc', 'TOEEq', 'TOEEc',
-                                             'ObjectReferenced', 'Equator', 'BodyFixed', 'BodyInertial',
-                                             'GSE', 'GSM', 'Topocentric', 'BodySpinSun'],
-                                    'CentralBody': CelestialBodies(),
-                                    'Origin': [CelestialBodies() + SpacecraftObjs() + LibrationPoints() + Barycenter() +
-                                               GroundStations()],
-                                    }
-            self._allowed_values['Primary'] = self._allowed_values['Origin']
-            self.axes = OrbitState.CoordinateSystem.Axes(axes, axes)
-            self.origin: gmat.Planet = gmat.GetObject(origin)
+            # Parse origin argument
+            if origin not in self.allowed_values['Origin']:
+                raise AttributeError(f'Specified origin "{origin}" is not recognized. Please specify one of the '
+                                     f'following:\n\t{self.allowed_values["Origin"]}')
+            else:
+                self.origin = gmat.GetObject(origin)  # get current (default) origin
+                # attach new origin to CoordinateSystem
+                self.SetStringParameter(1, self.origin.GetName())  # 1 for ORIGIN_NAME, 2 for J2000_BODY_NAME
+                self.SetRefObject(self.origin, gmat.SPACE_POINT, self.origin.GetName())
 
-            self.central_body = central_body
+            # Parse axes argument
+            if axes not in self.allowed_values['Axes']:
+                raise AttributeError(f'Specified axes type "{axes}" is not recognized. Please specify one of the '
+                                     f'following:\n\t{self.allowed_values["Axes"]}')
+            else:
+                self.axes: str = axes
+                if self.axes in list(self.allowed_values['AxesTypeSpecific'].keys()):
+                    axes_specific_values = self.allowed_values['AxesTypeSpecific'][self.axes]
 
-            # defaults = {'axes': 'MJ2000Eq', 'central_body': 'Earth', 'origin': 'Earth'}
-            # for attr in list(defaults.keys()):
-            #     try:  # assume attr is in kwargs
-            #         val = kwargs[attr]
-            #         valid_values = self._allowed_values[attr]
-            #         if val in valid_values:
-            #             setattr(self, f'_{attr}', val)
-            #         else:
-            #             raise AttributeError(f'Invalid {attr} parameter provided - {val}\n'
-            #                                  f'Must provide one of: {valid_values}')
-            #     except KeyError:  # not in kwargs
-            #         setattr(self, f'_{attr}', defaults[attr])  # set attribute's default value
+                    # TODO set params/ref objs for all axes types
+                    if self.axes == 'ObjectReferenced':
+                        self.primary = primary
+                        self.secondary = secondary
+                        self.xaxis = xaxis
+                        self.yaxis = yaxis
+                        self.zaxis = zaxis
 
+                    elif self.axes == 'TOE' or self.axes == 'MOE':
+                        self.epoch = epoch
 
+                    elif self.axes == 'LocalAlignedConstrained':
+                        self.alignment_vec_x = alignment_vec_x
+                        self.alignment_vec_y = alignment_vec_y
+                        self.alignment_vec_z = alignment_vec_z
+                        self.constraint_vec_x = constraint_vec_x
+                        self.constraint_vec_y = constraint_vec_y
+                        self.constraint_vec_z = constraint_vec_z
+                        self.constraint_ref_vec_x = constraint_ref_vec_x
+                        self.constraint_ref_vec_y = constraint_ref_vec_y
+                        self.constraint_ref_vec_z = constraint_ref_vec_z
+                        self.constraint_coord_sys = constraint_coord_sys
+                        self.ref_object = ref_object
 
-            # TODO parse Origin parameter
-            # print(f'Currently allowed Origin values:\n{self._allowed_values["Origin"]}')
-            gpy.Initialize()
+            self.axes = OrbitState.CoordinateSystem.Axes(axes, f'{origin}_{axes}')
+            self.SetRefObject(self.axes, gmat.AXIS_SYSTEM, self.axes.name)
+
+            # gpy.Initialize()
             self.Initialize()
 
         def __repr__(self):
@@ -655,7 +795,7 @@ class OrbitState:
             o_s._display_state_type = orbit_dict['DisplayStateType']  # get display_state_type from dict (required)
             orbit_dict.pop('DisplayStateType')  # remove DisplayStateType so we don't try setting it again later
         except KeyError:
-            try:   # maybe the user used the old name, StateType, instead of DisplayStateType
+            try:  # maybe the user used the old name, StateType, instead of DisplayStateType
                 o_s._display_state_type = orbit_dict['StateType']
                 orbit_dict.pop('StateType')  # remove StateType so we don't try setting it again later
             except KeyError:

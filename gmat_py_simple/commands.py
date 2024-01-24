@@ -23,13 +23,13 @@ class GmatCommand:
         self.SetGlobalObjectMap(gpy.Sandbox().GetGlobalObjectMap())
         self.SetSolarSystem(gmat.GetSolarSystem())
 
-        # Excluded object types must have key parameters set before they are initialized
-        if not isinstance(self, (gpy.Target, gpy.EndTarget, gpy.Achieve)):
-            try:
-                self.Initialize()
-            except Exception as ex:
-                raise RuntimeError(f'{self.command_type} command named "{self.name}" failed to initialize in '
-                                   f'GmatCommand.__init__() - see exception below:\n\t{ex}') from ex
+        # # Excluded object types must have key parameters set before they are initialized
+        # if not isinstance(self, (gpy.Target, gpy.EndTarget, gpy.Achieve)):
+        #     try:
+        #         self.Initialize()
+        #     except Exception as ex:
+        #         raise RuntimeError(f'{self.command_type} command named "{self.name}" failed to initialize in '
+        #                            f'GmatCommand.__init__() - see exception below:\n\t{ex}') from ex
 
     def AddToMCS(self) -> bool:
         return gpy.Moderator().AppendCommand(self)
@@ -59,12 +59,15 @@ class GmatCommand:
     def GetParameterType(self, param: str | int) -> int:
         if isinstance(param, str):
             param = self.GetParameterID(param)
-        type_id: int = gpy.extract_gmat_obj(self).GetParameterType(param)
-        # type_string: str = gpy.utils.GetTypeNameFromID(type_id)
-        return type_id
+        return gpy.extract_gmat_obj(self).GetParameterType(param)
+
+    def GetParameterTypeString(self, param: str | int) -> str:
+        if isinstance(param, str):
+            param = self.GetParameterID(param)
+        return gpy.extract_gmat_obj(self).GetParameterTypeString(param)
 
     def GetRefObject(self, type_id: int, name: str, index: int = 0):
-        return self.gmat_obj.GetRefObject(type_id, name, index)
+        return gpy.extract_gmat_obj(self).GetRefObject(type_id, name, index)
 
     def GetRefObjectName(self, type_int: int) -> str:
         return self.gmat_obj.GetRefObjectName(type_int)
@@ -167,6 +170,95 @@ class Achieve(GmatCommand):
         self.variable = variable
         self.SetStringParameter('Goal', self.variable)
 
+        # Make Parameter for Goal if one doesn't already exist
+        if not gpy.Moderator().GetParameter(self.variable):
+            param_eles = self.variable.split('.')
+            param_type = param_eles[-1]
+            new_param = gpy.Parameter(param_type, self.variable)
+
+            for ele in param_eles:
+                if ele in gpy.CoordSystems():
+                    # print(f'Updating CS for {new_param.GetName()}')
+                    # Update the Parameter's COORDINATE_SYSTEM
+                    new_param.SetRefObjectName(gmat.COORDINATE_SYSTEM, ele)
+                    cs = gmat.GetObject(ele)
+                    new_param.SetRefObject(cs, gmat.COORDINATE_SYSTEM)
+
+                    # Also update the Parameter's SPACE_POINT
+                    # print(f'Updating CB for {new_param.GetName()}')
+                    body = cs.GetField('Origin')
+                    new_param.SetRefObjectName(gmat.SPACE_POINT, body)
+                    new_param.SetRefObject(gmat.GetObject(body), gmat.SPACE_POINT)
+
+                if ele in gpy.SpacecraftObjs():
+                    # print(f'Updating S/C for {new_param.GetName()}')
+                    # Update the Parameter's SPACECRAFT
+                    new_param.SetRefObjectName(gmat.SPACECRAFT, ele)
+                    sc = gmat.GetObject(ele)
+                    new_param.SetRefObject(sc, gmat.SPACECRAFT)
+
+                if ele in gpy.CelestialBodies():
+                    # print(f'Updating CB for {new_param.GetName()}')
+                    # Update the Parameter's CELESTIAL_BODY (even if COORDINATE_SYSTEM not updated)
+                    new_param.SetRefObjectName(gmat.CELESTIAL_BODY, ele)
+                    new_param.SetRefObject(gmat.GetObject(ele), gmat.CELESTIAL_BODY)
+
+            new_param.SetSolarSystem(gmat.GetSolarSystem())
+            new_param.Initialize()
+            # self.SetRefObject(new_param.gmat_base, gmat.PARAMETER)
+
+        #     # param_type is the final element of the self.variable string, e.g. Periapsis for Sat.Earth.Periapsis
+        #     param_eles = self.variable.split('.')
+        #     param_type = param_eles[-1]
+            # new_param = gpy.Parameter(param_type, self.variable)
+            # for ele in param_eles:
+            #     body = 'Earth'
+            #     cs = 'EarthMJ2000Eq'
+            #     if ele in gpy.CelestialBodies():  # a CelestialBody is given, so need to set it as a ref object
+            #         # TODO: test this
+            #         body = ele
+            #
+            #     if ele in gpy.CoordSystems():
+            #         cs = ele
+            #
+            #     pass
+                # new_param.SetRefObjectName(gmat.SPACE_POINT, body)
+                # new_param.SetRefObjectName(gmat.COORDINATE_SYSTEM, cs)
+                # new_param.Help()
+                # print(new_param.gmat_base.GetRefObjectTypeArray())
+                # new_param.SetRefObjectName(gmat.CELESTIAL_BODY, ele)
+
+            #     if ele in gpy.CoordSystems():  # a CoordinateSystem is given, so need to set it as a ref object
+            #         # TODO remove (debugging only)
+            #         test_bddot = gmat.Construct('BdotT', 'TestBdotT')
+            #         test_bddot.SetRefObjectName(gmat.SPACECRAFT, 'MAVEN')
+            #         # test_bddot.SetReference(gmat.GetObject('MAVEN'))
+            #         # print(gpy.Moderator().gmat_obj.GetListOfFactoryItems(gmat.PARAMETER))
+            #         # test_bddot.RenameRefObject(gmat.COORDINATE_SYSTEM, 'EarthMJ2000Eq', ele)
+            #         test_bddot.SetRefObjectName(gmat.COORDINATE_SYSTEM, ele)
+            #         cs = gmat.GetObject(ele)
+            #         test_bddot.SetRefObject(cs, gmat.COORDINATE_SYSTEM, cs.GetName())
+            #
+            #         # test_bddot.SetRefObjectName(gmat.SPACECRAFT, 'MAVEN')
+            #         test_bddot.SetRefObject(gmat.GetObject('MAVEN'), gmat.SPACECRAFT, 'MAVEN')
+            #
+            #         test_bddot.SetSolarSystem(gmat.GetSolarSystem())
+            #         # gmat.Initialize()
+            #         mod = gpy.Moderator().gmat_obj
+            #         mod.SetParameterRefObject(test_bddot, 'BdotT', cs.GetName(), '', '', 1)
+            #         test_bddot.Help()
+            #         test_bddot.Initialize()
+            #
+            #         new_param.SetRefObjectName(gmat.COORDINATE_SYSTEM, ele)
+            #         # new_param.SetStringParameter(new_param.GetParameterID('CoordinateSystem'), ele)
+            #         # new_param.SetRefObject(gmat.GetObject(ele), gmat.COORDINATE_SYSTEM)
+            #         new_param.Help()
+            #         pass
+            #
+            # for body in gpy.CelestialBodies():
+            #     if body in self.variable:
+            #         new_param.SetRefObject(gmat.Planet(body), gmat.COORDINATE_SYSTEM)
+
         self.value = value
         self.SetStringParameter('GoalValue', str(self.value))
 
@@ -178,6 +270,9 @@ class Achieve(GmatCommand):
         self.SetGlobalObjectMap(gpy.Sandbox().GetGlobalObjectMap())
 
         self.Initialize()
+        # print(self.GetGeneratingString())
+        # gpy.Initialize()
+        # self.Initialize()
 
     def SetRefObject(self, obj, type_int: int, obj_name: str = '') -> bool:
         return extract_gmat_obj(self).SetRefObject(extract_gmat_obj(obj), type_int, obj_name)
@@ -458,6 +553,7 @@ class Propagate(GmatCommand):
                  user_stop_cond: tuple | str = None):
         # TODO add None as default for sat, prop, stop_cond and handle appropriately in __init__()
         super().__init__('Propagate', name)
+        self.Initialize()
 
         # Get names of Propagate's ref objects and extract the objects
         prop_ref_name = self.GetRefObjectName(gmat.PROP_SETUP)
@@ -482,7 +578,7 @@ class Propagate(GmatCommand):
         if user_stop_cond:
             self.user_stop_cond = user_stop_cond
             # update default StopCondition with user-provided values by converting to wrapper StopCondition
-            self.stop_cond = self.StopCondition(self.sat, self.user_stop_cond, self.stop_cond)
+            self.stop_cond = self.StopCondition(self.sat, stop_cond=self.user_stop_cond, gmat_obj=self.stop_cond)
             self.TakeAction('Clear', 'StopCondition')  # clear existing StopCond to replace it
             self.SetRefObject(extract_gmat_obj(self.stop_cond), gmat.STOP_CONDITION, self.stop_cond.name)
 
@@ -704,6 +800,8 @@ class Vary(SolverSequenceCommand):
         # If a DefaultIB object exists and the user didn't create it, GMAT did while building this command - delete it
         if not user_created_def_ib:
             gmat.Clear(def_ib_name)
+
+        # print(self.GetGeneratingString())
 
     def RenameRefObject(self, type_id: int, old_name: str, new_name: str) -> bool:
         return gpy.extract_gmat_obj(self).RenameRefObject(type_id, old_name, new_name)
