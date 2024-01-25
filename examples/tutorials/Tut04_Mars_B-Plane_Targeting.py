@@ -2,8 +2,6 @@
 # Achieve orbit around Mars with the MAVEN spacecraft by targeting Mars' B-plane on approach
 # Written by William Easdown Babb
 
-# TODO: THIS EXAMPLE IS CURRENTLY A WORK IN PROGRESS (WIP)
-
 from __future__ import annotations
 from load_gmat import gmat
 import gmat_py_simple as gpy
@@ -27,12 +25,12 @@ sat_params = {
         'AOP': 240.9696529532762,  # degrees
         'TA': 359.946553377841  # degrees
     },
-    'Hardware': {'Tanks': [{'Name': 'TestTank', 'FuelMass': '1718'}]}
 }
 sat = gpy.Spacecraft.from_dict(sat_params)
-# Create tank separately, so we can refer to it later (TODO: and as ImpulsiveBurn only accepts Tank objs, not names)
+# Create tank separately, so we can refer to it later
 main_tank = gpy.ChemicalTank('MainTank', fuel_mass=1718, allow_negative_fuel_mass=False, fuel_density=1000,
                              temperature=20, ref_temp=20, pressure=5000, volume=2, pressure_model='PressureRegulated')
+# gpy.Tank.attach_to_sat(gpy.GetObject('MainTank'), sat)
 sat.add_tanks(main_tank)
 
 # Setup ForceModels and Propagators
@@ -66,9 +64,9 @@ mars_inertial = gpy.OrbitState.CoordinateSystem('MarsInertial', 'Mars', 'BodyIne
 
 # Setup ImpulsiveBurns
 tcm = gpy.ImpulsiveBurn('TCM', coord_sys={'CoordinateSystem': 'Local', 'Origin': 'Mars', 'Axes': 'VNB'},
-                        decrement_mass=True, tanks=main_tank)
+                        decrement_mass=True, tanks='MainTank')
 moi = gpy.ImpulsiveBurn('MOI', coord_sys={'CoordinateSystem': 'Local', 'Origin': 'Mars', 'Axes': 'VNB'},
-                        decrement_mass=True, tanks=main_tank)
+                        decrement_mass=True, tanks='MainTank')
 
 dc1 = gpy.DifferentialCorrector('DC1')
 

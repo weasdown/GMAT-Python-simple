@@ -136,9 +136,7 @@ class Parameter:
             return valid
         except Exception as ex:
             raise RuntimeError(f'Parameter named "{self.name}" failed to Validate - '
-                               f'see exception below:\n     {ex}'
-                               # f'\nCM list of items in Parameter.Validate(): '
-                               # f'{gmat.ConfigManager.Instance().GetListOfAllItems()}'
+                               f'see exception below:\n\t{ex}'
                                f'') from ex
 
 

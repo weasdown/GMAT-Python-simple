@@ -409,6 +409,9 @@ def extract_gmat_obj(obj):
     if obj is None:
         raise SyntaxError('A NoneType object was given')
 
+    if isinstance(obj, gpy.Parameter):
+        return obj.gmat_base
+
     if 'gmat_py_simple' in obj_type:  # wrapper object
         if 'Parameter' in obj_type:
             return obj.gmat_base
@@ -425,7 +428,7 @@ class APIException(Exception):
 
 class GMATNameError(Exception):
     def __init__(self, attempted_name):
-        raise RuntimeError(f'No object currently exists in GMAT with the name {attempted_name}')
+        raise RuntimeError(f'No object currently exists in GMAT with the name "{attempted_name}"') from None
 
 
 def GetTypeNameFromID(type_id: int) -> str:

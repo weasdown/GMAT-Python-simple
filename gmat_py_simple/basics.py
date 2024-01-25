@@ -62,26 +62,8 @@ class GmatObject:
             param = self.GetParameterID(param)
         return gpy.extract_gmat_obj(self).GetIntegerParameter(param)
 
-    def GetObject(self: gpy.GmatObject):
-        """
-        Return the latest version of an object so its state info is up-to-date
-        :return:
-        """
-        try:
-            if not self.was_propagated:  # sat not yet propagated
-                return gmat.GetObject(self._name)
-            elif self.was_propagated:  # sat has been propagated - gmat.GetObject() would return incorrect values
-                if isinstance(self, gpy.Spacecraft):
-                    objs_to_update = [self.hardware.chemical_thrusters, self.hardware.chemical_tanks, self.hardware.electric_thrusters, self.hardware.electric_tanks]
-                    for hw_list in objs_to_update:
-                        for hw_item in hw_list:
-                            hw_item.GetObject()
-                return gmat.GetRuntimeObject(self._name)
-
-        except AttributeError:  # object may not have a self.was_propagated attribute
-            print(f'**Warning** Object {self.name} of type {self.gmat_obj.GetTypeName()} does not have an attribute '
-                  f'self.was_propagated. GetObject() is using gmat.GetObject() instead')
-            return gmat.GetObject(self._name)
+    def GetObject(self):
+        return gpy.GetObject(self)
 
     def GetName(self):
         return self._name

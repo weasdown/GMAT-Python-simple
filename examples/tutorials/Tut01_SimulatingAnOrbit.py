@@ -6,7 +6,6 @@ import gmat_py_simple as gpy
 import os
 
 log_path = os.path.normpath(f'{os.getcwd()}/GMAT-Log.txt')
-script_path = os.path.normpath(f'{os.getcwd()}/Tut01.script')
 gmat.UseLogFile(log_path)
 echo_log = False
 if echo_log:
@@ -47,4 +46,5 @@ gpy.RunMission(mcs)  # Run the mission
 print(f'Sat state after running: {sat.GetState()}')
 print(f'Epoch after running: {sat.GetField("Epoch")}')
 
+script_path = os.path.normpath(f'{os.getcwd()}/Tut01.script')
 gmat.SaveScript(script_path)

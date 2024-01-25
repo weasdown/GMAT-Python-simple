@@ -62,6 +62,9 @@ class Spacecraft(GmatObject):
             # parse tanks
             try:
                 tanks: dict = hw['Tanks']
+                if not isinstance(tanks, dict):
+                    raise TypeError('tanks must be a dictionary that is a value for the key "Tanks" in the hw dict. '
+                                    'Please check that the Spacecraft parameters dictionary is correctly formatted.')
 
                 # parse ChemicalTanks
                 try:
@@ -71,9 +74,10 @@ class Spacecraft(GmatObject):
                         cp_tanks_objs.append(ChemicalTank.from_dict(cp_tank))
                     sc_hardware.Tanks.chemical = cp_tanks_objs
                 except KeyError:
-                    raise KeyError(f'No ChemicalTank found for Spacecraft {sc.name}')
-                except TypeError:
-                    raise KeyError(f'No ChemicalTank found for Spacecraft {sc.name}')
+                    pass
+                #     raise KeyError(f'No ChemicalTank found for Spacecraft {sc.name}')
+                # except TypeError:
+                #     raise KeyError(f'No ChemicalTank found for Spacecraft {sc.name}')
 
                 # parse ElectricTanks
                 try:
@@ -83,7 +87,8 @@ class Spacecraft(GmatObject):
                         ep_tanks_objs.append(ElectricTank.from_dict(ep_tank))
                     sc_hardware.Tanks.electric = ep_tanks_objs
                 except KeyError:
-                    raise
+                    pass
+                    # raise
 
             except KeyError as ke:
                 logging.info(f'No tanks found in Hardware dict parsing')
@@ -100,7 +105,7 @@ class Spacecraft(GmatObject):
                         cp_thruster_objs.append(ChemicalThruster.from_dict(cp_thruster))
                     sc_hardware.Thrusters.chemical = cp_thruster_objs
                 except KeyError:
-                    raise
+                    pass
 
                 # parse ElectricThrusters
                 try:
@@ -110,7 +115,7 @@ class Spacecraft(GmatObject):
                         ep_thruster_objs.append(ElectricThruster.from_dict(ep_thruster))
                     sc_hardware.Thrusters.electric = ep_thruster_objs
                 except KeyError:
-                    raise
+                    pass
 
             except KeyError:
                 logging.info(f'No thrusters found in Hardware dict parsing')
@@ -181,7 +186,7 @@ class Spacecraft(GmatObject):
         _allowed_fields.update(_gmat_allowed_fields,
                                ['Name', 'Orbit', 'Hardware'])
 
-        self.hardware: Spacecraft.SpacecraftHardware | None = None
+        self.hardware: Spacecraft.SpacecraftHardware | None = self.SpacecraftHardware(self)
         self.tanks: Spacecraft.SpacecraftHardware.PropList | None = None
         self.chemical_tanks = None  # FIXME - not being updated by from_dict()
         self.electric_tanks = None  # FIXME - not being updated by from_dict()
@@ -249,7 +254,6 @@ class Spacecraft(GmatObject):
         gpy.Initialize()  # initialize GMAT as a whole
         sc.Initialize()  # initialize the completed Spacecraft object
         sc.Validate()  # validate the completed Spacecraft object
-
         return sc
 
     def update_from_runtime_object(self):
@@ -367,7 +371,7 @@ class Spacecraft(GmatObject):
     def ElectricTanks(self):
         return self.hardware.ElectricTanks
 
-    def add_tanks(self, tanks: gpy.Tank | list[gpy.Tank]) -> bool:
+    def add_tanks(self, tanks: gpy.Tank | list[gpy.Tank] | str) -> bool:
         """
         Add a tank object to a Spacecraft's list of Tanks.
 
@@ -382,7 +386,10 @@ class Spacecraft(GmatObject):
         current_tanks_list: list = gmat_field_string_to_list(current_tanks_value)
 
         # Add tanks by getting name of each tank, adding it to a list, then attaching this list to end of existing one
-        if isinstance(tanks, gpy.Tank):
+        if isinstance(tanks, str):
+            current_tanks_list = [tanks]
+            gpy.Tank.attach_to_sat(gmat.GetObject(tanks), self)
+        elif isinstance(tanks, gpy.Tank):
             current_tanks_list = [tanks.GetName()]
         else:
             tanks_to_set: list = [tank.GetName() for tank in tanks]
@@ -396,8 +403,11 @@ class Spacecraft(GmatObject):
         current_thrusters_list: list = gmat_field_string_to_list(current_thrusters_value)
 
         # Add thrusters by getting name of each, adding it to a list, then attaching this list to end of existing one
-        thrusters_to_set: list = [thruster.GetName() for thruster in thrusters]
-        current_thrusters_list.extend(thrusters_to_set)
+        if isinstance(thrusters, gpy.Thruster):
+            current_thrusters_list = [thrusters.GetName()]
+        else:
+            thrusters_to_set: list = [thruster.GetName() for thruster in thrusters]
+            current_thrusters_list.extend(thrusters_to_set)
         value = list_to_gmat_field_string(current_thrusters_list)
         self.SetField('Thrusters', value)
         return True
@@ -432,11 +442,17 @@ class Tank(GmatObject):
             raise SyntaxError(f'Invalid thr_type found in Tank.from_dict: {tank_type}'
                               f"\nMust be 'ChemicalTank' or 'ElectricTank'")
 
+        tank.Help()
+
         fields: list[str] = list(tank_dict.keys())
         fields.remove('Name')
-        # TODO convert to thr.SetFields
         for field in fields:
-            tank.SetField(field, tank_dict[field])
+            try:
+                tank.SetField(field, tank_dict[field])
+            except Exception as ex:
+                # TODO remove if (debugging only)
+                if field != 'AllowNegativeFuelMass':
+                    raise RuntimeError(f'Faulting field: {field}. GMAT error:\n\t{ex}')
 
         tank.Validate()
 
@@ -444,7 +460,7 @@ class Tank(GmatObject):
 
     def attach_to_sat(self, sat: Spacecraft):
         self.spacecraft = sat
-        self.spacecraft.add_tanks([self.gmat_obj])
+        self.spacecraft.add_tanks([gpy.extract_gmat_obj(self)])
 
 
 class ChemicalTank(Tank):
