@@ -42,18 +42,16 @@ class Spacecraft(GmatObject):
             # self.tanks = self.PropList('Tanks')
             # self.thrusters = self.PropList('Thrusters')
 
-            # self.chem_tanks = self.tanks.chemical
             self.chem_tanks = chem_tanks if chem_tanks is not None else []
             self.elec_tanks = elec_tanks if elec_tanks is not None else []
 
-            # self.chem_thrusters = self.thrusters.chemical
             self.chem_thrusters = chem_thrusters if chem_thrusters is not None else []
             self.elec_thrusters = elec_thrusters if elec_thrusters is not None else []
 
             self.solar_power_system = None if solar_power_system is None else solar_power_system
             self.nuclear_power_system = None if nuclear_power_system is None else nuclear_power_system
 
-            self.imagers = [None]
+            self.imagers = imagers if imagers is not None else []
 
         def __repr__(self):
             return (f'{type(self).__name__} object with the following parameters:'
@@ -496,7 +494,8 @@ class ElectricTank(Tank):
 class Thruster(GmatObject):
     def __init__(self, fuel_type: str, name: str, tanks: str | gpy.Tank | gmat.Tank | list[gpy.Tank] |
                  list[gmat.FuelTank], mix_ratio: int | float | list[int | float] = None):
-        self.thruster_type = f'{fuel_type}Thruster'  # 'ChemicalThruster' or 'ElectricThruster'
+        self.fuel_type = fuel_type
+        self.thruster_type = f'{self.fuel_type}Thruster'  # 'ChemicalThruster' or 'ElectricThruster'
         super().__init__(self.thruster_type, name)
 
         self.spacecraft = None
@@ -598,7 +597,7 @@ class ChemicalThruster(Thruster):
 class ElectricThruster(Thruster):
     def __init__(self, name: str, tanks: str | gpy.ElectricTank | gmat.ElectricTank |
                  list[gpy.ElectricTank] | list[gmat.ElectricTank]):
-        super().__init__('ElectricThruster', name, tanks)
+        super().__init__('Electric', name, tanks)
         self.Initialize()
 
     @classmethod
@@ -646,10 +645,10 @@ class SolarPowerSystem(GmatObject):
 
     @staticmethod
     def from_dict(sps_dict: dict[str, Union[str, int, float]]):
-        try:
-            name = sps_dict['Name']
-        except KeyError:  # no name found - use default
-            name = 'DefaultSolarPowerSystem'
+        if sps_dict == {}:
+            return
+
+        name = sps_dict.get('Name', 'DefaultSolarPowerSystem')
         sps = SolarPowerSystem(name)
 
         fields: list[str] = list(sps_dict.keys())
