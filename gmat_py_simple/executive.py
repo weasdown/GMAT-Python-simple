@@ -243,7 +243,7 @@ class Moderator:
 
             for p in propagate_commands:
                 p.sat.was_propagated = True  # mark sat as propagated so GetState uses runtime values
-                p.sat.gmat_obj = gpy.GmatObject.GetObject(p.sat)  # update sat gmat_obj post-run
+                # p.sat.gmat_obj = gpy.GmatObject.GetObject(p.sat)  # update sat gmat_obj post-run
 
             for t in target_commands:
                 solver = t.solver

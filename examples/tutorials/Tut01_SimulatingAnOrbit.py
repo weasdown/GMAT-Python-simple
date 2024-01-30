@@ -1,4 +1,5 @@
 # Tutorial 01: Simulating an Orbit. # Propagate a spacecraft in Earth orbit to its periapsis
+# Written by William Easdown Babb
 
 from __future__ import annotations
 from load_gmat import gmat

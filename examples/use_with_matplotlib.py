@@ -1,4 +1,5 @@
-# Tutorial 02: Simple Orbit Transfer. Perform a Hohmann Transfer from Low Earth Orbit (LEO) to Geostationary orbit (GEO)
+# Example showing how the gmat_py_simple wrapper can be used with matplotlib
+# Written by William Easdown Babb
 
 from __future__ import annotations
 

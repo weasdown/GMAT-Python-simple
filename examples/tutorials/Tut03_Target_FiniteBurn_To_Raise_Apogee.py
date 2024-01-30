@@ -20,7 +20,7 @@ sat_params = {
 sat = gpy.Spacecraft.from_dict(sat_params)
 
 # Set parameters of thruster that will be used for FiniteBurn
-thruster_to_fire = sat.thrusters.chemical[0]  # select which thruster on the Spacecraft will be fired
+thruster_to_fire = sat.chem_thrusters[0]  # select which thruster on the Spacecraft will be fired
 thruster_to_fire.SetField('DecrementMass', True)  # reduce the mass of fuel in ChemicalTank1 as it's burned
 thruster_to_fire.SetField('MixRatio', [1])  # all draining from one tank (ChemicalTank1, only one assigned to thruster)
 thruster_to_fire.SetField('C1', 1000)  # 1000 N thrust

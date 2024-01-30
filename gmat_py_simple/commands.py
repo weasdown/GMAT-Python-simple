@@ -96,8 +96,9 @@ class GmatCommand:
             return resp
 
         except Exception as ex:
+            ex_str = str(ex).replace("\n", "")
             raise RuntimeError(f'Initialize failed for {type(self).__name__} named "{self.name}". See GMAT error below:'
-                               f'\n\tGMAT internal exception/error: {str(ex).replace("\n", "")}') from ex
+                               f'\n\tGMAT internal exception/error: {ex_str}') from ex
 
     def SetBooleanParameter(self, param: str | int, value: bool) -> bool:
         if isinstance(param, str):
@@ -289,7 +290,10 @@ class BeginFiniteBurn(GmatCommand):
         # Assign the user-provided Spacecraft to the FiniteBurn
         self.spacecraft = spacecraft
         self.burn.SetRefObject(self.spacecraft, gmat.SPACECRAFT, self.spacecraft.GetName())
-        self.burn.SetSpacecraftToManeuver(self.spacecraft)  # update FiniteBurn's associated Spacecraft
+        # self.spacecraft.Help()
+        # print(type(self.spacecraft))
+        # self.burn.SetSpacecraftToManeuver(gpy.extract_gmat_obj(self.spacecraft))  # update FiniteBurn's associated Spacecraft
+        gpy.FiniteBurn.SetSpacecraftToManeuver(self.burn, gpy.extract_gmat_obj(self.spacecraft))  # update FiniteBurn's associated Spacecraft
 
         self.Initialize()
 

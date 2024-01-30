@@ -32,9 +32,12 @@ class GmatObject:
         return gpy.extract_gmat_obj(self).GetBooleanParameter(param)
 
     def GetEpoch(self, as_datetime: bool = False) -> str | datetime:
-        self.gmat_obj = self.GetObject()  # update object's gmat_obj with latest data (e.g. from mission run)
+        # self.gmat_obj = self.GetObject()  # update object's gmat_obj with latest data (e.g. from mission run)
+        if isinstance(self, gpy.Spacecraft):
+            self.gmat_obj.TakeAction('UpdateEpoch')
+        up_to_date_obj = self.GetObject()
         # FIXME: inaccurate for Mars in Tut04
-        epoch_str: str = self.GetField('Epoch')
+        epoch_str: str = up_to_date_obj.GetField('Epoch')
         if not as_datetime:
             return epoch_str
         else:
@@ -138,7 +141,7 @@ class GmatObject:
             param = self.GetParameterID(param)
         return gpy.extract_gmat_obj(self).SetIntegerParameter(param, value)
 
-    def SetField(self, field: str, val: str | int | float | bool | list):
+    def SetField(self, field: str | int, val: str | int | float | bool | list):
         """
         Set a field in the Object's GMAT model.
 
@@ -176,8 +179,20 @@ class GmatObject:
             param = self.GetParameterID(param)
         return gpy.extract_gmat_obj(self).SetRealParameter(param, value)
 
-    def SetReference(self, ref):
-        self.gmat_obj.SetReference(gpy.extract_gmat_obj(ref))
+    # def SetReference(self, ref_obj):
+    #     print(self)
+    #     self.Help()
+    #     try:
+    #         return gpy.extract_gmat_obj(self).SetReference(gpy.extract_gmat_obj(ref_obj))
+    #     except Exception as ex:
+    #         print('RuhRoh')
+    #         ref_arr = self.GetRefObjectNameArray(gpy.extract_gmat_obj(ref_obj).GetType())
+    #         print(ref_arr)
+    #         raise
+    #         pass
+
+    def SetReference(self, ref_obj):
+        gpy.extract_gmat_obj(self).SetReference(gpy.extract_gmat_obj(ref_obj))
 
     def SetRefObject(self, obj: gpy.GmatObject | gmat.GmatObject, type_id: int, name: str) -> bool:
         return gpy.extract_gmat_obj(self).SetRefObject(gpy.extract_gmat_obj(obj), type_id, name)

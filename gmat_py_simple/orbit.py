@@ -271,7 +271,7 @@ class ForceModel(GmatObject):
             self._drag = drag if drag else ForceModel.DragForce(self._force_model)
 
     class DragForce(PhysicalModel):
-        def __init__(self, fm: ForceModel = None, name: str = 'DF', atmo_model: str = 'JacchiaRoberts',
+        def __init__(self, fm: ForceModel = None, name: str = 'DragForce', atmo_model: str = 'JacchiaRoberts',
                      drag_model: str = 'Spherical', f107: int = 150, f107a: int = 150, magnetic_index: int = 3,
                      historic_weather_source: str = 'ConstantFluxAndGeoMag',
                      predicted_weather_source: str = 'ConstantFluxAndGeoMag',
