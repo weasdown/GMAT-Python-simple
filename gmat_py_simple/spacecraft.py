@@ -70,77 +70,39 @@ class Spacecraft(GmatObject):
         def from_dict(cls, hw: dict, sc: Spacecraft) -> Spacecraft.SpacecraftHardware:
             sc_hardware = cls(sc)
 
-            # TODO remove Tanks key, use ChemicalTanks and ElectricTanks
-            # parse tanks
-            try:
-                tanks: dict = hw['Tanks']
-                if not isinstance(tanks, dict):
-                    raise TypeError('tanks must be a dictionary that is a value for the key "Tanks" in the hw dict. '
-                                    'Please check that the Spacecraft parameters dictionary is correctly formatted.')
+            # parse ChemicalTanks
+            cp_tanks_list: list[dict] = hw.get('ChemicalTanks', [{}])
+            cp_tanks_objs = []
+            for index, cp_tank in enumerate(cp_tanks_list):
+                cp_tanks_objs.append(ChemicalTank.from_dict(cp_tank))
+            sc_hardware.chem_tanks = cp_tanks_objs
 
-                # parse ChemicalTanks
-                try:
-                    cp_tanks_list: list[dict] = tanks['chemical']
-                    cp_tanks_objs = []
-                    for index, cp_tank in enumerate(cp_tanks_list):
-                        cp_tanks_objs.append(ChemicalTank.from_dict(cp_tank))
-                    sc_hardware.chem_tanks = cp_tanks_objs
-                except KeyError:
-                    pass
-                #     raise KeyError(f'No ChemicalTank found for Spacecraft {sc.name}')
-                # except TypeError:
-                #     raise KeyError(f'No ChemicalTank found for Spacecraft {sc.name}')
+            # parse ElectricTanks
+            ep_tanks_list: list[dict] = hw.get('ElectricTanks', [{}])
+            ep_tanks_objs = []
+            for index, ep_tank in enumerate(ep_tanks_list):
+                ep_tanks_objs.append(ElectricTank.from_dict(ep_tank))
+            sc_hardware.elec_tanks = ep_tanks_objs
 
-                # parse ElectricTanks
-                try:
-                    ep_tanks_list: list[dict] = tanks['electric']
-                    ep_tanks_objs = []
-                    for index, ep_tank in enumerate(ep_tanks_list):
-                        ep_tanks_objs.append(ElectricTank.from_dict(ep_tank))
-                    sc_hardware.elec_tanks = ep_tanks_objs
-                except KeyError:
-                    pass
-                    # raise
+            # parse ChemicalThrusters
+            cp_thrusters_list: list[dict] = hw.get('ChemicalThrusters', [{}])
+            cp_thruster_objs = []
+            for index, cp_thruster in enumerate(cp_thrusters_list):
+                cp_thruster_objs.append(ChemicalThruster.from_dict(cp_thruster))
+            sc_hardware.chem_thrusters = cp_thruster_objs
 
-            except KeyError as ke:
-                logging.info(f'No tanks found in Hardware dict parsing')
-
-            # parse thrusters
-            try:
-                thrusters: dict = hw['Thrusters']
-
-                # parse ChemicalThrusters
-                try:
-                    cp_thrusters_list: list[dict] = thrusters['chemical']
-                    cp_thruster_objs = []
-                    for index, cp_thruster in enumerate(cp_thrusters_list):
-                        cp_thruster_objs.append(ChemicalThruster.from_dict(cp_thruster))
-                    sc_hardware.chem_thrusters = cp_thruster_objs
-                except KeyError:
-                    pass
-
-                # parse ElectricThrusters
-                try:
-                    ep_thrusters_list: list[dict] = thrusters['electric']
-                    ep_thruster_objs = []
-                    for index, ep_thruster in enumerate(ep_thrusters_list):
-                        ep_thruster_objs.append(ElectricThruster.from_dict(ep_thruster))
-                    sc_hardware.elec_thrusters = ep_thruster_objs
-                except KeyError:
-                    pass
-
-            except KeyError:
-                logging.info(f'No thrusters found in Hardware dict parsing')
-
-            # TODO: parse solar_power_system, nuclear_power_system, imager
+            # parse ElectricThrusters
+            ep_thrusters_list: list[dict] = hw.get('ElectricThrusters', [{}])
+            ep_thruster_objs = []
+            for index, ep_thruster in enumerate(ep_thrusters_list):
+                ep_thruster_objs.append(ElectricThruster.from_dict(ep_thruster))
+            sc_hardware.elec_thrusters = ep_thruster_objs
 
             # parse solar power systems
-            try:
-                solar_power_systems: dict = hw['SolarPowerSystem']  # TODO change to 'SolarPowerSystem' (no s)
-                sc_hardware.solar_power_system = SolarPowerSystem.from_dict(solar_power_systems)
+            solar_power_systems: dict = hw.get('SolarPowerSystem', {})
+            sc_hardware.solar_power_system = SolarPowerSystem.from_dict(solar_power_systems)
 
-            except KeyError:
-                logging.info(f'No SolarPowerSystem found in Hardware dict parsing')
+            # TODO: parse nuclear_power_system, imager
 
             return sc_hardware
 
