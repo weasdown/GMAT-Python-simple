@@ -574,7 +574,7 @@ class ElectricTank(Tank):
     @classmethod
     def from_dict(cls, ep_tank_dict: dict) -> gpy.ElectricTank | None:
         if ep_tank_dict != {}:
-            ep_tank = Tank.from_dict('ElectricTank', ep_tank_dict)
+            ep_tank = Tank.from_dict('Electric', ep_tank_dict)
             ep_tank.Validate()
             return ep_tank
         else:
