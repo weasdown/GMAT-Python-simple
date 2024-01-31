@@ -1,5 +1,6 @@
 import gmat_py_simple
 from gmat_py_simple.spacecraft import Spacecraft
+from load_gmat import gmat
 from book import Book
 import unittest
 
@@ -16,6 +17,9 @@ class TestSpacecraft(unittest.TestCase):
                                     chem_thrusters=gmat_py_simple.ChemicalThruster('ChemThruster1', 'ChemTank1'),
                                     elec_tanks=gmat_py_simple.ElectricTank('ElecTank1'),
                                     elec_thrusters=gmat_py_simple.ElectricThruster('ElecThruster1', 'ElecTank1'),
+                                    solar_power_system=gmat_py_simple.SolarPowerSystem('SolarPowerSystem1'),
+                                    nuclear_power_system=gmat_py_simple.NuclearPowerSystem('NuclearPowerSystem1'),
+                                    imagers=gmat_py_simple.Imager('Imager1')
                                 )
                                 )
 
@@ -26,11 +30,18 @@ class TestSpacecraft(unittest.TestCase):
 
     def tearDown(self):
         print("Running tearDown method...")
+        gmat.Clear()
 
-    def test_reading_time(self):
+    def test_hardware(self):
         print("Running test_reading_time...")
-        # self.assertEqual(self.book_1.get_reading_time(), f"{304 * 1.5} minutes")
-        # self.assertEqual(self.book_2.get_reading_time(), f"{447 * 1.5} minutes")
+        self.sat_1.Help()
+
+        # Check thrusters, tanks, power systems
+        self.assertEqual(self.sat_1.GetField('Thrusters'), '{ChemThruster1, ElecThruster1}')
+        self.assertEqual(self.sat_1.GetField('Tanks'), '{ChemTank1, ElecTank1}')
+        # self.assertEqual(self.sat_1.GetField('PowerSystem'), 'SolarPowerSystem1')
+        # gmat.Initialize()
+        print(f'Param 104: {self.sat_1.gmat_obj.GetStringArrayParameter(104)}')  # 104 for ADD_HARDWARE
 
     # def test_discount(self):
     #     print("Running test_discount...")

@@ -156,53 +156,71 @@ class Spacecraft(GmatObject):
         # Setup tanks
         self.chem_tanks = None
         if self.hardware.chem_tanks is not None:
-            self.chem_tanks = self.hardware.chem_tanks
             if isinstance(self.chem_tanks, list):
+                self.chem_tanks = self.hardware.chem_tanks
                 for tank in self.chem_tanks:
                     tank.attach_to_sat(self)
             else:
-                self.chem_tanks.attach_to_sat(self)
+                self.chem_tanks = [self.hardware.chem_tanks]
+                self.chem_tanks[0].attach_to_sat(self)
 
         self.elec_tanks = None
         if self.hardware.elec_tanks is not None:
-            self.elec_tanks = self.hardware.elec_tanks
             if isinstance(self.elec_tanks, list):
+                self.elec_tanks = self.hardware.elec_tanks
                 for tank in self.elec_tanks:
                     tank.attach_to_sat(self)
             else:
-                self.elec_tanks.attach_to_sat(self)
+                self.elec_tanks = [self.hardware.elec_tanks]
+                self.elec_tanks[0].attach_to_sat(self)
         
         # Setup thrusters
         self.chem_thrusters = None
         if self.hardware.chem_thrusters is not None:
-            self.chem_thrusters: ChemicalThruster | list[ChemicalThruster] | list = self.hardware.chem_thrusters
+            self.chem_thrusters: ChemicalThruster | list[ChemicalThruster] = self.hardware.chem_thrusters
             if isinstance(self.chem_thrusters, list):
+                self.chem_thrusters: list[ChemicalThruster] = self.hardware.chem_thrusters
                 for thruster in self.chem_thrusters:
                     thruster.attach_to_sat(self)
                     thruster.attach_to_tanks(thruster.tanks)
             else:  # self.chem_thrusters is a single ChemicalThruster object
-                self.chem_thrusters.attach_to_sat(self)
-                self.chem_thrusters.attach_to_tanks(self.chem_thrusters.tanks)
+                self.chem_thrusters = [self.hardware.chem_thrusters]
+                self.chem_thrusters[0].attach_to_sat(self)
+                self.chem_thrusters[0].attach_to_tanks(self.chem_thrusters[0].tanks)
 
         self.elec_thrusters = None
         if self.hardware.elec_thrusters is not None:
-            self.elec_thrusters = self.hardware.elec_thrusters
+            self.elec_thrusters: ElectricThruster | list[ElectricThruster] = self.hardware.elec_thrusters
             if isinstance(self.elec_thrusters, list):
+                self.elec_thrusters: list[ElectricThruster] = self.hardware.elec_thrusters
                 for thruster in self.elec_thrusters:
                     thruster.attach_to_sat(self)
                     thruster.attach_to_tanks(thruster.tanks)
             else:  # self.elec_thrusters is a single ElectricThruster object
-                self.elec_thrusters.attach_to_sat(self)
-                self.elec_thrusters.attach_to_tanks(self.elec_thrusters.tanks)
+                self.elec_thrusters = [self.hardware.elec_thrusters]
+                self.elec_thrusters[0].attach_to_sat(self)
+                self.elec_thrusters[0].attach_to_tanks(self.elec_thrusters[0].tanks)
 
         # Setup power systems
-        self.solar_power_system = None if self.hardware.solar_power_system is None else self.hardware.solar_power_system
-        self.nuclear_power_system = None if self.hardware.nuclear_power_system is None \
-            else self.hardware.nuclear_power_system
+        self.solar_power_system = None
+        if self.hardware.solar_power_system is not None:
+            self.solar_power_system = self.hardware.solar_power_system
+            self.solar_power_system.attach_to_sat(self)
+
+        self.nuclear_power_system = None
+        if self.hardware.nuclear_power_system is not None:
+            self.nuclear_power_system = self.hardware.nuclear_power_system
+            self.nuclear_power_system.attach_to_sat(self)
 
         # Setup imagers
-        self.imagers = None if self.hardware.imagers is None else self.hardware.imagers
-        # TODO attach imagers to sat
+        self.imagers = None
+        if self.hardware.imagers is not None:
+            self.imagers: gpy.Imager | list[gpy.Imager] = self.hardware.imagers
+            if isinstance(self.imagers, list):
+                for imager in self.imagers:
+                    imager.attach_to_sat(self)
+            else:
+                self.imagers.attach_to_sat(self)
 
         self.orbit = None
         self.dry_mass = self.GetField('DryMass')
@@ -367,40 +385,51 @@ class Spacecraft(GmatObject):
 
         # Add tanks by getting name of each tank, adding it to a list, then attaching this list to end of existing one
         if isinstance(tanks, str):
-            current_tanks_list = [tanks]
-            gpy.Tank.attach_to_sat(gmat.GetObject(tanks), self)
+            tank = gmat.GetObject(tanks)
+            self.SetStringParameter(104, tank.GetName())  # 104 for sat's ADD_HARDWARE
         elif isinstance(tanks, gpy.Tank):
-            current_tanks_list = [tanks.GetName()]
+            self.SetStringParameter(104, tanks.GetName())  # 104 for sat's ADD_HARDWARE
         else:
-            tanks_to_set: list = [tank.GetName() for tank in tanks]
-            current_tanks_list.extend(tanks_to_set)
+            for tank in tanks:
+                tanks_to_set: list = [tank.GetName()]
+                current_tanks_list.extend(tanks_to_set)
+                self.SetStringParameter(104, tank.GetName())  # 104 for sat's ADD_HARDWARE
+
         value = list_to_gmat_field_string(current_tanks_list)
         self.SetField('Tanks', value)
+
         return True
 
     def add_thrusters(self, thrusters: list[ChemicalThruster | ElectricThruster]) -> bool:
         current_thrusters_value: str = self.GetField('Thrusters')
         current_thrusters_list: list = gmat_field_string_to_list(current_thrusters_value)
 
-        # Add thrusters by getting name of each, adding it to a list, then attaching this list to end of existing one
-        if isinstance(thrusters, gpy.Thruster):
-            current_thrusters_list = [thrusters.GetName()]
+        # Add tanks by getting name of each tank, adding it to a list, then attaching this list to end of existing one
+        if isinstance(thrusters, str):
+            thruster = gmat.GetObject(thrusters)
+            self.SetStringParameter(104, thruster.GetName())  # 104 for sat's ADD_HARDWARE
+        elif isinstance(thrusters, gpy.Thruster):
+            self.SetStringParameter(104, thrusters.GetName())  # 104 for sat's ADD_HARDWARE
         else:
-            thrusters_to_set: list = [thruster.GetName() for thruster in thrusters]
-            current_thrusters_list.extend(thrusters_to_set)
+            for thruster in thrusters:
+                thrusters_to_set: list = [thruster.GetName()]
+                current_thrusters_list.extend(thrusters_to_set)
+                self.SetStringParameter(104, thruster.GetName())  # 104 for sat's ADD_HARDWARE
+
         value = list_to_gmat_field_string(current_thrusters_list)
         self.SetField('Thrusters', value)
+
         return True
 
     def add_sps(self, solar_power_system: gpy.SolarPowerSystem | gmat.SolarPowerSystem) -> bool:
         # TODO add to existing if PowerSystem already has a name
-        self.SetField('PowerSystem', solar_power_system.GetName())
-        return True
+        # self.SetField('PowerSystem', solar_power_system.GetName())
+        return self.SetStringParameter(104, solar_power_system.GetName())  # 104 for sat's ADD_HARDWARE
 
     def add_nps(self, nuclear_power_system: gpy.NuclearPowerSystem | gmat.NuclearPowerSystem) -> bool:
         # TODO add to existing if PowerSystem already has a name
-        self.SetField('PowerSystem', nuclear_power_system.GetName())
-        return True
+        # self.SetField('PowerSystem', nuclear_power_system.GetName())
+        return self.SetStringParameter(104, nuclear_power_system.GetName())  # 104 for sat's ADD_HARDWARE
 
 
 class Tank(GmatObject):
@@ -761,9 +790,8 @@ class Imager(GmatObject):
         return f'An Imager named "{self.GetName()}"'
 
     def attach_to_sat(self, sat: gpy.Spacecraft | gmat.Spacecraft):
-        raise NotImplementedError
-        # self.spacecraft = sat
-        # self.spacecraft.add_nps(self)
+        sat_gmat = gpy.extract_gmat_obj(sat)
+        sat_gmat.SetStringParameter(104, self.GetName())  # 104 for sat's ADD_HARDWARE
 
     @staticmethod
     def from_dict(imager_dict: dict[str, Union[str, int, float]]):

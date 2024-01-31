@@ -32,17 +32,18 @@ class GmatObject:
         return gpy.extract_gmat_obj(self).GetBooleanParameter(param)
 
     def GetEpoch(self, as_datetime: bool = False) -> str | datetime:
-        # self.gmat_obj = self.GetObject()  # update object's gmat_obj with latest data (e.g. from mission run)
         if isinstance(self, gpy.Spacecraft):
             self.gmat_obj.TakeAction('UpdateEpoch')
         up_to_date_obj = self.GetObject()
         # FIXME: inaccurate for Mars in Tut04
-        epoch_str: str = up_to_date_obj.GetField('Epoch')
-        if not as_datetime:
-            return epoch_str
-        else:
+        if as_datetime:
+            up_to_date_obj.SetField('DateFormat', 'UTCGregorian')
+            epoch_str: str = up_to_date_obj.GetField('Epoch')
             epoch_datetime: datetime = self.epoch_to_datetime(epoch_str)
             return epoch_datetime
+        else:
+            epoch_str: str = up_to_date_obj.GetField('Epoch')
+            return epoch_str
 
     def GetField(self, field: str | int) -> str:
         """

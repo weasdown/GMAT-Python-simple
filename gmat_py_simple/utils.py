@@ -228,6 +228,8 @@ def list_to_gmat_field_string(data_list: list) -> str:
     """
     if data_list is not []:  # Python list contains at least one item
         string = ', '.join(data_list)  # convert the list to a string, with a comma between each item
+        # if len(data_list) > 1:
+        #     string = '{' + string + '}'  # add curly braces for GMAT to interpret as a list
 
     else:  # Python list is empty
         string = '{}'
