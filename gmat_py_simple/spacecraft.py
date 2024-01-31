@@ -37,11 +37,6 @@ class Spacecraft(GmatObject):
                      solar_power_system: gpy.SolarPowerSystem = None,
                      nuclear_power_system: gpy.NuclearPowerSystem = None,
                      imagers: gpy.Imager | list[gpy.Imager] = None):
-            # self.spacecraft = spacecraft
-
-            # self.tanks = self.PropList('Tanks')
-            # self.thrusters = self.PropList('Thrusters')
-
             self.chem_tanks = chem_tanks if chem_tanks is not None else []
             self.elec_tanks = elec_tanks if elec_tanks is not None else []
 
@@ -161,7 +156,6 @@ class Spacecraft(GmatObject):
                 for tank in self.chem_tanks:
                     tank.attach_to_sat(self)
             else:
-                print(self.hardware.chem_tanks)
                 self.chem_tanks = [self.hardware.chem_tanks]
                 self.chem_tanks[0].attach_to_sat(self)
 
@@ -428,14 +422,20 @@ class Spacecraft(GmatObject):
         return True
 
     def add_sps(self, solar_power_system: gpy.SolarPowerSystem | gmat.SolarPowerSystem) -> bool:
-        # TODO add to existing if PowerSystem already has a name
-        # self.SetField('PowerSystem', solar_power_system.GetName())
-        return self.SetStringParameter(104, solar_power_system.GetName())  # 104 for sat's ADD_HARDWARE
+        self.SetStringParameter(104, solar_power_system.GetName())  # 104 for sat's ADD_HARDWARE
+        if self.GetField('PowerSystem') == '':
+            self.SetField('PowerSystem', solar_power_system.GetName())
+            return True
+        else:
+            return False
 
     def add_nps(self, nuclear_power_system: gpy.NuclearPowerSystem | gmat.NuclearPowerSystem) -> bool:
-        # TODO add to existing if PowerSystem already has a name
-        # self.SetField('PowerSystem', nuclear_power_system.GetName())
-        return self.SetStringParameter(104, nuclear_power_system.GetName())  # 104 for sat's ADD_HARDWARE
+        self.SetStringParameter(104, nuclear_power_system.GetName())  # 104 for sat's ADD_HARDWARE
+        if self.GetField('PowerSystem') == '':
+            self.SetField('PowerSystem', nuclear_power_system.GetName())
+            return True
+        else:
+            return False
 
 
 class Tank(GmatObject):
@@ -733,7 +733,11 @@ class SolarPowerSystem(GmatObject):
 
     def attach_to_sat(self, sat: gpy.Spacecraft | gmat.Spacecraft):
         self.spacecraft = sat
-        self.spacecraft.add_sps(self)
+        if sat.GetField('PowerSystem') == '':
+            self.spacecraft.add_sps(self)
+        else:
+            return False
+        pass
 
     @staticmethod
     def from_dict(sps_dict: dict[str, Union[str, int, float]]):
@@ -769,9 +773,12 @@ class NuclearPowerSystem(GmatObject):
     def __repr__(self):
         return f'A NuclearPowerSystem named "{self.GetName()}"'
 
-    def attach_to_sat(self, sat: gpy.Spacecraft | gmat.Spacecraft):
+    def attach_to_sat(self, sat: gpy.Spacecraft | gmat.Spacecraft) -> bool:
         self.spacecraft = sat
-        self.spacecraft.add_nps(self)
+        if sat.GetField('PowerSystem') == '':
+            self.spacecraft.add_nps(self)
+        else:
+            return False
 
     @staticmethod
     def from_dict(nps_dict: dict[str, Union[str, int, float]]):

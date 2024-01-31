@@ -29,19 +29,17 @@ class TestSpacecraft(unittest.TestCase):
     #     self.book_2 = Book('Grit', 'Angela Duckworth', 447, 16, 0.15)
 
     def tearDown(self):
-        print("Running tearDown method...")
         gmat.Clear()
 
-    def test_hardware(self):
-        print("Running test_reading_time...")
-        self.sat_1.Help()
+    def test_thrusters(self):
+        hardware_list = self.sat_1.GetField('AddHardware')
 
-        # Check thrusters, tanks, power systems
+        # Check thrusters, tanks, power system fields
         self.assertEqual(self.sat_1.GetField('Thrusters'), '{ChemThruster1, ElecThruster1}')
-        self.assertEqual(self.sat_1.GetField('Tanks'), '{ChemTank1, ElecTank1}')
-        # self.assertEqual(self.sat_1.GetField('PowerSystem'), 'SolarPowerSystem1')
-        # gmat.Initialize()
-        print(f'Param 104: {self.sat_1.gmat_obj.GetStringArrayParameter(104)}')  # 104 for ADD_HARDWARE
+
+        # Check AddHardware field
+        self.assertIn('ChemThruster1', hardware_list)
+        self.assertIn('ElecThruster1', hardware_list)
 
     # def test_discount(self):
     #     print("Running test_discount...")
@@ -62,6 +60,27 @@ class TestSpacecraft(unittest.TestCase):
     # @classmethod
     # def tearDownClass(cls):
     #     print("\ntearDownClass method: Runs after all tests...")
+
+    def test_tanks(self):
+        hardware_list = self.sat_1.GetField('AddHardware')
+
+        # Check Tanks field
+        self.assertEqual(self.sat_1.GetField('Tanks'), '{ChemTank1, ElecTank1}')
+
+        # Check AddHardware field
+        self.assertIn('ChemTank1', hardware_list)
+        self.assertIn('ElecTank1', hardware_list)
+
+    def test_power_system(self):
+        # Check Tanks field
+        self.assertEqual(self.sat_1.GetField('PowerSystem'), 'SolarPowerSystem1')
+
+        # Check AddHardware field
+        self.assertIn('SolarPowerSystem1', self.sat_1.GetField('AddHardware'))
+
+    def test_imagers(self):
+        # Check AddHardware field
+        self.assertIn('Imager1', self.sat_1.GetField('AddHardware'))
 
 
 if __name__ == '__main__':
