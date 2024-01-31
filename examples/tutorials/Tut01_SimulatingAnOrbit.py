@@ -37,7 +37,7 @@ prop = gpy.PropSetup('LowEarthProp', fm=fm, accuracy=9.999999999999999e-12,
                      gator=gpy.PropSetup.Propagator(name='LowEarthProp', integrator='RungeKutta89'))
 
 print(f'\nSat state before running: {sat.GetState()}')
-print(f"Epoch before running: {sat.GetField('Epoch')}")
+print(f"Epoch before running: {sat.GetEpoch()}")
 
 # Mission Command Sequence
 mcs = [gpy.BeginMissionSequence(),
@@ -46,7 +46,7 @@ mcs = [gpy.BeginMissionSequence(),
 gpy.RunMission(mcs)  # Run the mission
 
 print(f'Sat state after running: {sat.GetState()}')
-print(f'Epoch after running: {sat.GetField("Epoch")}')
+print(f'Epoch after running: {sat.GetEpoch()}')
 
 script_path = os.path.normpath(f'{os.getcwd()}/Tut01.script')
 gmat.SaveScript(script_path)
