@@ -13,8 +13,7 @@ class GmatObject:
     def __init__(self, obj_type: str, name: str):
         self.obj_type = obj_type
         self._name = name
-
-        self.gmat_obj = gmat.Construct(self.obj_type, self._name)
+        self.gmat_obj = gpy.Construct(self.obj_type, self._name)
         self.gmat_obj.SetSolarSystem(gmat.GetSolarSystem())
         self.was_propagated = False
 
@@ -198,6 +197,9 @@ class GmatObject:
 
     def SetRefObject(self, obj: gpy.GmatObject | gmat.GmatObject, type_id: int, name: str) -> bool:
         return gpy.extract_gmat_obj(self).SetRefObject(gpy.extract_gmat_obj(obj), type_id, name)
+
+    def SetRefObjectName(self, type_id: int, name: str) -> bool:
+        return gpy.extract_gmat_obj(self).SetRefObjectName(type_id, name)
 
     def SetSolarSystem(self, ss: gmat.SolarSystem = gmat.GetSolarSystem()) -> bool:
         return self.gmat_obj.SetSolarSystem(ss)

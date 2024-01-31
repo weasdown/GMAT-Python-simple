@@ -362,11 +362,9 @@ def Construct(obj_type: str, name: str, *args):
             return gmat.Construct(obj_type, name, args)
         else:
             return gmat.Construct(obj_type, name)
-    except Exception as ex:
-        if isinstance(ex, AttributeError) and str(ex) == "'NoneType' object has no attribute 'GetTypeName'":
-            raise TypeError(f'GMAT does not recognize the given type: {obj_type}')
-        else:
-            raise ex
+    except AttributeError as attr:
+        if str(attr) == "'NoneType' object has no attribute 'GetTypeName'":
+            raise TypeError(f'GMAT does not recognize the given object type "{obj_type}"')
 
 
 def CustomHelp(obj):
