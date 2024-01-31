@@ -6,10 +6,11 @@ from load_gmat import gmat
 from gmat_py_simple.basics import GmatObject
 from gmat_py_simple.orbit import OrbitState
 from gmat_py_simple.utils import (gmat_str_to_py_str, gmat_field_string_to_list,
-                                  list_to_gmat_field_string, rvector6_to_list, get_sat_objects)
+                                  list_to_gmat_field_string, rvector6_to_list)
 
 from typing import Union
 import logging
+from math import pi
 
 
 class Spacecraft(GmatObject):
@@ -858,10 +859,30 @@ class Imager(GmatObject):
             if fov_type not in allowed_fov_types:
                 raise TypeError(f'FieldOfView type given in fov_type "{fov_type}" is not recognized. Must be one of:\n'
                                 f'{allowed_fov_types}')
-            elif fov_type is None:
-                super().__init__('RectangularFOV', name)
+            if fov_type is None:
+                self.fov_type = 'RectangularFOV'
             else:
-                super().__init__(fov_type, name)
+                self.fov_type = fov_type
+            super().__init__(self.fov_type, name)
+
+            # gmat.Construct returns a GmatBase for FOV, so get object in FOV type from Validator
+            # self.gmat_obj = gpy.Moderator().gmat_obj.FindObject(self.name)
+            # self.gmat_obj = gpy.Moderator().gmat_obj.CreateFieldOfView(self.fov_type, self.name)
+            # self.gmat_obj = gpy.Validator().FindObject(self.name)
+            # self.gmat_obj = gmat.Construct('RectangularFOV', 'DefRectFOV')
+            # self.gmat_obj = gpy.Moderator().gmat_obj.GetFieldOfView(self.name)
+            # print(type(self.gmat_obj))
+            # print(self.gmat_obj)
+            #
+            # self.gmat_obj.Help()
+
+            # # TODO remove (method checking only)
+            # self.CheckTargetVisibility([0, 0, 0])
+            # pass
+
+        def CheckTargetVisibility(self, target: list[int | float]):
+            rv3 = gmat.Rvector3(target)  # convert to a GMAT Rvector3 object
+            return self.gmat_obj.CheckTargetVisibility(rv3)
 
     class RectangularFOV(FieldOfView):
         def __init__(self, name: str = 'DefaultRectangularFOV'):
@@ -871,10 +892,6 @@ class Imager(GmatObject):
         def __init__(self, name: str = 'DefaultConicalFOV', color: list = None, fov_angle: int | float = 30):
             super().__init__('ConicalFOV', name)
 
-            print(f'Full Colour DB: {gmat.ColorDatabase.Instance().GetAllColorNameArray()}')
-            red = gmat.ColorDatabase.Instance().GetRgbColor("Red")
-            print(f'Red Color: {red}')
-
             self.color = [float(ele) for ele in self.GetField('Color')[1:-1].split(' ')]
             if color is None:
                 # color: list = [0, 0, 0]
@@ -883,8 +900,6 @@ class Imager(GmatObject):
 
             self.fov_angle = fov_angle if fov_angle is not None else 30
             self.SetRealParameter('FieldOfViewAngle', self.fov_angle)
-            # self.Help()
-            pass
 
     class CustomFOV(FieldOfView):
         def __init__(self, name: str = 'DefaultCustomFOV'):
@@ -896,24 +911,23 @@ class Imager(GmatObject):
         self.spacecraft = None
 
         if fov is None:
-            self.fov = self.FieldOfView()
+            # self.fov = self.gmat_obj.GetFieldOfView()
+            # self.fov = self.RectangularFOV()
+            self.fov = self.RectangularFOV()
         elif isinstance(fov, Imager.FieldOfView):
             self.fov = fov
         elif isinstance(fov, str):
-            # fov is presumed to be a path to an FoV file
+            # fov str is presumed to be a path to an FoV file
             raise NotImplementedError
         else:
             raise TypeError(
                 f'Type for fov "{type(fov).__name__}" is not recognized. Must be a FieldOfView object or str'
                 f' representing a path to an FoV file')
 
-        self.fov = self.ConicalFOV()
-
-        # TODO: attach self.fov to Imager
-
-        # TODO add parsing of each field under Help()
-        # self.Help()
-        pass
+        # Attach FOV to Imager
+        self.SetStringParameter(22, self.fov.GetName())  # 22 for FOV_MODEL
+        self.SetRefObjectName(gmat.FIELD_OF_VIEW, self.fov.name)
+        self.SetRefObject(self.fov, gmat.FIELD_OF_VIEW, self.fov.name)
 
     def __repr__(self):
         return f'An Imager named "{self.GetName()}"'
@@ -942,3 +956,15 @@ class Imager(GmatObject):
         # imager.Validate()
         #
         # return imager
+
+    def GetMaskClockAngles(self, degrees: bool = False):
+        if not degrees:
+            return self.gmat_obj.GetMaskClockAngles()
+        else:
+            return self.gmat_obj.GetMaskClockAngles() * 180/pi
+
+    def GetMaskConeAngles(self, degrees: bool = False):
+        if not degrees:
+            return self.gmat_obj.GetMaskConeAngles()
+        else:
+            return self.gmat_obj.GetMaskConeAngles() * 180/pi

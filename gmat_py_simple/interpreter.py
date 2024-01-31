@@ -7,6 +7,8 @@ from load_gmat import gmat
 class Validator:
     def __init__(self):
         self.gmat_obj = gmat.Validator.Instance()
+        self.SetSolarSystem(gmat.GetSolarSystem())
+        self.SetObjectMap(gpy.Moderator().GetConfiguredObjectMap())
 
     def CreateParameter(self, param_type: str, value: str | int | float):
         return self.gmat_obj.CreateParameter(param_type, value)
@@ -19,8 +21,6 @@ class Validator:
         return self.gmat_obj.CreateSystemParameter(param_created, name, manage)
 
     def FindObject(self, name: str):
-        self.SetSolarSystem(gmat.GetSolarSystem())
-        self.SetObjectMap(gpy.Moderator().GetConfiguredObjectMap())
         return gpy.extract_gmat_obj(self).FindObject(name)
 
     def SetObjectMap(self, om: gmat.ObjectMap) -> bool:
