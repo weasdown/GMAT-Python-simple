@@ -13,7 +13,10 @@ class TestSpacecraft(unittest.TestCase):
         self.sat_1 = Spacecraft('TS1',
                                 hardware=Spacecraft.SpacecraftHardware(
                                     chem_tanks=gmat_py_simple.ChemicalTank('ChemTank1'),
-                                    chem_thrusters=gmat_py_simple.ChemicalThruster('ChemThruster1', 'ChemTank1'))
+                                    chem_thrusters=gmat_py_simple.ChemicalThruster('ChemThruster1', 'ChemTank1'),
+                                    elec_tanks=gmat_py_simple.ElectricTank('ElecTank1'),
+                                    elec_thrusters=gmat_py_simple.ElectricThruster('ElecThruster1', 'ElecTank1'),
+                                )
                                 )
 
     # def setUp(self):

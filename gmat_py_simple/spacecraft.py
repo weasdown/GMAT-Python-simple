@@ -412,7 +412,6 @@ class Tank(GmatObject):
         self.spacecraft = None
         self.fuel_mass = self.GetField('FuelMass')
 
-        gmat.Initialize()
         self.Initialize()
 
     def __repr__(self):
@@ -501,6 +500,8 @@ class ChemicalTank(Tank):
             self.pressure_model = pressure_model
             self.SetStringParameter('PressureModel', self.pressure_model)
 
+            self.Initialize()
+
     @classmethod
     def from_dict(cls, cp_tank_dict: dict):
         cp_tank = super().from_dict('ChemicalTank', cp_tank_dict)
@@ -523,7 +524,9 @@ class ElectricTank(Tank):
 
     def __init__(self, name: str):
         super().__init__('ElectricTank', name)
-        gpy.Initialize()
+
+        # TODO take and parse arguments like in ChemicalTank
+
         self.Initialize()
 
     @classmethod
