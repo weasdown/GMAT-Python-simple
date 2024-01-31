@@ -73,28 +73,28 @@ class Spacecraft(GmatObject):
             cp_tanks_objs = []
             for index, cp_tank in enumerate(cp_tanks_list):
                 cp_tanks_objs.append(ChemicalTank.from_dict(cp_tank))
-            sc_hardware.chem_tanks = cp_tanks_objs
+            sc_hardware.chem_tanks = cp_tanks_objs if cp_tanks_objs != [None] else None
 
             # parse ElectricTanks
             ep_tanks_list: list[dict] = hw.get('ElectricTanks', [{}])
             ep_tanks_objs = []
             for index, ep_tank in enumerate(ep_tanks_list):
                 ep_tanks_objs.append(ElectricTank.from_dict(ep_tank))
-            sc_hardware.elec_tanks = ep_tanks_objs
+            sc_hardware.elec_tanks = ep_tanks_objs if ep_tanks_objs != [None] else None
 
             # parse ChemicalThrusters
             cp_thrusters_list: list[dict] = hw.get('ChemicalThrusters', [{}])
             cp_thruster_objs = []
             for index, cp_thruster in enumerate(cp_thrusters_list):
                 cp_thruster_objs.append(ChemicalThruster.from_dict(cp_thruster))
-            sc_hardware.chem_thrusters = cp_thruster_objs
+            sc_hardware.chem_thrusters = cp_thruster_objs  if cp_thruster_objs != [None] else None
 
             # parse ElectricThrusters
             ep_thrusters_list: list[dict] = hw.get('ElectricThrusters', [{}])
             ep_thruster_objs = []
             for index, ep_thruster in enumerate(ep_thrusters_list):
                 ep_thruster_objs.append(ElectricThruster.from_dict(ep_thruster))
-            sc_hardware.elec_thrusters = ep_thruster_objs
+            sc_hardware.elec_thrusters = ep_thruster_objs if ep_thruster_objs != [None] else None
 
             # parse solar power systems
             solar_power_systems: dict = hw.get('SolarPowerSystem', {})
@@ -155,17 +155,18 @@ class Spacecraft(GmatObject):
         # TODO confirm fixed - FIXME - not being updated by from_dict()
         # Setup tanks
         self.chem_tanks = None
-        if self.hardware.chem_tanks is not None:
+        if self.hardware.chem_tanks:
             if isinstance(self.chem_tanks, list):
                 self.chem_tanks = self.hardware.chem_tanks
                 for tank in self.chem_tanks:
                     tank.attach_to_sat(self)
             else:
+                print(self.hardware.chem_tanks)
                 self.chem_tanks = [self.hardware.chem_tanks]
                 self.chem_tanks[0].attach_to_sat(self)
 
         self.elec_tanks = None
-        if self.hardware.elec_tanks is not None:
+        if self.hardware.elec_tanks:
             if isinstance(self.elec_tanks, list):
                 self.elec_tanks = self.hardware.elec_tanks
                 for tank in self.elec_tanks:
@@ -176,7 +177,7 @@ class Spacecraft(GmatObject):
         
         # Setup thrusters
         self.chem_thrusters = None
-        if self.hardware.chem_thrusters is not None:
+        if self.hardware.chem_thrusters:
             self.chem_thrusters: ChemicalThruster | list[ChemicalThruster] = self.hardware.chem_thrusters
             if isinstance(self.chem_thrusters, list):
                 self.chem_thrusters: list[ChemicalThruster] = self.hardware.chem_thrusters
@@ -189,7 +190,7 @@ class Spacecraft(GmatObject):
                 self.chem_thrusters[0].attach_to_tanks(self.chem_thrusters[0].tanks)
 
         self.elec_thrusters = None
-        if self.hardware.elec_thrusters is not None:
+        if self.hardware.elec_thrusters:
             self.elec_thrusters: ElectricThruster | list[ElectricThruster] = self.hardware.elec_thrusters
             if isinstance(self.elec_thrusters, list):
                 self.elec_thrusters: list[ElectricThruster] = self.hardware.elec_thrusters
@@ -289,27 +290,32 @@ class Spacecraft(GmatObject):
         self.hardware = hardware
 
         # Attach thrusters and tanks to the Spacecraft
-        for thruster in self.hardware.chem_thrusters:
-            if not thruster:
-                print(f'No chemical thrusters found, chemical thruster list is: {self.chem_thrusters}')
-                raise SyntaxError
+        if self.hardware.chem_thrusters is not None:
+            for thruster in self.hardware.chem_thrusters:
+                # if not thruster:
+                #     raise RuntimeError(f'No chemical thrusters found, chemical thruster list is: {self.chem_thrusters}'
+                #                        f'\n{self.hardware.chem_thrusters}')
+                if thruster is not None:
+                    thruster.attach_to_sat(self)
+                    thruster.attach_to_tanks(thruster.tanks)
 
-            thruster.attach_to_sat(self)
-            thruster.attach_to_tanks(thruster.tanks)
+        if self.hardware.elec_thrusters is not None:
+            for thruster in self.hardware.elec_thrusters:
+                # if not thruster:
+                #     raise RuntimeError(f'No electric thrusters found, electric thruster list is: {self.elec_thrusters}')
+                if thruster is not None:
+                    thruster.attach_to_sat(self)
+                    thruster.attach_to_tanks(thruster.tanks)
 
-        for thruster in self.hardware.elec_thrusters:
-            if not thruster:
-                print(f'No electric thrusters found, electric thruster list is: {self.elec_thrusters}')
-                break
+        if self.hardware.chem_tanks is not None:
+            for tank in self.hardware.chem_tanks:
+                if tank is not None:
+                    tank.attach_to_sat(self)
 
-            thruster.attach_to_sat(self)
-            thruster.attach_to_tanks(thruster.tanks)
-
-        for tank in self.hardware.chem_tanks:
-            tank.attach_to_sat(self)
-
-        for tank in self.hardware.elec_tanks:
-            tank.attach_to_sat(self)
+        if self.hardware.elec_tanks is not None:
+            for tank in self.hardware.elec_tanks:
+                if tank is not None:
+                    tank.attach_to_sat(self)
 
         self.chem_thrusters = self.hardware.chem_thrusters
         self.elec_thrusters = self.hardware.elec_thrusters
@@ -447,14 +453,14 @@ class Tank(GmatObject):
         return f'{self.tank_type} with name {self.name}'
 
     @staticmethod
-    def from_dict(tank_type: str, tank_dict: dict[str, Union[str, int, float]]):
-        if tank_type == 'ChemicalTank':
+    def from_dict(fuel_type: str, tank_dict: dict[str, Union[str, int, float]]):
+        if fuel_type == 'Chemical':
             tank = ChemicalTank(tank_dict['Name'])
-        elif tank_type == 'ElectricTank':
+        elif fuel_type == 'Electric':
             tank = ElectricTank(tank_dict['Name'])
         else:
-            raise SyntaxError(f'Invalid thr_type found in Tank.from_dict: {tank_type}'
-                              f"\nMust be 'ChemicalTank' or 'ElectricTank'")
+            raise SyntaxError(f'Invalid thr_type found in Tank.from_dict: {fuel_type}'
+                              f"\nMust be 'Chemical' or 'Electric'")
 
         fields: list[str] = list(tank_dict.keys())
         fields.remove('Name')
@@ -532,10 +538,13 @@ class ChemicalTank(Tank):
             self.Initialize()
 
     @classmethod
-    def from_dict(cls, cp_tank_dict: dict):
-        cp_tank = super().from_dict('ChemicalTank', cp_tank_dict)
-        cp_tank.Validate()
-        return cp_tank
+    def from_dict(cls, cp_tank_dict: dict) -> gpy.ChemicalTank | None:
+        if cp_tank_dict != {}:
+            cp_tank = super().from_dict('Chemical', cp_tank_dict)
+            cp_tank.Validate()
+            return cp_tank
+        else:
+            return None
 
     # def attach_to_sat(self):
     #     return super().attach_to_sat()
@@ -559,10 +568,13 @@ class ElectricTank(Tank):
         self.Initialize()
 
     @classmethod
-    def from_dict(cls, ep_tank_dict: dict):
-        ep_tank = Tank.from_dict('ElectricTank', ep_tank_dict)
-        ep_tank.Validate()
-        return ep_tank
+    def from_dict(cls, ep_tank_dict: dict) -> gpy.ElectricTank | None:
+        if ep_tank_dict != {}:
+            ep_tank = Tank.from_dict('ElectricTank', ep_tank_dict)
+            ep_tank.Validate()
+            return ep_tank
+        else:
+            return None
 
 
 class Thruster(GmatObject):
@@ -662,10 +674,13 @@ class ChemicalThruster(Thruster):
         self.Initialize()
 
     @classmethod
-    def from_dict(cls, cp_thr_dict: dict) -> ChemicalThruster:
-        cp_thr: ChemicalThruster = Thruster.from_dict('Chemical', cp_thr_dict)
-        cp_thr.Validate()
-        return cp_thr
+    def from_dict(cls, cp_thr_dict: dict) -> gpy.ChemicalThruster | None:
+        if cp_thr_dict != {}:
+            cp_thr: ChemicalThruster = Thruster.from_dict('Chemical', cp_thr_dict)
+            cp_thr.Validate()
+            return cp_thr
+        else:
+            return None
 
 
 class ElectricThruster(Thruster):
@@ -675,10 +690,13 @@ class ElectricThruster(Thruster):
         self.Initialize()
 
     @classmethod
-    def from_dict(cls, ep_thr_dict: dict):
-        ep_thr = Thruster.from_dict('Electric', ep_thr_dict)
-        ep_thr.Validate()
-        return ep_thr
+    def from_dict(cls, ep_thr_dict: dict) -> gpy.ElectricThruster | None:
+        if ep_thr_dict != {}:
+            ep_thr = Thruster.from_dict('Electric', ep_thr_dict)
+            ep_thr.Validate()
+            return ep_thr
+        else:
+            return None
 
     # @property
     # def mix_ratio(self):

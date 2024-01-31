@@ -120,7 +120,8 @@ class GmatObject:
 
     def Help(self):
         # TODO: upgrade to get list of fields with utils.gmat_obj_field_list then print all fields/values
-        return gpy.extract_gmat_obj(self).Help()
+        self_gmat = self.GetObject()  # update with data from RuntimeObject if necessary
+        return self_gmat.Help()
 
     def Initialize(self):
         try:
