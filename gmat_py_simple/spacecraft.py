@@ -150,17 +150,59 @@ class Spacecraft(GmatObject):
         _allowed_fields.update(_gmat_allowed_fields,
                                ['Name', 'Orbit', 'Hardware'])
 
-        self.hardware: Spacecraft.SpacecraftHardware = hardware if hardware is not None \
-            else self.SpacecraftHardware(self)
-        self.tanks: Spacecraft.SpacecraftHardware.PropList | None = None
-        self.chem_tanks = None  # FIXME - not being updated by from_dict()
-        self.elec_tanks = None  # FIXME - not being updated by from_dict()
+        self.hardware: Spacecraft.SpacecraftHardware = self.SpacecraftHardware(self) if hardware is None else hardware
 
-        self.thrusters: Spacecraft.SpacecraftHardware.PropList | None = None
-        self.chem_thrusters = None  # FIXME - not being updated by from_dict()
-        self.elec_thrusters = None  # FIXME - not being updated by from_dict()
+        # TODO confirm fixed - FIXME - not being updated by from_dict()
+        # Setup tanks
+        self.chem_tanks = None
+        if self.hardware.chem_tanks is not None:
+            self.chem_tanks = self.hardware.chem_tanks
+            if isinstance(self.chem_tanks, list):
+                for tank in self.chem_tanks:
+                    tank.attach_to_sat(self)
+            else:
+                self.chem_tanks.attach_to_sat(self)
 
-        self.solar_power_system = None
+        self.elec_tanks = None
+        if self.hardware.elec_tanks is not None:
+            self.elec_tanks = self.hardware.elec_tanks
+            if isinstance(self.elec_tanks, list):
+                for tank in self.elec_tanks:
+                    tank.attach_to_sat(self)
+            else:
+                self.elec_tanks.attach_to_sat(self)
+        
+        # Setup thrusters
+        self.chem_thrusters = None
+        if self.hardware.chem_thrusters is not None:
+            self.chem_thrusters: ChemicalThruster | list[ChemicalThruster] | list = self.hardware.chem_thrusters
+            if isinstance(self.chem_thrusters, list):
+                for thruster in self.chem_thrusters:
+                    thruster.attach_to_sat(self)
+                    thruster.attach_to_tanks(thruster.tanks)
+            else:  # self.chem_thrusters is a single ChemicalThruster object
+                self.chem_thrusters.attach_to_sat(self)
+                self.chem_thrusters.attach_to_tanks(self.chem_thrusters.tanks)
+
+        self.elec_thrusters = None
+        if self.hardware.elec_thrusters is not None:
+            self.elec_thrusters = self.hardware.elec_thrusters
+            if isinstance(self.elec_thrusters, list):
+                for thruster in self.elec_thrusters:
+                    thruster.attach_to_sat(self)
+                    thruster.attach_to_tanks(thruster.tanks)
+            else:  # self.elec_thrusters is a single ElectricThruster object
+                self.elec_thrusters.attach_to_sat(self)
+                self.elec_thrusters.attach_to_tanks(self.elec_thrusters.tanks)
+
+        # Setup power systems
+        self.solar_power_system = None if self.hardware.solar_power_system is None else self.hardware.solar_power_system
+        self.nuclear_power_system = None if self.hardware.nuclear_power_system is None \
+            else self.hardware.nuclear_power_system
+
+        # Setup imagers
+        self.imagers = None if self.hardware.imagers is None else self.hardware.imagers
+        # TODO attach imagers to sat
 
         self.orbit = None
         self.dry_mass = self.GetField('DryMass')
@@ -558,7 +600,7 @@ class Thruster(GmatObject):
         self.spacecraft.add_thrusters([self.gmat_obj])
 
     def attach_to_tanks(self, tanks: list[ChemicalTank | ElectricTank]):
-        self.gmat_obj.SetField('Tank', tanks)
+        gpy.extract_gmat_obj(self).SetField('Tank', tanks)
 
     @property
     def decrement_mass(self):
