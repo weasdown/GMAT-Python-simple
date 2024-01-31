@@ -385,11 +385,14 @@ class Spacecraft(GmatObject):
 
         # Add tanks by getting name of each tank, adding it to a list, then attaching this list to end of existing one
         if isinstance(tanks, str):
+            current_tanks_list = [tanks]
             tank = gmat.GetObject(tanks)
             self.SetStringParameter(104, tank.GetName())  # 104 for sat's ADD_HARDWARE
+            current_tanks_list.extend(tank.GetName())
         elif isinstance(tanks, gpy.Tank):
             self.SetStringParameter(104, tanks.GetName())  # 104 for sat's ADD_HARDWARE
-        else:
+            current_tanks_list.append(tanks.GetName())
+        else:  # tanks is a list of Tanks
             for tank in tanks:
                 tanks_to_set: list = [tank.GetName()]
                 current_tanks_list.extend(tanks_to_set)

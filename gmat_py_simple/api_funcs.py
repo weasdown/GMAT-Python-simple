@@ -60,6 +60,7 @@ def Initialize() -> bool:
     try:
         return gmat.Initialize()
     except Exception as ex:
+        gmat.ShowObjects()
         ex_str = str(ex).replace('\n', '')
         raise RuntimeError(f'GMAT Initialize failed - GMAT error: "{ex_str}"') from ex
 

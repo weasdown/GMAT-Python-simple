@@ -30,7 +30,6 @@ sat = gpy.Spacecraft.from_dict(sat_params)
 # Create tank separately, so we can refer to it later
 main_tank = gpy.ChemicalTank('MainTank', fuel_mass=1718, allow_negative_fuel_mass=False, fuel_density=1000,
                              temperature=20, ref_temp=20, pressure=5000, volume=2, pressure_model='PressureRegulated')
-# gpy.Tank.attach_to_sat(gpy.GetObject('MainTank'), sat)
 sat.add_tanks(main_tank)
 
 # Setup ForceModels and Propagators
