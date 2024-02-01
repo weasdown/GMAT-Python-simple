@@ -10,7 +10,6 @@ from gmat_py_simple.utils import (gmat_str_to_py_str, gmat_field_string_to_list,
 
 from typing import Union
 import logging
-from math import pi
 
 
 class Spacecraft(GmatObject):
@@ -94,7 +93,7 @@ class Spacecraft(GmatObject):
 
             # parse solar power systems
             solar_power_systems: dict = hw.get('SolarPowerSystem', {})
-            sc_hardware.solar_power_system = SolarPowerSystem.from_dict(solar_power_systems)
+            sc_hardware.solar_power_system = gpy.SolarPowerSystem.from_dict(solar_power_systems)
 
             # TODO: parse nuclear_power_system, imager
 
@@ -211,7 +210,7 @@ class Spacecraft(GmatObject):
         # Setup imagers
         self.imagers = None
         if self.hardware.imagers is not None:
-            self.imagers: gpy.Imager | list[gpy.Imager] = self.hardware.imagers
+            self.imagers: hardware.Imager | list[hardware.Imager] = self.hardware.imagers
             if isinstance(self.imagers, list):
                 for imager in self.imagers:
                     imager.attach_to_sat(self)
@@ -425,7 +424,7 @@ class Spacecraft(GmatObject):
 
         return True
 
-    def add_sps(self, solar_power_system: gpy.SolarPowerSystem | gmat.SolarPowerSystem) -> bool:
+    def add_sps(self, solar_power_system: gpy.SolarPowerSystem | gpy.SolarPowerSystem) -> bool:
         self.SetStringParameter(104, solar_power_system.GetName())  # 104 for sat's ADD_HARDWARE
         if self.GetField('PowerSystem') == '':
             self.SetField('PowerSystem', solar_power_system.GetName())
@@ -433,7 +432,7 @@ class Spacecraft(GmatObject):
         else:
             return False
 
-    def add_nps(self, nuclear_power_system: gpy.NuclearPowerSystem | gmat.NuclearPowerSystem) -> bool:
+    def add_nps(self, nuclear_power_system: gpy.NuclearPowerSystem | gpy.NuclearPowerSystem) -> bool:
         self.SetStringParameter(104, nuclear_power_system.GetName())  # 104 for sat's ADD_HARDWARE
         if self.GetField('PowerSystem') == '':
             self.SetField('PowerSystem', nuclear_power_system.GetName())
@@ -722,249 +721,3 @@ class ElectricThruster(Thruster):
     #     else:
     #         raise SyntaxError('All elements of mix_ratio must be of type int')
 
-
-class SolarPowerSystem(GmatObject):
-    def __init__(self, name: str):
-        super().__init__('SolarPowerSystem', name)
-
-        self.spacecraft = None
-
-        # TODO add parsing of each field under Help()
-        # self.Help()
-        pass
-
-    def __repr__(self):
-        return f'A SolarPowerSystem named "{self.GetName()}"'
-
-    def attach_to_sat(self, sat: gpy.Spacecraft | gmat.Spacecraft):
-        self.spacecraft = sat
-        if sat.GetField('PowerSystem') == '':
-            self.spacecraft.add_sps(self)
-        else:
-            return False
-        pass
-
-    @staticmethod
-    def from_dict(sps_dict: dict[str, Union[str, int, float]]):
-        if sps_dict == {}:
-            return
-
-        name = sps_dict.get('Name', 'DefaultSolarPowerSystem')
-        sps = SolarPowerSystem(name)
-
-        fields: list[str] = list(sps_dict.keys())
-        fields.remove('Name')
-
-        # TODO convert to sps.SetFields
-        for field in fields:
-            sps.SetField(field, sps_dict[field])
-            setattr(sps, field, sps_dict[field])
-
-        sps.Validate()
-
-        return sps
-
-
-class NuclearPowerSystem(GmatObject):
-    def __init__(self, name: str):
-        super().__init__('NuclearPowerSystem', name)
-
-        self.spacecraft = None
-
-        # TODO add parsing of each field under Help()
-        # self.Help()
-        pass
-
-    def __repr__(self):
-        return f'A NuclearPowerSystem named "{self.GetName()}"'
-
-    def attach_to_sat(self, sat: gpy.Spacecraft | gmat.Spacecraft) -> bool:
-        self.spacecraft = sat
-        if sat.GetField('PowerSystem') == '':
-            self.spacecraft.add_nps(self)
-        else:
-            return False
-
-    @staticmethod
-    def from_dict(nps_dict: dict[str, Union[str, int, float]]):
-        try:
-            name = nps_dict['Name']
-        except KeyError:  # no name found - use default
-            name = 'DefaultNuclearPowerSystem'
-        nps = NuclearPowerSystem(name)
-
-        fields: list[str] = list(nps_dict.keys())
-        fields.remove('Name')
-
-        # TODO convert to nps.SetFields
-        for field in fields:
-            nps.SetField(field, nps_dict[field])
-            setattr(nps, field, nps_dict[field])
-
-        nps.Validate()
-
-        return nps
-
-
-class Color(bytearray):
-    def __init__(self, name: str = 'DefaultColor', red: int = 0, green: int = 0, blue: int = 0, alpha: int = 1):
-        super().__init__()
-        self.name = name
-        self.gmat_obj = gmat.RgbColor()
-
-        # Initialize RGB color to black
-        self.red: int = red if red is not None else self.gmat_obj.Red()
-
-        self.green: int = green if green is not None else self.gmat_obj.Green()
-        self.blue: int = blue if blue is not None else self.gmat_obj.Blue()
-        self.alpha: int = alpha if alpha is not None else self.gmat_obj.Alpha()  # opaque
-        self.rgb_color = bytearray([self.red, self.green, self.blue, self.alpha])
-
-        # Apply the custom color values to the gmat_obj
-        self.gmat_obj.Set(self.red, self.green, self.blue, self.alpha)
-
-    def GetIntColor(self):
-        # TODO write method
-        raise NotImplementedError
-        # return self.colortype.int_color
-
-    def ToIntColor(self, color_str: str) -> int:
-        return gpy.extract_gmat_obj(self).ToIntColor(color_str)
-
-    def ToRgbString(self, color_uint: int) -> str:
-        return gpy.extract_gmat_obj(self).ToRgbString(color_uint)
-
-    def ToRgbList(self, color_uint: int) -> list[int]:
-        rgb_str: str = gpy.extract_gmat_obj(self).ToRgbString(color_uint)
-        rgb_list: list = [int(ele) for ele in rgb_str[1:-1].split(' ')]
-        return rgb_list
-
-    def Red(self) -> int:
-        return self.gmat_obj.Red()
-
-    def Green(self) -> int:
-        return self.gmat_obj.Green()
-
-    def Blue(self) -> int:
-        return self.gmat_obj.Blue()
-
-    def Alpha(self) -> int:
-        return self.gmat_obj.Alpha()
-
-
-class Imager(GmatObject):
-    class FieldOfView(GmatObject):
-        def __init__(self, fov_type: str = None, name: str = 'DefaultFOV'):
-            allowed_fov_types = ['ConicalFOV', 'CustomFOV', 'RectangularFOV', None]
-            if fov_type not in allowed_fov_types:
-                raise TypeError(f'FieldOfView type given in fov_type "{fov_type}" is not recognized. Must be one of:\n'
-                                f'{allowed_fov_types}')
-            if fov_type is None:
-                self.fov_type = 'RectangularFOV'
-            else:
-                self.fov_type = fov_type
-            super().__init__(self.fov_type, name)
-
-            # gmat.Construct returns a GmatBase for FOV, so get object in FOV type from Validator
-            # self.gmat_obj = gpy.Moderator().gmat_obj.FindObject(self.name)
-            # self.gmat_obj = gpy.Moderator().gmat_obj.CreateFieldOfView(self.fov_type, self.name)
-            # self.gmat_obj = gpy.Validator().FindObject(self.name)
-            # self.gmat_obj = gmat.Construct('RectangularFOV', 'DefRectFOV')
-            # self.gmat_obj = gpy.Moderator().gmat_obj.GetFieldOfView(self.name)
-            # print(type(self.gmat_obj))
-            # print(self.gmat_obj)
-            #
-            # self.gmat_obj.Help()
-
-            # # TODO remove (method checking only)
-            # self.CheckTargetVisibility([0, 0, 0])
-            # pass
-
-        def CheckTargetVisibility(self, target: list[int | float]):
-            rv3 = gmat.Rvector3(target)  # convert to a GMAT Rvector3 object
-            return self.gmat_obj.CheckTargetVisibility(rv3)
-
-    class RectangularFOV(FieldOfView):
-        def __init__(self, name: str = 'DefaultRectangularFOV'):
-            super().__init__('RectangularFOV', name)
-
-    class ConicalFOV(FieldOfView):
-        def __init__(self, name: str = 'DefaultConicalFOV', color: list = None, fov_angle: int | float = 30):
-            super().__init__('ConicalFOV', name)
-
-            self.color = [float(ele) for ele in self.GetField('Color')[1:-1].split(' ')]
-            if color is None:
-                # color: list = [0, 0, 0]
-                color = Color()
-            self.color = color  # None case already handled above
-
-            self.fov_angle = fov_angle if fov_angle is not None else 30
-            self.SetRealParameter('FieldOfViewAngle', self.fov_angle)
-
-    class CustomFOV(FieldOfView):
-        def __init__(self, name: str = 'DefaultCustomFOV'):
-            super().__init__('CustomFOV', name)
-
-    def __init__(self, name: str, fov: FieldOfView | gmat.FieldOfView | str = None):
-        super().__init__('Imager', name)
-
-        self.spacecraft = None
-
-        if fov is None:
-            # self.fov = self.gmat_obj.GetFieldOfView()
-            # self.fov = self.RectangularFOV()
-            self.fov = self.RectangularFOV()
-        elif isinstance(fov, Imager.FieldOfView):
-            self.fov = fov
-        elif isinstance(fov, str):
-            # fov str is presumed to be a path to an FoV file
-            raise NotImplementedError
-        else:
-            raise TypeError(
-                f'Type for fov "{type(fov).__name__}" is not recognized. Must be a FieldOfView object or str'
-                f' representing a path to an FoV file')
-
-        # Attach FOV to Imager
-        self.SetStringParameter(22, self.fov.GetName())  # 22 for FOV_MODEL
-        self.SetRefObjectName(gmat.FIELD_OF_VIEW, self.fov.name)
-        self.SetRefObject(self.fov, gmat.FIELD_OF_VIEW, self.fov.name)
-
-    def __repr__(self):
-        return f'An Imager named "{self.GetName()}"'
-
-    def attach_to_sat(self, sat: gpy.Spacecraft | gmat.Spacecraft):
-        sat_gmat = gpy.extract_gmat_obj(sat)
-        sat_gmat.SetStringParameter(104, self.GetName())  # 104 for sat's ADD_HARDWARE
-
-    @staticmethod
-    def from_dict(imager_dict: dict[str, Union[str, int, float]]):
-        raise NotImplementedError
-        # try:
-        #     name = imager_dict['Name']
-        # except KeyError:  # no name found - use default
-        #     name = 'DefaultImager'
-        # imager = Imager(name)
-        #
-        # fields: list[str] = list(imager_dict.keys())
-        # fields.remove('Name')
-        #
-        # # TODO convert to imager.SetFields
-        # for field in fields:
-        #     imager.SetField(field, imager_dict[field])
-        #     setattr(imager, field, imager_dict[field])
-        #
-        # imager.Validate()
-        #
-        # return imager
-
-    def GetMaskClockAngles(self, degrees: bool = False):
-        if not degrees:
-            return self.gmat_obj.GetMaskClockAngles()
-        else:
-            return self.gmat_obj.GetMaskClockAngles() * 180/pi
-
-    def GetMaskConeAngles(self, degrees: bool = False):
-        if not degrees:
-            return self.gmat_obj.GetMaskConeAngles()
-        else:
-            return self.gmat_obj.GetMaskConeAngles() * 180/pi

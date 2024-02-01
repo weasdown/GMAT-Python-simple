@@ -3,6 +3,7 @@ from .basics import *
 from .burn import *
 from .commands import *
 from .executive import *
+from .hardware import *
 from .interpreter import *
 from .parameter import *
 from .solver import *

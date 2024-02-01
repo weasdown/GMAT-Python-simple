@@ -1,4 +1,5 @@
 import gmat_py_simple
+import hardware
 from gmat_py_simple.spacecraft import Spacecraft
 from load_gmat import gmat
 from book import Book
@@ -17,9 +18,9 @@ class TestSpacecraft(unittest.TestCase):
                                     chem_thrusters=gmat_py_simple.ChemicalThruster('ChemThruster1', 'ChemTank1'),
                                     elec_tanks=gmat_py_simple.ElectricTank('ElecTank1'),
                                     elec_thrusters=gmat_py_simple.ElectricThruster('ElecThruster1', 'ElecTank1'),
-                                    solar_power_system=gmat_py_simple.SolarPowerSystem('SolarPowerSystem1'),
-                                    nuclear_power_system=gmat_py_simple.NuclearPowerSystem('NuclearPowerSystem1'),
-                                    imagers=gmat_py_simple.Imager('Imager1')
+                                    solar_power_system=hardware.SolarPowerSystem('SolarPowerSystem1'),
+                                    nuclear_power_system=hardware.NuclearPowerSystem('NuclearPowerSystem1'),
+                                    imagers=hardware.Imager('Imager1')
                                 )
                                 )
 

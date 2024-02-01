@@ -132,6 +132,9 @@ class GmatObject:
     def IsInitialized(self):
         return self.gmat_obj.IsInitialized()
 
+    def IsOfType(self, type_name: str | int) -> bool:
+        return self.gmat_obj.IsOfType(type_name)
+
     def SetBooleanParameter(self, param: str | int, value: bool) -> bool:
         if isinstance(param, str):
             param = self.GetParameterID(param)

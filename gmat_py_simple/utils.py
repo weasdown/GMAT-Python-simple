@@ -365,6 +365,8 @@ def Construct(obj_type: str, name: str, *args):
     except AttributeError as attr:
         if str(attr) == "'NoneType' object has no attribute 'GetTypeName'":
             raise TypeError(f'GMAT does not recognize the given object type "{obj_type}"')
+        else:
+            raise attr  # other AttributeErrors are not handled, so raise instead
 
 
 def CustomHelp(obj):
