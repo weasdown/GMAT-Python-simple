@@ -331,6 +331,8 @@ class Imager(GmatObject):
         :return: True if the target vector points within the Imager's FOV, False otherwise
         """
         # NOTE: this only considers rotation, not translation
+        print('\n** Warning! Imager.CheckTargetVisibility currently only considers rotation and not translation, so its'
+              ' result may be incorrect for situations involving translation **\n')
         if isinstance(target, list):
             target = np.array(target)
         vec = self.r_sb.diagonal() * target
