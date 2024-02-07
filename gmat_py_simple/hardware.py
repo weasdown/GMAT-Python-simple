@@ -294,11 +294,14 @@ class RectangularFOV(FieldOfView):
         return [1, angle_height]
 
 
+# Line below disables false positive "This code is unreachable" warning with np.cross()
+# noinspection PyUnreachableCode
 class Imager(GmatObject):
     def __init__(self, name: str, fov: gpy.FieldOfView | gmat.FieldOfView | str = None,
                  rotation_matrix: np.ndarray = None, boresight: np.ndarray | list = None,
                  second_vec: np.ndarray | list = None, hw_origin_in_bcs=None):
         super().__init__('Imager', name)
+        self.Initialize()  # must be initialized here so vector/matrix parameters are set correctly
 
         self.spacecraft = None
 
@@ -332,21 +335,25 @@ class Imager(GmatObject):
             self.SetRealParameter('DirectionY', float(self._boresight[1]))
             self.SetRealParameter('DirectionZ', float(self._boresight[2]))
 
-        if second_vec is None:
+        # second_vec is the 3D vector, expressed in the body frame, used to resolve the sensor's orientation about the
+        #  boresite vector
+        if second_vec is None:  # user did not provide second_vec, so get default from gmat_obj
             sec_dir_x_def: float = self.GetRealParameter('SecondDirectionX')
             sec_dir_y_def: float = self.GetRealParameter('SecondDirectionY')
             sec_dir_z_def: float = self.GetRealParameter('SecondDirectionZ')
+
             self.second_vec = np.array([sec_dir_x_def, sec_dir_y_def, sec_dir_z_def])
         else:  # second_vec is not None, so the user provided one
+            # Expecting a 3D vector
             if len(second_vec) != 3:
                 raise AttributeError(
                     f'Imager second_vec argument an invalid number of elements ({len(second_vec)}) - must'
                     f' be 3 to represent a 3D direction vector for the Imager\'s second vector')
             # Ensure self.second_vec is a np.ndarray - convert from list if necessary
             if isinstance(second_vec, list):
-                self.second_vec: np.ndarray = np.array([float(ele) for ele in second_vec])
+                self._second_vec: np.ndarray = np.array([float(ele) for ele in second_vec])
             elif isinstance(second_vec, np.ndarray):
-                self.second_vec: np.ndarray = second_vec
+                self._second_vec: np.ndarray = second_vec
             self.SetRealParameter('DirectionX', float(self._boresight[0]))
             self.SetRealParameter('DirectionY', float(self._boresight[1]))
             self.SetRealParameter('DirectionZ', float(self._boresight[2]))
@@ -365,12 +372,6 @@ class Imager(GmatObject):
             raise TypeError(
                 f'Type for fov "{type(fov).__name__}" is not recognized. Must be a FieldOfView object or str'
                 f' representing a path to an FoV file')
-
-        # second_vec is the vector, expressed in the body frame, used to resolve the sensor's orientation about the
-        #  boresite vector
-        if second_vec is None:
-            second_vec = [0, 0, 1]
-            self.second_vec = second_vec
 
         # origin of the Imager's coordinate system expressed in the spacecraft’s body coordinate system
         if hw_origin_in_bcs is None:
@@ -395,10 +396,25 @@ class Imager(GmatObject):
 
     @boresight.setter
     def boresight(self, boresight):
+        print(self._boresight)
+
+        gmat_boresight = [self.GetRealParameter('DirectionX'), self.GetRealParameter('DirectionY'),
+                          self.GetRealParameter('DirectionZ')]  # TODO remove (debugging only)
+
         self._boresight = boresight
         self.SetRealParameter('DirectionX', boresight[0])
         self.SetRealParameter('DirectionY', boresight[1])
         self.SetRealParameter('DirectionZ', boresight[2])
+
+        self.Initialize()
+
+        # TODO remove (debugging only)
+        new_boresight = [self.GetRealParameter('DirectionX'), self.GetRealParameter('DirectionY'),
+                         self.GetRealParameter('DirectionZ')]
+
+        # FIXME: update_rotation_matrix throws error when this method setting boresight to [0, 1, 0]
+        # At Imager initialization (within GMAT), rotation_matrix is calculated based on boresight, so needs updating
+        self.update_rotation_matrix()
 
     @staticmethod
     def from_dict(imager_dict: dict[str, Union[str, int, float]]):
@@ -437,8 +453,8 @@ class Imager(GmatObject):
         return self.fov.CheckTargetVisibility(vec)
 
     def CustomCheckTargetVisibility(self, target: np.ndarray | list) -> bool:
-        print('# TODO: check whether self.boresight already in spacecraft body frame - use self.rotation_matrix to '
-              'transform if not (printed in Imager.CustomCheckTargetVisibility)')  # TODO
+        print('\n# TODO: check whether self.boresight already in spacecraft body frame - use self.rotation_matrix to '
+              'transform if not (printed in Imager.CustomCheckTargetVisibility)\n')  # TODO - see print string
         return self.fov.CustomCheckTargetVisibility(target)
 
     def GetFieldOfView(self) -> gmat.GmatBase:
@@ -459,14 +475,37 @@ class Imager(GmatObject):
         return self._rotation_matrix
 
     @rotation_matrix.setter
-    def rotation_matrix(self, new_rot_mat: np.ndarray):
-        self._rotation_matrix = new_rot_mat
-        new_rot_mat = new_rot_mat.reshape(-1)  # flatten the 3x3 array into a 1x9 array
+    def rotation_matrix(self, rot_mat: np.ndarray):
+        self._rotation_matrix = rot_mat
+        new_rot_mat = rot_mat.reshape(-1)  # flatten the 3x3 array into a 1x9 array
         set_vals = [self.SetRealParameter(field, float(value)) for field, value in
                     zip(self.rot_mat_fields, new_rot_mat)]  # self.SetRealParameter returns True when successfully set
         if not all(set_vals):  # if not all values have been set successfully
             raise RuntimeError('Not all rotation matrix elements were successfully set in Imager.SetRotationMatrix() '
                                '(not all elements of all_set_successfully were True)')
+
+    @property
+    def second_vec(self):
+        return self._second_vec
+
+    @second_vec.setter
+    def second_vec(self, second_vec):
+        self._second_vec = second_vec
+        # At Imager initialization (within GMAT), rotation_matrix is based on second_vec, so needs updating
+        self.update_rotation_matrix()
+
+    def update_rotation_matrix(self):
+        # At Imager initialization (within GMAT), rotation_matrix is based on boresight and second_vec, so needs
+        #  updating if either one changes. Process given in remarks on page 406 (PDF pg 415) of GMAT R2022a User Guide
+        z = self.boresight
+        n: np.ndarray = np.cross(z, self._second_vec)  # normal to boresight and second_vec
+        m: float = np.linalg.norm(n)  # magnitude of n
+        if np.isclose(m, 0):
+            raise RuntimeError('magnitude of cross product of boresight and second_vec vectors is close to 0, which '
+                               f'would cause major problems for GMAT. (magnitude is {m})')
+        x = n / m
+        y = np.cross(z, x)
+        self.rotation_matrix = np.array([x, y, z])
 
 
 class NuclearPowerSystem(GmatObject):
