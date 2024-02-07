@@ -303,6 +303,10 @@ class Imager(GmatObject):
         super().__init__('Imager', name)
         self.Initialize()  # must be initialized here so vector/matrix parameters are set correctly
 
+        bs = [self.GetRealParameter('DirectionX'), self.GetRealParameter('DirectionY'),
+              self.GetRealParameter('DirectionZ')]
+        print(f'Boresight straight after init Initialize: {bs}')  # [1, 0, 0]
+
         self.spacecraft = None
 
         self.rot_mat_fields = ['R_SB11', 'R_SB12', 'R_SB13',
@@ -383,6 +387,8 @@ class Imager(GmatObject):
         self.SetRefObjectName(gmat.FIELD_OF_VIEW, self.fov.name)
         self.SetRefObject(self.fov, gmat.FIELD_OF_VIEW, self.fov.name)
 
+        self.Initialize()
+
     def __repr__(self):
         return f'An Imager named "{self.GetName()}"'
 
@@ -396,10 +402,16 @@ class Imager(GmatObject):
 
     @boresight.setter
     def boresight(self, boresight):
+        print('In boresight.setter')
         print(self._boresight)
 
-        gmat_boresight = [self.GetRealParameter('DirectionX'), self.GetRealParameter('DirectionY'),
-                          self.GetRealParameter('DirectionZ')]  # TODO remove (debugging only)
+        # TODO assume that the transformation being applied between the old and new boresights will also apply to the
+        #  second_vec, so update that too. That will prevent the new boresight having a problematic cross product with
+        #  the old second_vec
+        old_boresight = [self.GetRealParameter('DirectionX'), self.GetRealParameter('DirectionY'),
+                         self.GetRealParameter('DirectionZ')]
+        old_second_vec = [self.GetRealParameter('SecondDirectionX'), self.GetRealParameter('SecondDirectionY'),
+                          self.GetRealParameter('SecondDirectionZ')]
 
         self._boresight = boresight
         self.SetRealParameter('DirectionX', boresight[0])
