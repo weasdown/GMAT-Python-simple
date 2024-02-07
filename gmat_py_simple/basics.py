@@ -3,7 +3,6 @@ from __future__ import annotations
 import gmat_py_simple as gpy
 from load_gmat import gmat
 
-from typing import Union
 from datetime import datetime
 
 
@@ -179,9 +178,20 @@ class GmatObject:
             raise SyntaxError(f'Invalid argument OnOff - {on_off} - must be "On" or "Off"')
 
     def SetRealParameter(self, param: str | int, value: int | float) -> bool:
+        """
+        Set the value of a real (int or float) parameter.
+        Note: this function returns a bool but native GMAT returns the value that was set.
+
+        :param param: str name or int ID for parameter to be set
+        :param value: int or float of value to be set
+        :return: True if value set successfully, False otherwise
+        """
         if isinstance(param, str):
             param = self.GetParameterID(param)
-        return gpy.extract_gmat_obj(self).SetRealParameter(param, value)
+        # gmat_obj.SetRealParameter returns the value set if set successfully, not bool
+        value_set: float = gpy.extract_gmat_obj(self).SetRealParameter(param, value)
+        set_successfully: bool = value_set == value
+        return set_successfully
 
     # def SetReference(self, ref_obj):
     #     print(self)

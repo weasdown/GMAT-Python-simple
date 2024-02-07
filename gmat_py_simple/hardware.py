@@ -10,6 +10,15 @@ import gmat_py_simple as gpy
 from gmat_py_simple import GmatObject
 
 
+class Antenna(GmatObject):
+    def __init__(self, name: str, boresight: np.ndarray | list = np.array([1, 0, 0])):
+        super().__init__('Antenna', name)
+
+        self._boresight = np.array(boresight) if not isinstance(boresight, np.ndarray) else boresight
+
+        raise NotImplementedError
+
+
 class Color(bytearray):
     def __init__(self, name: str = 'DefaultColor', red: int = 0, green: int = 0, blue: int = 0, alpha: int = 1):
         super().__init__()
@@ -56,16 +65,16 @@ class Color(bytearray):
         return self.gmat_obj.Alpha()
 
 
-class Direction:
-    # TODO move to a more appropriate file
-    def __init__(self, x: int | float = 0, y: int | float = 0, z: int | float = 1):
-        self.x = x
-        self.y = y
-        self.z = z
+# class Direction:
+#     # TODO move to a more appropriate file
+#     def __init__(self, x: int | float = 0, y: int | float = 0, z: int | float = 1):
+#         self.x = x
+#         self.y = y
+#         self.z = z
 
 
 class FieldOfView(GmatObject):
-    def __init__(self, fov_type: str = None, name: str = 'DefaultFOV'):
+    def __init__(self, attached_object: gpy.Imager | gpy.Antenna, fov_type: str = None, name: str = 'DefaultFOV'):
         allowed_fov_types = ['ConicalFOV', 'CustomFOV', 'RectangularFOV', None]
         if fov_type not in allowed_fov_types:
             raise TypeError(f'FieldOfView type given in fov_type "{fov_type}" is not recognized. Must be one of:\n'
@@ -74,7 +83,10 @@ class FieldOfView(GmatObject):
             self.fov_type = 'RectangularFOV'
         else:
             self.fov_type = fov_type
+
         super().__init__(self.fov_type, name)
+
+        self.attached_obj = attached_object  # e.g. an Imager or Antenna that uses this FieldOfView
 
         # gmat.Construct returns a GmatBase for FOV, so get object in FOV type from Validator
         # self.gmat_obj = gpy.Moderator().gmat_obj.FindObject(self.name)
@@ -120,8 +132,9 @@ class FieldOfView(GmatObject):
 
 
 class ConicalFOV(FieldOfView):
-    def __init__(self, name: str = 'DefaultConicalFOV', color: list = None, fov_angle: int | float = 30):
-        super().__init__('ConicalFOV', name)
+    def __init__(self, attached_object: gpy.Imager | gpy.Antenna, name: str = 'DefaultConicalFOV', color: list = None,
+                 fov_angle: int | float = 30):
+        super().__init__(attached_object, 'ConicalFOV', name)
 
         self.color = [float(ele) for ele in self.GetField('Color')[1:-1].split(' ')]
         if color is None:
@@ -137,17 +150,19 @@ class ConicalFOV(FieldOfView):
 
 
 class CustomFOV(FieldOfView):
-    def __init__(self, name: str = 'DefaultCustomFOV'):
-        super().__init__('CustomFOV', name)
+    def __init__(self, attached_object: gpy.Imager | gpy.Antenna, name: str = 'DefaultCustomFOV'):
+        super().__init__(attached_object, 'CustomFOV', name)
 
     def CheckTargetVisibility(self):
         raise NotImplementedError
 
 
 class RectangularFOV(FieldOfView):
-    def __init__(self, name: str = 'DefaultRectangularFOV', angle_width: int | float = None,
-                 angle_height: int | float = None):
-        super().__init__('RectangularFOV', name)
+    def __init__(self, attached_object: gpy.Imager | gpy.Antenna, name: str = 'DefaultRectangularFOV',
+                 angle_width: int | float = None, angle_height: int | float = None):
+        super().__init__(attached_object, 'RectangularFOV', name)
+
+        self._boresight = self.attached_obj.boresight  # inherit boresight from attached Imager/Antenna
 
         # Set initial angle width, in degrees
         if angle_width is None:
@@ -179,11 +194,97 @@ class RectangularFOV(FieldOfView):
         else:
             return True
 
+    def CustomCheckTargetVisibility(self, target: np.ndarray | list) -> bool:
+        """
+        Determine whether a point is within the Imager's field of view.
+
+        Note: this currently assumes that the Y-axis is the boresight, the X-axis is towards the right of the FOV, and
+        the Z-axis is pointing up in the FOV. The origin is taken to be the center of the Imager's sensor/FOV.
+        # TODO: change this to match GMAT, which uses z for boresight, v for second_vec, x for normalized version of
+           normal to z and v (N), y as z cross x.
+
+        Overall process:
+        1) Find the vectors that give the edges of the FOV
+        2) Find the normal vector to each pair of adjacent vectors such that the normal points into the FOV
+        3) The target is in the FOV if the dot product of the target's position vector and the normal vector is
+        positive, for all four of the normal vectors.
+
+        :param target: np array or list representation of a 3D position vector for the target point
+        :return in_fov: bool - True if target is in field of view, False if not
+        """
+
+        def get_edge_vectors(bs: np.ndarray, a: int | float, b: int | float):
+            a2 = a / 2
+            b2 = b / 2
+
+            # Find vectors: K: top left edge of FOV, L: top right, M: bottom left, N: bottom right
+            klmn = []  # list that will be filled with vectors for edges of FOV
+            vector_params = ((1, 1), (-1, 1), (1, -1), (-1, -1))  # multipliers to give correct vector orientations
+
+            for vec in vector_params:
+                # Pre-calculate cosine and sine of half-width and half-height
+                # Multiply a2 and b2 by 1 or -1 as appropriate for the vector being calculated
+                a2_for_vec = a2 * vec[0]
+                b2_for_vec = b2 * vec[1]
+                ca2 = np.cos(np.deg2rad(a2_for_vec))
+                sa2 = np.sin(np.deg2rad(a2_for_vec))
+                cb2 = np.cos(np.deg2rad(b2_for_vec))
+                sb2 = np.sin(np.deg2rad(b2_for_vec))
+
+                # Rotate boresight around Z-axis by a2 degrees (direction as appropriate)
+                trans_mat = np.array([[ca2, -sa2, 0, 0],
+                                      [sa2, ca2, 0, 0],
+                                      [0, 0, 1, 0],
+                                      [0, 0, 0, 1]])
+                z_rot = np.matmul(trans_mat, bs)
+
+                # Rotate z_rot around X-axis by b2 degrees (direction as appropriate)
+                trans_mat = np.array([[1, 0, 0, 0],
+                                      [0, cb2, -sb2, 0],
+                                      [0, sb2, cb2, 0],
+                                      [0, 0, 0, 1]])
+                vec = np.matmul(trans_mat, z_rot)
+                vec = vec[:-1]  # remove the last element (1) that was just to enable matrix multiplication
+
+                klmn.append(vec)  # append the calculated vector to the list of K, L, M, N vectors
+
+            return klmn
+
+        # Check target position vector is valid
+        if len(target) != 3:
+            raise AttributeError(f'target has an invalid number of elements ({len(target)}) - must be 3 to represent a '
+                                 f'3D position vector for the target point')
+        # Convert to numpy array if a list to use numpy's better performance
+        if isinstance(target, list):
+            target: np.ndarray = np.array(target)
+
+        # TODO: transform boresight to consider Imager second_vec and rotation_matrix
+        boresight = np.append(self._boresight, 1)
+
+        alpha = self.angle_width
+        beta = self.angle_height
+
+        # Find the vectors that define the four corners of the FOV
+        # k: top left edge of FOV, l: top right, m: bottom left, n: bottom right
+        k, l, m, n = get_edge_vectors(boresight, alpha, beta)
+
+        # normal_params: pairs of vectors that will be cross-producted to find a normal vector pointing into the FOV
+        # Each pair of vectors forms a planar face of the FOV
+        # Note: vectors must be given in this order (e.g. n, m rather than m, n) for cross product to point into FOV
+        normals_params = ((m, k), (l, n), (k, l), (n, m))  # left, right, top, bottom
+        normal_vecs = np.array([np.cross(param[0], param[1]) for param in normals_params])
+
+        # If the target is within the FOV, the normal will point more towards the target than away. This means the dot
+        # product of the normal and the target's position vector will be positive
+        dot_results = np.dot(normal_vecs, target)
+
+        return True if all(dot_results > 0) else False
+
     def GetMaskClockAngles(self) -> list:
         angle_width = self.GetRealParameter('AngleWidth')
         return [1, angle_width]
 
-    def GetMaskConeAngles(self, degrees: bool = False):
+    def GetMaskConeAngles(self):
         # # FIXME - broken because of GmatBase type for self
         # if not degrees:
         #     return self.gmat_obj.GetMaskConeAngles()
@@ -194,16 +295,69 @@ class RectangularFOV(FieldOfView):
 
 
 class Imager(GmatObject):
-    def __init__(self, name: str, fov: gpy.FieldOfView | gmat.FieldOfView | str = None, direction_vec=None,
-                 second_vec=None, hw_origin_in_bcs=None, r_sb: np.ndarray = None):
+    def __init__(self, name: str, fov: gpy.FieldOfView | gmat.FieldOfView | str = None,
+                 rotation_matrix: np.ndarray = None, boresight: np.ndarray | list = None,
+                 second_vec: np.ndarray | list = None, hw_origin_in_bcs=None):
         super().__init__('Imager', name)
 
         self.spacecraft = None
 
+        self.rot_mat_fields = ['R_SB11', 'R_SB12', 'R_SB13',
+                               'R_SB21', 'R_SB22', 'R_SB23',
+                               'R_SB31', 'R_SB32', 'R_SB33']
+
+        if rotation_matrix is None:  # rotation matrix from spacecraft body frame to Imager frame
+            # Get list of values then reshape from 1x9 to 3x3 and store as ndarray
+            gmat_rot_mat_vals = [self.GetRealParameter(field) for field in self.rot_mat_fields]
+            self._rotation_matrix: np.ndarray = np.reshape(np.array(gmat_rot_mat_vals), (3, 3))
+        else:
+            self._rotation_matrix = rotation_matrix
+
+        if boresight is None:
+            dir_x_def: float = self.GetRealParameter('DirectionX')
+            dir_y_def: float = self.GetRealParameter('DirectionY')
+            dir_z_def: float = self.GetRealParameter('DirectionZ')
+            self._boresight = np.array([dir_x_def, dir_y_def, dir_z_def])
+        else:  # a boresight vector has been provided
+            if len(boresight) != 3:
+                raise AttributeError(
+                    f'Imager boresight argument an invalid number of elements ({len(boresight)}) - must'
+                    f' be 3 to represent a 3D direction vector for the Imager\'s boresight')
+            # Ensure self._boresight is a np.ndarray - convert from list if necessary
+            if isinstance(boresight, list):
+                self._boresight: np.ndarray = np.array([float(ele) for ele in boresight])
+            else:
+                self._boresight = boresight
+            self.SetRealParameter('DirectionX', float(self._boresight[0]))
+            self.SetRealParameter('DirectionY', float(self._boresight[1]))
+            self.SetRealParameter('DirectionZ', float(self._boresight[2]))
+
+        if second_vec is None:
+            sec_dir_x_def: float = self.GetRealParameter('SecondDirectionX')
+            sec_dir_y_def: float = self.GetRealParameter('SecondDirectionY')
+            sec_dir_z_def: float = self.GetRealParameter('SecondDirectionZ')
+            self.second_vec = np.array([sec_dir_x_def, sec_dir_y_def, sec_dir_z_def])
+        else:  # second_vec is not None, so the user provided one
+            if len(second_vec) != 3:
+                raise AttributeError(
+                    f'Imager second_vec argument an invalid number of elements ({len(second_vec)}) - must'
+                    f' be 3 to represent a 3D direction vector for the Imager\'s second vector')
+            # Ensure self.second_vec is a np.ndarray - convert from list if necessary
+            if isinstance(second_vec, list):
+                self.second_vec: np.ndarray = np.array([float(ele) for ele in second_vec])
+            elif isinstance(second_vec, np.ndarray):
+                self.second_vec: np.ndarray = second_vec
+            self.SetRealParameter('DirectionX', float(self._boresight[0]))
+            self.SetRealParameter('DirectionY', float(self._boresight[1]))
+            self.SetRealParameter('DirectionZ', float(self._boresight[2]))
+
+        # TODO: pass self.rotation_matrix, self._boresight, self.second_vec to FieldOfView creation
+        #  but also check against FieldOfView creation in src
         if fov is None:
-            self.fov: RectangularFOV = RectangularFOV()
+            self.fov: RectangularFOV = RectangularFOV(self)
         elif isinstance(fov, (RectangularFOV, ConicalFOV, CustomFOV)):
             self.fov: RectangularFOV | ConicalFOV | CustomFOV = fov
+            self.fov.attached_obj = self
         elif isinstance(fov, str):
             # fov str is presumed to be a path to an FoV file
             raise NotImplementedError
@@ -212,16 +366,8 @@ class Imager(GmatObject):
                 f'Type for fov "{type(fov).__name__}" is not recognized. Must be a FieldOfView object or str'
                 f' representing a path to an FoV file')
 
-        # direction_vec is field-of-view boresight vector expressed in spacecraft body coordinates
-        if direction_vec is None:
-            direction_vec = [0, 0, 1]  # use as default
-            self.direction_vec = Direction(direction_vec[0], direction_vec[1], direction_vec[2])
-            self.SetField('DirectionX', self.direction_vec.x)
-            self.SetField('DirectionY', self.direction_vec.y)
-            self.SetField('DirectionZ', self.direction_vec.z)
-
         # second_vec is the vector, expressed in the body frame, used to resolve the sensor's orientation about the
-        # boresite vector
+        #  boresite vector
         if second_vec is None:
             second_vec = [0, 0, 1]
             self.second_vec = second_vec
@@ -231,70 +377,10 @@ class Imager(GmatObject):
             hw_origin_in_bcs = [0, 0, 0]
             self.hw_origin_in_bcs = hw_origin_in_bcs
 
-        # r_sb is rotation matrix from spacecraft body frame to Imager frame
-        if r_sb is None:
-            self.r_sb11 = self.GetRealParameter('R_SB11')
-            self.r_sb12 = self.GetRealParameter('R_SB12')
-            self.r_sb13 = self.GetRealParameter('R_SB13')
-            self.r_sb21 = self.GetRealParameter('R_SB21')
-            self.r_sb22 = self.GetRealParameter('R_SB22')
-            self.r_sb23 = self.GetRealParameter('R_SB23')
-            self.r_sb31 = self.GetRealParameter('R_SB31')
-            self.r_sb32 = self.GetRealParameter('R_SB32')
-            self.r_sb33 = self.GetRealParameter('R_SB33')
-            self.r_sb = np.array([[self.r_sb11, self.r_sb12, self.r_sb13],
-                                  [self.r_sb21, self.r_sb22, self.r_sb23],
-                                  [self.r_sb31, self.r_sb32, self.r_sb33],])
-
-            # # use 3x3 identity matrix as default (same as within GMAT)
-            # self.r_sb: np.ndarray = np.eye(3, 3)
-            # self.r_sb11 = int(self.r_sb[0][0])
-            # self.SetRealParameter('R_SB11', self.r_sb11)
-            # self.r_sb12 = int(self.r_sb[0][1])
-            # self.SetRealParameter('R_SB12', self.r_sb12)
-            # self.r_sb13 = int(self.r_sb[0][2])
-            # self.SetRealParameter('R_SB13', self.r_sb13)
-            # self.r_sb21 = int(self.r_sb[1][0])
-            # self.SetRealParameter('R_SB21', self.r_sb21)
-            # self.r_sb22 = int(self.r_sb[1][1])
-            # self.SetRealParameter('R_SB22', self.r_sb22)
-            # self.r_sb23 = int(self.r_sb[1][2])
-            # self.SetRealParameter('R_SB23', self.r_sb23)
-            # self.r_sb31 = int(self.r_sb[2][0])
-            # self.SetRealParameter('R_SB31', self.r_sb31)
-            # self.r_sb32 = int(self.r_sb[2][1])
-            # self.SetRealParameter('R_SB32', self.r_sb32)
-            # self.r_sb33 = int(self.r_sb[2][2])
-            # self.SetRealParameter('R_SB33', self.r_sb33)
-
-        else:  # r_sb is not None
-            self.r_sb: np.ndarray = r_sb
-            self.r_sb11 = float(r_sb[0][0])
-            self.SetRealParameter('R_SB11', self.r_sb11)
-            self.r_sb12 = float(r_sb[0][1])
-            self.SetRealParameter('R_SB12', self.r_sb12)
-            self.r_sb13 = float(r_sb[0][2])
-            self.SetRealParameter('R_SB13', self.r_sb13)
-            self.r_sb21 = float(r_sb[1][0])
-            self.SetRealParameter('R_SB21', self.r_sb21)
-            self.r_sb22 = float(r_sb[1][1])
-            self.SetRealParameter('R_SB22', self.r_sb22)
-            self.r_sb23 = float(r_sb[1][2])
-            self.SetRealParameter('R_SB23', self.r_sb23)
-            self.r_sb31 = float(r_sb[2][0])
-            self.SetRealParameter('R_SB31', self.r_sb31)
-            self.r_sb32 = float(r_sb[2][1])
-            self.SetRealParameter('R_SB32', self.r_sb32)
-            self.r_sb33 = float(r_sb[2][2])
-            self.SetRealParameter('R_SB33', self.r_sb33)
-
         # Attach FOV to Imager
         self.SetStringParameter(22, self.fov.GetName())  # 22 for FOV_MODEL
         self.SetRefObjectName(gmat.FIELD_OF_VIEW, self.fov.name)
         self.SetRefObject(self.fov, gmat.FIELD_OF_VIEW, self.fov.name)
-
-        print(self.CheckTargetVisibility([1, 0, 0]))
-        pass
 
     def __repr__(self):
         return f'An Imager named "{self.GetName()}"'
@@ -302,6 +388,17 @@ class Imager(GmatObject):
     def attach_to_sat(self, sat: gpy.Spacecraft | gmat.Spacecraft):
         sat_gmat = gpy.extract_gmat_obj(sat)
         sat_gmat.SetStringParameter(104, self.GetName())  # 104 for sat's ADD_HARDWARE
+
+    @property
+    def boresight(self):
+        return self._boresight
+
+    @boresight.setter
+    def boresight(self, boresight):
+        self._boresight = boresight
+        self.SetRealParameter('DirectionX', boresight[0])
+        self.SetRealParameter('DirectionY', boresight[1])
+        self.SetRealParameter('DirectionZ', boresight[2])
 
     @staticmethod
     def from_dict(imager_dict: dict[str, Union[str, int, float]]):
@@ -324,7 +421,7 @@ class Imager(GmatObject):
         #
         # return imager
 
-    def CheckTargetVisibility(self, target: np.ndarray | list):
+    def CheckTargetVisibility(self, target: np.ndarray | list) -> bool:
         """
 
         :param target: unit vector to the target in the spacecraft body frame
@@ -332,11 +429,17 @@ class Imager(GmatObject):
         """
         # NOTE: this only considers rotation, not translation
         print('\n** Warning! Imager.CheckTargetVisibility currently only considers rotation and not translation, so its'
-              ' result may be incorrect for situations involving translation **\n')
+              ' result may be incorrect for situations involving translation **\n'
+              '** Please use CustomCheckTargetVisibility instead until this replaces CheckTargetVisibility **\n')
         if isinstance(target, list):
             target = np.array(target)
-        vec = self.r_sb.diagonal() * target
+        vec = self.rotation_matrix.diagonal() * target
         return self.fov.CheckTargetVisibility(vec)
+
+    def CustomCheckTargetVisibility(self, target: np.ndarray | list) -> bool:
+        print('# TODO: check whether self.boresight already in spacecraft body frame - use self.rotation_matrix to '
+              'transform if not (printed in Imager.CustomCheckTargetVisibility)')  # TODO
+        return self.fov.CustomCheckTargetVisibility(target)
 
     def GetFieldOfView(self) -> gmat.GmatBase:
         # self.gmat_obj.GetFieldOfView() returns a SwigPyObject that isn't usable
@@ -350,6 +453,20 @@ class Imager(GmatObject):
 
     def GetMaskConeAngles(self) -> list:
         return list(self.gmat_obj.GetMaskConeAngles().GetRealArray())
+
+    @property
+    def rotation_matrix(self):
+        return self._rotation_matrix
+
+    @rotation_matrix.setter
+    def rotation_matrix(self, new_rot_mat: np.ndarray):
+        self._rotation_matrix = new_rot_mat
+        new_rot_mat = new_rot_mat.reshape(-1)  # flatten the 3x3 array into a 1x9 array
+        set_vals = [self.SetRealParameter(field, float(value)) for field, value in
+                    zip(self.rot_mat_fields, new_rot_mat)]  # self.SetRealParameter returns True when successfully set
+        if not all(set_vals):  # if not all values have been set successfully
+            raise RuntimeError('Not all rotation matrix elements were successfully set in Imager.SetRotationMatrix() '
+                               '(not all elements of all_set_successfully were True)')
 
 
 class NuclearPowerSystem(GmatObject):

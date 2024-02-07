@@ -403,13 +403,13 @@ class Spacecraft(GmatObject):
 
         return True
 
-    def add_thrusters(self, thrusters: list[ChemicalThruster | ElectricThruster]) -> bool:
+    def add_thrusters(self, thrusters: list[ChemicalThruster | ElectricThruster] | str | gpy.Thruster) -> bool:
         current_thrusters_value: str = self.GetField('Thrusters')
         current_thrusters_list: list = gmat_field_string_to_list(current_thrusters_value)
 
         # Add tanks by getting name of each tank, adding it to a list, then attaching this list to end of existing one
         if isinstance(thrusters, str):
-            thruster = gmat.GetObject(thrusters)
+            thruster: gmat.GmatBase = gmat.GetObject(thrusters)
             self.SetStringParameter(104, thruster.GetName())  # 104 for sat's ADD_HARDWARE
         elif isinstance(thrusters, gpy.Thruster):
             self.SetStringParameter(104, thrusters.GetName())  # 104 for sat's ADD_HARDWARE
