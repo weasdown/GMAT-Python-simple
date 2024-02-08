@@ -196,6 +196,18 @@ class RectangularFOV(FieldOfView):
         self._angle_width = angle_width
         self.SetRealParameter('AngleWidth', angle_width)
 
+    @property
+    def boresight(self):
+        return self._boresight
+
+    @boresight.setter
+    def boresight(self, new_boresight: np.ndarray | list):
+        if not isinstance(new_boresight, np.ndarray):
+            new_boresight = np.array(new_boresight)
+
+        self._boresight = new_boresight
+        # TODO add second_vec and rotation_matrix updating as in Imager.boresight.setter
+
     def CheckTargetVisibility(self, target: np.ndarray) -> bool:
         ra, dec = self.UnitVecToRADEC(target)
         cone, clock = self.RADECtoConeClock(ra, dec)
@@ -446,6 +458,10 @@ class Imager(GmatObject):
         self.SetRealParameter('DirectionX', float(new_boresight[0]))
         self.SetRealParameter('DirectionY', float(new_boresight[1]))
         self.SetRealParameter('DirectionZ', float(new_boresight[2]))
+
+        # Also update boresight in attached FOV object (if there is one)
+        if self.fov is not None:
+            self.fov.boresight = new_boresight
 
         self.second_vec = new_second_vec
 
