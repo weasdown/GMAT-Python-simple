@@ -6,6 +6,7 @@ from load_gmat import gmat
 import sys
 from io import StringIO
 import logging
+import numpy as np
 
 
 def class_string_to_GMAT_string(string):
@@ -356,6 +357,22 @@ def get_sat_objects() -> list[gmat.Spacecraft]:
     return sat_objs
 
 
+def hamilton_product(p: np.ndarray, q: np.ndarray) -> np.array:
+    """
+    Multiply two quaternions, assuming each has scalar part as final element.
+    :param p:
+    :param q:
+    :return:
+    """
+    p1, p2, p3, p4 = p[0:4]
+    m = np.array([[p4, -p3, p2, p1],
+                  [p3, p4, -p1, p2],
+                  [-p2, p1, p4, p3],
+                  [-p1, -p2, -p3, p4]])
+    result = np.matmul(m, q)
+    return result
+
+
 def Construct(obj_type: str, name: str, *args):
     try:
         if args:
@@ -634,3 +651,28 @@ def GetTypeNameFromID(type_id: int) -> str:
 
     raise RuntimeError(f'Type name could not be found for ID {type_id}')
 
+
+# Line below disables false positive "This code is unreachable" warning with np.cross()
+# noinspection PyUnreachableCode
+def quat_between_vecs(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
+    q_xyz = np.cross(v1, v2)  # quat vector part is cross product of old and new boresights
+    mag_v1 = np.linalg.norm(v1)
+    mag_v2 = np.linalg.norm(v2)
+    q_w = np.sqrt((mag_v1 ** 2) * (mag_v2 ** 2)) + np.dot(v1, v2)
+    quat: np.ndarray = np.append(np.array(q_xyz), q_w)  # q = (qx, qy, qz, qw), where qw is scalar part
+
+    return quat
+
+
+def transform_vec_quat(vec: np.ndarray, quat: np.ndarray) -> np.ndarray:
+    vec = np.append(vec, 0)
+
+    q_norm = quat / np.sqrt(sum(quat ** 2))
+    q_conj_xyz: np.ndarray = np.array([-e for e in q_norm[0:3]])
+    quat_conj: np.ndarray = np.append(q_conj_xyz, q_norm[3])  # negative of vector parts, scalar part same as q_
+
+    new_a = gpy.hamilton_product(quat, vec)
+    final_prod = gpy.hamilton_product(new_a, quat_conj)
+    new_vec = np.delete(final_prod / np.linalg.norm(final_prod), 3)
+
+    return new_vec

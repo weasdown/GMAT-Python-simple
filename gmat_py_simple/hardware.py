@@ -252,9 +252,9 @@ class RectangularFOV(FieldOfView):
                 # TODO: transform boresight to consider Imager second_vec and rotation_matrix
                 boresight = np.append(self._boresight, 1)  # make boresight a 4-element vector by appending 1
                 trans_mat_z = np.array([[ca2, -sa2, 0, 0],
-                                      [sa2, ca2, 0, 0],
-                                      [0, 0, 1, 0],
-                                      [0, 0, 0, 1]])
+                                        [sa2, ca2, 0, 0],
+                                        [0, 0, 1, 0],
+                                        [0, 0, 0, 1]])
                 z_rot = np.matmul(trans_mat_z, boresight)
 
                 # Rotate z_rot around -Y-axis (SecondDirection) by ah2 degrees (direction as appropriate)
@@ -372,9 +372,9 @@ class Imager(GmatObject):
                     f' be 3 to represent a 3D direction vector for the Imager\'s second vector')
             # Ensure self.second_vec is a np.ndarray - convert from list if necessary
             if isinstance(second_vec, list):
-                self._second_vec: np.ndarray = np.array([float(ele) for ele in second_vec])
+                self.second_vec: np.ndarray = np.array([float(ele) for ele in second_vec])
             elif isinstance(second_vec, np.ndarray):
-                self._second_vec: np.ndarray = second_vec
+                self.second_vec: np.ndarray = second_vec
 
             self.SetRealParameter('DirectionX', float(self._boresight[0]))
             self.SetRealParameter('DirectionY', float(self._boresight[1]))
@@ -426,35 +426,32 @@ class Imager(GmatObject):
         return self._boresight
 
     @boresight.setter
-    def boresight(self, boresight):
-        print('In boresight.setter')
+    def boresight(self, new_boresight: np.ndarray):
+        if not isinstance(new_boresight, np.ndarray):
+            new_boresight = np.array(new_boresight)
 
-        # TODO assume that the transformation being applied between the old and new boresights will also apply to the
+        # Assume that the transformation being applied between the old and new boresights will also apply to the
         #  second_vec, so update that too. That will prevent the new boresight having a problematic cross product with
         #  the old second_vec
-        old_boresight = [self.GetRealParameter('DirectionX'), self.GetRealParameter('DirectionY'),
-                         self.GetRealParameter('DirectionZ')]
-        old_second_vec = [self.GetRealParameter('SecondDirectionX'), self.GetRealParameter('SecondDirectionY'),
-                          self.GetRealParameter('SecondDirectionZ')]
+        old_boresight = self.boresight
 
-        print(f'old_boresight: {old_boresight}')
-        print(f'old_second_vec: {old_second_vec}')
-        print(f'new boresight (not yet set): {boresight}')
-        print(f'new second_vec to be calculated')
+        # Find quaternion for shortest path rotation from old_boresight to new_boresight
+        quat = gpy.quat_between_vecs(old_boresight, new_boresight)
 
-        self._boresight = boresight
-        self.SetRealParameter('DirectionX', boresight[0])
-        self.SetRealParameter('DirectionY', boresight[1])
-        self.SetRealParameter('DirectionZ', boresight[2])
+        # Assume second_vec will be rotated same as boresight, so apply quat to old_second_vec to get new_second_vec
+        old_second_vec = self.second_vec
+        new_second_vec = gpy.transform_vec_quat(old_second_vec, quat)
+
+        self._boresight = new_boresight
+        self.SetRealParameter('DirectionX', float(new_boresight[0]))
+        self.SetRealParameter('DirectionY', float(new_boresight[1]))
+        self.SetRealParameter('DirectionZ', float(new_boresight[2]))
+
+        self.second_vec = new_second_vec
 
         self.Initialize()
 
-        # TODO remove (debugging only)
-        new_boresight = [self.GetRealParameter('DirectionX'), self.GetRealParameter('DirectionY'),
-                         self.GetRealParameter('DirectionZ')]
-
-        # FIXME: update_rotation_matrix throws error when this method setting boresight to [0, 1, 0]
-        # At Imager initialization (within GMAT), rotation_matrix is calculated based on boresight, so needs updating
+        # rotation_matrix is calculated based on boresight, so needs updating
         self.update_rotation_matrix()
 
     @staticmethod
@@ -533,7 +530,11 @@ class Imager(GmatObject):
     @second_vec.setter
     def second_vec(self, second_vec):
         self._second_vec = second_vec
-        # At Imager initialization (within GMAT), rotation_matrix is based on second_vec, so needs updating
+        self.SetRealParameter('SecondDirectionX', second_vec[0])
+        self.SetRealParameter('SecondDirectionY', second_vec[1])
+        self.SetRealParameter('SecondDirectionZ', second_vec[2])
+
+        # rotation_matrix is based on second_vec, so needs updating
         self.update_rotation_matrix()
 
     def update_rotation_matrix(self):
@@ -548,6 +549,8 @@ class Imager(GmatObject):
         x = n / m
         y = np.cross(z, x)
         self.rotation_matrix = np.array([x, y, z])
+
+        self.Initialize()
 
 
 class NuclearPowerSystem(GmatObject):
