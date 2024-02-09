@@ -1,4 +1,4 @@
-Written by weasdown, 7/12/2023.
+Written by William Easdown Babb, 7/12/2023.
 
 These instructions will help you setup GMAT's Python API, using its default configuration. To use versions of Python later than 3.9, follow these instructions then those in README.txt.
 
