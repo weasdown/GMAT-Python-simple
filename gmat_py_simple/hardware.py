@@ -242,6 +242,9 @@ class RectangularFOV(FieldOfView):
         :return in_fov: bool - True if target is in field of view, False if not
         """
 
+        # Note: GMAT handles Imagers as having no sensor width/height, so FOV edge vectors start at origin rather than
+        #  being translated by sensor width/2, sensor height/2 etc.
+
         def get_edge_vectors():
             aw2 = self.angle_width / 2
             ah2 = self.angle_height / 2
@@ -266,7 +269,7 @@ class RectangularFOV(FieldOfView):
                 trans_mat_z = np.array([[ca2, -sa2, 0, 0],
                                         [sa2, ca2, 0, 0],
                                         [0, 0, 1, 0],
-                                        [0, 0, 0, 1]])
+                                        [0, 0, 0, 1]])  # transformation matrix for Z-axis rotation
                 z_rot = np.matmul(trans_mat_z, boresight)
 
                 # Rotate z_rot around -Y-axis (SecondDirection) by ah2 degrees (direction as appropriate)
@@ -274,7 +277,7 @@ class RectangularFOV(FieldOfView):
                 trans_mat_y = np.array([[cb2, 0, -sb2, 0],
                                         [0, 1, 0, 0],
                                         [sb2, 0, cb2, 0],
-                                        [0, 0, 0, 1]])
+                                        [0, 0, 0, 1]])  # transformation matrix for -Y-axis rotation
                 vec = np.matmul(trans_mat_y, z_rot)
                 vec = vec[:-1]  # remove the last element (1) that was just to enable matrix multiplication
 
@@ -444,7 +447,6 @@ class Imager(GmatObject):
 
         if not all([1 >= ele >= -1 for ele in new_boresight]):
             raise AttributeError('All boresight elements must be between -1 and 1 inclusive.')
-
 
         # Assume that the transformation being applied between the old and new boresights will also apply to the
         #  second_vec, so update that too. That will prevent the new boresight having a problematic cross product with
