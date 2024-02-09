@@ -442,6 +442,10 @@ class Imager(GmatObject):
         if not isinstance(new_boresight, np.ndarray):
             new_boresight = np.array(new_boresight)
 
+        if not all([1 >= ele >= -1 for ele in new_boresight]):
+            raise AttributeError('All boresight elements must be between -1 and 1 inclusive.')
+
+
         # Assume that the transformation being applied between the old and new boresights will also apply to the
         #  second_vec, so update that too. That will prevent the new boresight having a problematic cross product with
         #  the old second_vec
