@@ -247,6 +247,7 @@ class RectangularFOV(FieldOfView):
 
         # TODO update this to use simpler algo - don't need corner vectors, only vecs at midpoint of each face
         #  Can find midpoint vecs by rotating boresight by alpha/beta +/- 90 (as appropriate)
+        # TODO determine whether new method applicable to FOVs with width/height >180 degrees
 
         # TODO consider case where FOV rolled around boresight - need to update axes so midpoint vecs calced correctly
 
