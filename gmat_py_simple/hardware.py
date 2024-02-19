@@ -245,6 +245,11 @@ class RectangularFOV(FieldOfView):
         # Note: GMAT handles Imagers as having no sensor width/height, so FOV edge vectors start at origin rather than
         #  being translated by sensor width/2, sensor height/2 etc.
 
+        # TODO update this to use simpler algo - don't need corner vectors, only vecs at midpoint of each face
+        #  Can find midpoint vecs by rotating boresight by alpha/beta +/- 90 (as appropriate)
+
+        # TODO consider case where FOV rolled around boresight - need to update axes so midpoint vecs calced correctly
+
         def get_edge_vectors():
             aw2 = self.angle_width / 2
             ah2 = self.angle_height / 2
@@ -263,22 +268,26 @@ class RectangularFOV(FieldOfView):
                 cb2 = np.cos(np.deg2rad(ah2_for_vec))
                 sb2 = np.sin(np.deg2rad(ah2_for_vec))
 
+                # TODO replace full matrix rotations with simplified forms
+                #  e.g. Y-axis: [x * np.cos(theta) - z * np.sin(theta), y, x * np.sin(theta) + z * np.cos(theta), 1]
+
                 # Rotate boresight around +X-axis (Direction or boresight) by aw2 degrees (direction as appropriate)
-                # TODO: transform boresight to consider Imager second_vec and rotation_matrix
+                # TODO: transform boresight to consider Imager second_vec and rotation_matrix then ensure rotation axes
+                #  are correct e.g. towards second_vec rather than simply around +X-axis
                 boresight = np.append(self._boresight, 1)  # make boresight a 4-element vector by appending 1
                 trans_mat_z = np.array([[ca2, -sa2, 0, 0],
                                         [sa2, ca2, 0, 0],
                                         [0, 0, 1, 0],
                                         [0, 0, 0, 1]])  # transformation matrix for Z-axis rotation
-                z_rot = np.matmul(trans_mat_z, boresight)
+                x_rot = np.matmul(trans_mat_z, boresight)
 
-                # Rotate z_rot around -Y-axis (SecondDirection) by ah2 degrees (direction as appropriate)
+                # Rotate x_rot around -Y-axis (SecondDirection) by ah2 degrees (direction as appropriate)
                 # Note: using *minus* Y axis means the direction signs are reversed - already applied to vector_params
                 trans_mat_y = np.array([[cb2, 0, -sb2, 0],
                                         [0, 1, 0, 0],
                                         [sb2, 0, cb2, 0],
                                         [0, 0, 0, 1]])  # transformation matrix for -Y-axis rotation
-                vec = np.matmul(trans_mat_y, z_rot)
+                vec = np.matmul(trans_mat_y, x_rot)
                 vec = vec[:-1]  # remove the last element (1) that was just to enable matrix multiplication
 
                 klmn.append(vec)  # append the calculated vector to the list of K, L, M, N vectors
@@ -431,6 +440,28 @@ class Imager(GmatObject):
 
     def __repr__(self):
         return f'An Imager named "{self.GetName()}"'
+
+    @property
+    def angle_height(self):
+        return self.fov.angle_height
+
+    @angle_height.setter
+    def angle_height(self, angle_height: int | float):
+        if self.fov is not None:
+            self.fov.angle_height = angle_height
+        else:
+            raise AttributeError('Cannot set Imager angle_height as Imager has no fov (fov is None)')
+
+    @property
+    def angle_width(self):
+        return self.fov.angle_width
+
+    @angle_width.setter
+    def angle_width(self, angle_width: int | float):
+        if self.fov is not None:
+            self.fov.angle_width = angle_width
+        else:
+            raise AttributeError('Cannot set Imager angle_width as Imager has no fov (fov is None)')
 
     def attach_to_sat(self, sat: gpy.Spacecraft | gmat.Spacecraft):
         sat_gmat = gpy.extract_gmat_obj(sat)

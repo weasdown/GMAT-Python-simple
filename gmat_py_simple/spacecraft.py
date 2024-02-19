@@ -210,6 +210,7 @@ class Spacecraft(GmatObject):
         # Setup imagers
         self.imagers = None
         if self.hardware.imagers is not None:
+            # FIXME
             self.imagers: hardware.Imager | list[hardware.Imager] = self.hardware.imagers
             if isinstance(self.imagers, list):
                 for imager in self.imagers:
