@@ -664,6 +664,84 @@ def quat_between_vecs(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
     return quat
 
 
+def rotate_vector(vec: np.ndarray | list, axis: str, angle: int | float) -> np.ndarray:
+    if axis == 'X':
+        new_vec = gpy.rotx(vec, angle)
+    elif axis == 'Y':
+        new_vec = gpy.roty(vec, angle)
+    elif axis == 'Z':
+        new_vec = gpy.rotz(vec, angle)
+    else:
+        raise RuntimeError(f'Rotation axis to get normal vector, "{axis}", is not recognized.')
+    return new_vec
+
+
+def rotx(vec: np.ndarray | list, angle: int | float) -> np.ndarray:
+    """
+    Rotate a 3-element vector around the X-axis by an angle
+    :param vec:
+    :param angle:
+    :return:
+    """
+    if len(vec) != 3:
+        raise AttributeError(f'Invalid vector length ({len(vec)}) - must be 3')
+
+    # Aliases to help readability and execution speed
+    ca = np.cos(angle)
+    sa = np.sin(angle)
+
+    rotation_matrix = np.array([[1, 0, 0],
+                            [0, ca, -sa],
+                            [0, sa, ca]])
+
+    new_vec = np.matmul(rotation_matrix, vec)
+    return new_vec
+
+
+def roty(vec: np.ndarray | list, angle: int | float) -> np.ndarray:
+    """
+    Rotate a 3-element vector around the Y-axis by an angle
+    :param vec:
+    :param angle:
+    :return:
+    """
+    if len(vec) != 3:
+        raise AttributeError(f'Invalid vector length ({len(vec)}) - must be 3')
+
+    # Aliases to help readability and execution speed
+    ca = np.cos(angle)
+    sa = np.sin(angle)
+
+    rotation_matrix = np.array([[ca, 0, sa],
+                            [0, 1, 0],
+                            [-sa, 0, ca]])
+
+    new_vec = np.matmul(rotation_matrix, vec)
+    return new_vec
+
+
+def rotz(vec: np.ndarray | list, angle: int | float) -> np.ndarray:
+    """
+    Rotate a 3-element vector around the Z-axis by an angle
+    :param vec:
+    :param angle:
+    :return:
+    """
+    if len(vec) != 3:
+        raise AttributeError(f'Invalid vector length ({len(vec)}) - must be 3')
+
+    # Aliases to help readability and execution speed
+    ca = np.cos(angle)
+    sa = np.sin(angle)
+
+    rotation_matrix = np.array([[ca, -sa, 0],
+                            [sa, ca, 0],
+                            [0, 0, 1]])
+
+    new_vec = np.matmul(rotation_matrix, vec)
+    return new_vec
+
+
 def transform_vec_quat(vec: np.ndarray, quat: np.ndarray) -> np.ndarray:
     vec = np.append(vec, 0)
 

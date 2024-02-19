@@ -245,55 +245,9 @@ class RectangularFOV(FieldOfView):
         # Note: GMAT handles Imagers as having no sensor width/height, so FOV edge vectors start at origin rather than
         #  being translated by sensor width/2, sensor height/2 etc.
 
-        # TODO update this to use simpler algo - don't need corner vectors, only vecs at midpoint of each face
-        #  Can find midpoint vecs by rotating boresight by alpha/beta +/- 90 (as appropriate)
-        # TODO determine whether new method applicable to FOVs with width/height >180 degrees
+        # TODO determine whether applicable to FOVs with width/height >180 degrees
 
         # TODO consider case where FOV rolled around boresight - need to update axes so midpoint vecs calced correctly
-
-        def get_edge_vectors():
-            aw2 = self.angle_width / 2
-            ah2 = self.angle_height / 2
-
-            # Find vectors: K: top left edge of FOV, L: top right, M: bottom left, N: bottom right
-            klmn = []  # list that will be filled with vectors for edges of FOV
-            vector_params = ((1, 1), (-1, 1), (1, -1), (-1, -1))  # multipliers to give correct vector orientations
-
-            for vec in vector_params:
-                # Pre-calculate cosine and sine of half-width (aw2) and half-height (ah2) - all four will be used later
-                # Multiply aw2 and ah2 by 1 or -1 as appropriate for the vector being calculated for correct pointing
-                aw2_for_vec = aw2 * vec[0]
-                ah2_for_vec = ah2 * vec[1]
-                ca2 = np.cos(np.deg2rad(aw2_for_vec))
-                sa2 = np.sin(np.deg2rad(aw2_for_vec))
-                cb2 = np.cos(np.deg2rad(ah2_for_vec))
-                sb2 = np.sin(np.deg2rad(ah2_for_vec))
-
-                # TODO replace full matrix rotations with simplified forms
-                #  e.g. Y-axis: [x * np.cos(theta) - z * np.sin(theta), y, x * np.sin(theta) + z * np.cos(theta), 1]
-
-                # Rotate boresight around +X-axis (Direction or boresight) by aw2 degrees (direction as appropriate)
-                # TODO: transform boresight to consider Imager second_vec and rotation_matrix then ensure rotation axes
-                #  are correct e.g. towards second_vec rather than simply around +X-axis
-                boresight = np.append(self._boresight, 1)  # make boresight a 4-element vector by appending 1
-                trans_mat_z = np.array([[ca2, -sa2, 0, 0],
-                                        [sa2, ca2, 0, 0],
-                                        [0, 0, 1, 0],
-                                        [0, 0, 0, 1]])  # transformation matrix for Z-axis rotation
-                x_rot = np.matmul(trans_mat_z, boresight)
-
-                # Rotate x_rot around -Y-axis (SecondDirection) by ah2 degrees (direction as appropriate)
-                # Note: using *minus* Y axis means the direction signs are reversed - already applied to vector_params
-                trans_mat_y = np.array([[cb2, 0, -sb2, 0],
-                                        [0, 1, 0, 0],
-                                        [sb2, 0, cb2, 0],
-                                        [0, 0, 0, 1]])  # transformation matrix for -Y-axis rotation
-                vec = np.matmul(trans_mat_y, x_rot)
-                vec = vec[:-1]  # remove the last element (1) that was just to enable matrix multiplication
-
-                klmn.append(vec)  # append the calculated vector to the list of K, L, M, N vectors
-
-            return klmn
 
         # Check target position vector is valid
         if len(target) != 3:
@@ -307,19 +261,23 @@ class RectangularFOV(FieldOfView):
         print('\n** WARNING: CustomCheckTargetVisibility does not currently convert the target to the Imager frame, so '
               'its result is likely to be incorrect **\n')
 
-        # Find the vectors that define the four corners of the FOV
-        # k: top left edge of FOV, l: top right, m: bottom left, n: bottom right
-        k, l, m, n = get_edge_vectors()
+        aw2 = self.angle_width / 2
+        ah2 = self.angle_height / 2
 
-        # normal_params: pairs of vectors that will be cross-producted to find a normal vector pointing into the FOV
-        # Each pair of vectors forms a planar face of the FOV
-        # Note: vectors must be given in this order (e.g. n, m rather than m, n) for cross product to point into FOV
-        normals_params = ((m, k), (l, n), (k, l), (n, m))  # left, right, top, bottom
-        normal_vecs = np.array([np.cross(param[0], param[1]) for param in normals_params])
+        # Each face of FOV has a vector along its midpoint. Find the normal vectors to these that point into FOV.
+        # Parameters for vectors normal to FOV face midpoint vectors
+        normals_vector_params = (('Z', np.deg2rad(aw2 - 90)),
+                                 ('Z', np.deg2rad(-aw2 + 90)),
+                                 ('Y', np.deg2rad(-ah2 + 90)),
+                                 ('Y', np.deg2rad(ah2 - 90)))
+        normals = []  # empty list to hold normal vectors
+        for vec_param in normals_vector_params:  # rotate boresight to find each normal vector, using vec's params
+            normals.append(gpy.rotate_vector(self.boresight, vec_param[0], vec_param[1]))
+        normals = np.array(normals)  # convert list of normals to np.ndarray
 
         # If the target is within the FOV, the normal will point more towards the target than away. This means the dot
         # product of the normal and the target's position vector will be positive
-        dot_results = np.dot(normal_vecs, target)
+        dot_results = np.dot(normals, target)
 
         return True if all(dot_results > 0) else False
 
