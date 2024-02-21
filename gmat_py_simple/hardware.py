@@ -464,10 +464,8 @@ class Imager(GmatObject):
         new_second_vec = gpy.transform_vec_quat(old_second_vec, quat)
 
         # Check new_boresight and new_second_vec are orthogonal (dot product = 0) as required
-        new_dot = np.dot(new_boresight, new_second_vec)
-        if new_dot != 0:
-            raise AttributeError(f'new_boresight and new_second_vec are not orthogonal - dot product is {new_dot}, '
-                                 f'not 0.'
+        if not gpy.vectors_orthogonal(new_boresight, new_second_vec):
+            raise AttributeError(f'new_boresight and new_second_vec are not orthogonal.'
                                  f'\n-\tnew_boresight:\t{new_boresight}'
                                  f'\n-\tnew_second_vec:\t{new_second_vec}')
 
@@ -568,7 +566,7 @@ class Imager(GmatObject):
     @property
     def second_vec(self):
         """
-        Update second_vec attribute.
+        Get second_vec attribute.
         :return:
         """
         sv = getattr(self, '_second_vec', None)
@@ -608,10 +606,8 @@ class Imager(GmatObject):
         new_boresight = gpy.transform_vec_quat(old_boresight, quat)
 
         # Check new_second_vec and new_boresight are orthogonal (dot product = 0) as required
-        new_dot = np.dot(new_second_vec, new_boresight)
-        if new_dot != 0:
-            raise AttributeError(f'new_second_vec and new_boresight are not orthogonal - dot product is {new_dot}, '
-                                 f'not 0.'
+        if not gpy.vectors_orthogonal(new_second_vec, new_boresight):
+            raise AttributeError(f'new_second_vec and new_boresight are not orthogonal.'
                                  f'\n-\told_second_vec:\t{old_sv}'
                                  f'\n-\told_boresight:\t{old_boresight}'
                                  f'\n-\tnew_second_vec:\t{new_second_vec}'

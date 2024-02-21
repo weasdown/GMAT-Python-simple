@@ -9,6 +9,18 @@ import logging
 import numpy as np
 
 
+class APIException(Exception):
+    pass
+
+
+def Barycenter() -> list[str]:
+    return get_gmat_objects_of_type('Barycenter')
+
+
+def CelestialBodies() -> list[str]:
+    return get_gmat_objects_of_type('CelestialBody')
+
+
 def class_string_to_GMAT_string(string):
     """
     Convert PEP8-compliant string to GMAT format (CamelCase)
@@ -23,83 +35,17 @@ def class_string_to_GMAT_string(string):
     return string
 
 
-def get_subs_of_gmat_class(gmat_class) -> list:
-    """
-    Get GMAT's list of fields in a GMAT class
-    :param gmat_class
-    :return: fields: list[str]
-    """
-    # Target: "GmatBase Exception Thrown: Parameter id = 6 not defined on object"
-    # Set: "Factory (sub)class exception: Generic factory creation method not implemented for Set"
-    # CallGmatFunction, Global, CallPythonFunction: see Set
-    disallowed_classes = ['CallFunction', 'Optimize', 'Propagate', 'ScriptEvent',
-                          'Target',
-                          'Set', 'CallGmatFunction', 'Global', 'CallPythonFunction', 'RunEstimator', 'RunSimulator',
-                          'CommandEcho', 'BeginFileThrust', 'EndFileThrust', 'RunSmoother', 'ModEquinoctial',
-                          'IncomingAsymptote']
-
-    print(f'argument gmat_class: {gmat_class}')
-    print(f'Subclasses of {gmat_class.__name__}:')
-    subs = [ty for ty in gmat_class.__subclasses__()]
-
-    # Save subs to a txt file
-    filename = f'Subclasses of GMAT class {gmat_class.__name__}.txt'
-    with open(filename, 'w') as file:
-        for sub in subs:
-            file.write(f'{sub}\n')
-
-    return subs
-
-
-def get_gmat_classes():
-    """
-    Get GMAT's list of possible classes
-
-    :return:
-    """
-    # Intercept stdout as that's where gmat.ShowClasses goes to
-    old_stdout = sys.stdout  # take snapshot of current (normal) stdout
-    # create a StringIO object, assign it to obj_help_stringio and set as the target for stdout
-    sys.stdout = classes_stringio = StringIO()
-    gmat.ShowClasses()
-    classes_str = classes_stringio.getvalue()  # Help() table text as a string
-
-    sys.stdout = old_stdout  # revert back to normal handling of stdout
-
-    rows: list = classes_str.split('\n')  # split the Help() text into rows for easier parsing
-    classes = [None] * len(rows)  # create a list to store the fields
-    for index, row in enumerate(rows):
-        row = row[3:]
-        classes[index] = row
-
-    classes = list(filter(None, classes))  # filter out any empty strings
-    return classes
-
-
-def get_gmat_objects_of_type(obj_type: str) -> list[str]:
-    """
-    Return GMAT's list of currently defined objects of a given type
-    :param obj_type:
-    :return:
-    """
-    # Intercept stdout as that's where gmat.Showcoord_syses goes to
-    old_stdout = sys.stdout  # take snapshot of current (normal) stdout
-    # create a StringIO object, assign it to objs_stringio and set as the target for stdout
-    sys.stdout = objs_stringio = StringIO()
-    gmat.ShowObjects(obj_type)
-    objs_str: str = objs_stringio.getvalue()  # ShowObjects() table text as a string
-
-    sys.stdout = old_stdout  # revert back to normal handling of stdout
-
-    rows: list[str] = objs_str.split('\n')  # split the returned text into rows for easier parsing
-    data_rows: list[str] = rows[2:]  # first two rows are always title and blank so remove them
-    coord_syses: list[str | None] = [None] * len(data_rows)  # create a list to store the coord_syses
-    for index, row in enumerate(data_rows):
-        row = row[3:]  # remove indent
-        coord_syses[index] = row
-
-    coord_syses = list(filter(None, coord_syses))  # filter out any empty strings
-    return coord_syses
+def Construct(obj_type: str, name: str, *args):
+    try:
+        if args:
+            return gmat.Construct(obj_type, name, args)
+        else:
+            return gmat.Construct(obj_type, name)
+    except AttributeError as attr:
+        if str(attr) == "'NoneType' object has no attribute 'GetTypeName'":
+            raise TypeError(f'GMAT does not recognize the given object type "{obj_type}"')
+        else:
+            raise attr  # other AttributeErrors are not handled, so raise instead
 
 
 def CoordSystems() -> list[str]:
@@ -110,24 +56,63 @@ def CoordSystems() -> list[str]:
     return get_gmat_objects_of_type('CoordinateSystem')
 
 
-def CelestialBodies() -> list[str]:
-    return get_gmat_objects_of_type('CelestialBody')
+def CustomHelp(obj):
+    print(f'\nCustomHelp for {type(obj).__name__} named "{obj.GetName()}":')
+    # print('\nCustomHelp:')
+    obj = extract_gmat_obj(obj)
+    param_count = obj.GetParameterCount()
+
+    print(f'Object parameter count: {param_count}\n')
+    for i in range(param_count):
+        try:
+            param_name = obj.GetParameterText(i)
+            param_type = obj.GetParameterTypeString(i)
+            print(f'    Parameter: {param_name}')
+            print(f'    - Type: {param_type}')
+            if param_type == 'String':
+                val = obj.GetStringParameter(i)
+            elif param_type == 'StringArray':
+                val = obj.GetStringArrayParameter(i)
+            elif param_type == 'Integer':
+                val = obj.GetIntegerParameter(i)
+            elif param_type == 'Object':
+                val = obj.GetName()
+            elif (param_type == 'Real') or (param_type == 'UnsignedInt') or (param_name == 'InitialEpoch'):
+                val = obj.GetRealParameter(i)
+            elif param_type == 'Rmatrix':
+                val = obj.GetRmatrixParameter(i)
+            elif param_type == 'Boolean':
+                val = obj.GetBooleanParameter(i)
+            else:
+                raise TypeError(f'  Unrecognised type: {param_type}')
+
+            print(f'    - Value: {val}\n')
+
+        except Exception as exc:
+            print(f'\t{exc}\n')
 
 
-def SpacecraftObjs() -> list[str]:
-    return get_gmat_objects_of_type('Spacecraft')
+def extract_gmat_obj(obj):
+    obj_type = str(type(obj))
+    if obj is None:
+        raise SyntaxError('A NoneType object was given')
+
+    if isinstance(obj, gpy.Parameter):
+        return obj.gmat_base
+
+    if 'gmat_py_simple' in obj_type:  # wrapper object
+        if 'Parameter' in obj_type:
+            return obj.gmat_base
+        return obj.gmat_obj
+    elif 'gmat_py' in obj_type:  # native GMAT object
+        return obj
+    else:
+        raise TypeError(f'obj type not recognised in utils.extract_gmat_obj: {obj_type}')
 
 
-def LibrationPoints() -> list[str]:
-    return get_gmat_objects_of_type('LibrationPoint')
-
-
-def Barycenter() -> list[str]:
-    return get_gmat_objects_of_type('Barycenter')
-
-
-def GroundStations() -> list[str]:
-    return get_gmat_objects_of_type('GroundStation')
+class GMATNameError(Exception):
+    def __init__(self, attempted_name):
+        raise RuntimeError(f'No object currently exists in GMAT with the name "{attempted_name}"') from None
 
 
 def fields_for_gmat_base_gmat_command():
@@ -206,121 +191,6 @@ def fields_for_gmat_base_gmat_command():
     pass
 
 
-def gmat_field_string_to_list(string: str) -> list[str]:
-    if string == '{}':  # GMAT list is empty
-        string_list = []
-
-    elif ',' not in string:  # GMAT list contains exactly one item
-        string_list = [string[1:-1]]  # remove GMAT's curly braces and replace with Python square brackets
-
-    else:  # GMAT list contains more than one item
-        string_no_curly_braces = f'{string[1:-1]}'
-        string_list = list(string_no_curly_braces.split(', '))  # convert to list using comma as separator
-        string_list = [substring[1:-1] for substring in string_list]  # remove extra quotes from each item
-
-    return string_list
-
-
-def list_to_gmat_field_string(data_list: list) -> str:
-    """
-    Convert a Python list to a format that GMAT can handle in SetField
-    :param data_list:
-    :return string:
-    """
-    if data_list is not []:  # Python list contains at least one item
-        string = ', '.join(data_list)  # convert the list to a string, with a comma between each item
-        # if len(data_list) > 1:
-        #     string = '{' + string + '}'  # add curly braces for GMAT to interpret as a list
-
-    else:  # Python list is empty
-        string = '{}'
-
-    return string
-
-
-def py_str_to_gmat_str(string: str) -> str:
-    string = string.replace('_', ' ')  # replace each underscore with a space
-    string = string.title()  # set first letter of each word to upper case
-    string = string.replace(' ', '')  # remove spaces
-    return string
-
-
-def gmat_str_to_py_str(string: str, is_attr: bool = False) -> str:
-    new_string = ''
-    chars_added = 0
-    for i, char in enumerate(string):
-        if char.isupper():
-            new_string = new_string[0:i + chars_added + 1] + '_' + char.lower()
-            chars_added += 1
-        else:
-            new_string = new_string + char
-
-    if not is_attr:  # don't want leading underscores
-        if new_string[0] == '_':
-            new_string = new_string[1:]
-
-    return new_string
-
-
-def python_liststr_to_gmat_liststr(string_list: list[str]) -> list[str]:
-    for index, string in enumerate(string_list):
-        string_list[index] = py_str_to_gmat_str(string)  # convert each string and put it back in the list
-    return string_list
-
-
-def gmat_liststr_to_python_liststr(string_list: list[str], is_attr_list: bool = False) -> list[str]:
-    for index, string in enumerate(string_list):
-        new_string = gmat_str_to_py_str(string, is_attr_list)
-        string_list[index] = new_string
-
-    return string_list
-
-
-def ls2str(py_list: list) -> str:
-    """
-    Convert a list to a string
-    :param py_list:
-    :return:
-    """
-    # return ', '.join(py_list)
-    return str(py_list)[1:-1]
-
-
-def rvector6_to_list(rv6) -> list[float | int]:
-    rv6_str: str = str(rv6)
-    list_str = rv6_str.split(' ')
-    ele_strs = [string for string in list_str if string != '']  # remove all the empty strings
-    eles_list: list[None | float | int] = [None] * 6
-    for index, ele in enumerate(ele_strs):
-        try:
-            num = float(ele)  # convert string to float
-        except ValueError:  # number is likely an int
-            num = int(ele)  # convert string to int
-        eles_list[index] = num
-
-    return eles_list
-
-
-def gmat_obj_field_list(gmat_obj):
-    gmat_obj = gpy.extract_gmat_obj(gmat_obj)
-
-    fields = []
-    for i in range(gmat_obj.GetParameterCount()):
-        try:
-            field_str: str = gmat_obj.GetParameterText(i)
-            field = field_str.replace('\n', '')
-            fields.append(field)
-            i += 1
-
-        except Exception as e:
-            if type(e).__name__ == 'APIException':
-                break
-            else:
-                raise
-
-    return fields
-
-
 def generate_script() -> str:
     """
     Return the full GMAT script equivalent of the current file
@@ -329,6 +199,57 @@ def generate_script() -> str:
     script = f'globals from gpy: {[item for item in globals().copy().values() if "gmat_py_simple" in str(type(item))]}'
     # TODO complete function
     return script
+
+
+def get_gmat_classes():
+    """
+    Get GMAT's list of possible classes
+
+    :return:
+    """
+    # Intercept stdout as that's where gmat.ShowClasses goes to
+    old_stdout = sys.stdout  # take snapshot of current (normal) stdout
+    # create a StringIO object, assign it to obj_help_stringio and set as the target for stdout
+    sys.stdout = classes_stringio = StringIO()
+    gmat.ShowClasses()
+    classes_str = classes_stringio.getvalue()  # Help() table text as a string
+
+    sys.stdout = old_stdout  # revert back to normal handling of stdout
+
+    rows: list = classes_str.split('\n')  # split the Help() text into rows for easier parsing
+    classes = [None] * len(rows)  # create a list to store the fields
+    for index, row in enumerate(rows):
+        row = row[3:]
+        classes[index] = row
+
+    classes = list(filter(None, classes))  # filter out any empty strings
+    return classes
+
+
+def get_gmat_objects_of_type(obj_type: str) -> list[str]:
+    """
+    Return GMAT's list of currently defined objects of a given type
+    :param obj_type:
+    :return:
+    """
+    # Intercept stdout as that's where gmat.Showcoord_syses goes to
+    old_stdout = sys.stdout  # take snapshot of current (normal) stdout
+    # create a StringIO object, assign it to objs_stringio and set as the target for stdout
+    sys.stdout = objs_stringio = StringIO()
+    gmat.ShowObjects(obj_type)
+    objs_str: str = objs_stringio.getvalue()  # ShowObjects() table text as a string
+
+    sys.stdout = old_stdout  # revert back to normal handling of stdout
+
+    rows: list[str] = objs_str.split('\n')  # split the returned text into rows for easier parsing
+    data_rows: list[str] = rows[2:]  # first two rows are always title and blank so remove them
+    coord_syses: list[str | None] = [None] * len(data_rows)  # create a list to store the coord_syses
+    for index, row in enumerate(data_rows):
+        row = row[3:]  # remove indent
+        coord_syses[index] = row
+
+    coord_syses = list(filter(None, coord_syses))  # filter out any empty strings
+    return coord_syses
 
 
 def get_sat_names() -> list[str]:
@@ -357,100 +278,35 @@ def get_sat_objects() -> list[gmat.Spacecraft]:
     return sat_objs
 
 
-def hamilton_product(p: np.ndarray, q: np.ndarray) -> np.array:
+def get_subs_of_gmat_class(gmat_class) -> list:
     """
-    Multiply two quaternions, assuming each has scalar part as final element.
-    :param p:
-    :param q:
-    :return:
+    Get GMAT's list of fields in a GMAT class
+    :param gmat_class
+    :return: fields: list[str]
     """
-    p1, p2, p3, p4 = p[0:4]
-    m = np.array([[p4, -p3, p2, p1],
-                  [p3, p4, -p1, p2],
-                  [-p2, p1, p4, p3],
-                  [-p1, -p2, -p3, p4]])
-    result = np.matmul(m, q)
-    return result
+    # Target: "GmatBase Exception Thrown: Parameter id = 6 not defined on object"
+    # Set: "Factory (sub)class exception: Generic factory creation method not implemented for Set"
+    # CallGmatFunction, Global, CallPythonFunction: see Set
+    disallowed_classes = ['CallFunction', 'Optimize', 'Propagate', 'ScriptEvent',
+                          'Target',
+                          'Set', 'CallGmatFunction', 'Global', 'CallPythonFunction', 'RunEstimator', 'RunSimulator',
+                          'CommandEcho', 'BeginFileThrust', 'EndFileThrust', 'RunSmoother', 'ModEquinoctial',
+                          'IncomingAsymptote']
+
+    print(f'argument gmat_class: {gmat_class}')
+    print(f'Subclasses of {gmat_class.__name__}:')
+    subs = [ty for ty in gmat_class.__subclasses__()]
+
+    # Save subs to a txt file
+    filename = f'Subclasses of GMAT class {gmat_class.__name__}.txt'
+    with open(filename, 'w') as file:
+        for sub in subs:
+            file.write(f'{sub}\n')
+
+    return subs
 
 
-def Construct(obj_type: str, name: str, *args):
-    try:
-        if args:
-            return gmat.Construct(obj_type, name, args)
-        else:
-            return gmat.Construct(obj_type, name)
-    except AttributeError as attr:
-        if str(attr) == "'NoneType' object has no attribute 'GetTypeName'":
-            raise TypeError(f'GMAT does not recognize the given object type "{obj_type}"')
-        else:
-            raise attr  # other AttributeErrors are not handled, so raise instead
-
-
-def CustomHelp(obj):
-    print(f'\nCustomHelp for {type(obj).__name__} named "{obj.GetName()}":')
-    # print('\nCustomHelp:')
-    obj = extract_gmat_obj(obj)
-    param_count = obj.GetParameterCount()
-
-    print(f'Object parameter count: {param_count}\n')
-    for i in range(param_count):
-        try:
-            param_name = obj.GetParameterText(i)
-            param_type = obj.GetParameterTypeString(i)
-            print(f'    Parameter: {param_name}')
-            print(f'    - Type: {param_type}')
-            if param_type == 'String':
-                val = obj.GetStringParameter(i)
-            elif param_type == 'StringArray':
-                val = obj.GetStringArrayParameter(i)
-            elif param_type == 'Integer':
-                val = obj.GetIntegerParameter(i)
-            elif param_type == 'Object':
-                val = obj.GetName()
-            elif (param_type == 'Real') or (param_type == 'UnsignedInt') or (param_name == 'InitialEpoch'):
-                val = obj.GetRealParameter(i)
-            elif param_type == 'Rmatrix':
-                val = obj.GetRmatrixParameter(i)
-            elif param_type == 'Boolean':
-                val = obj.GetBooleanParameter(i)
-            else:
-                raise TypeError(f'  Unrecognised type: {param_type}')
-
-            print(f'    - Value: {val}\n')
-
-        except Exception as exc:
-            print(f'    {exc}\n')
-            # raise
-
-
-def extract_gmat_obj(obj):
-    obj_type = str(type(obj))
-    if obj is None:
-        raise SyntaxError('A NoneType object was given')
-
-    if isinstance(obj, gpy.Parameter):
-        return obj.gmat_base
-
-    if 'gmat_py_simple' in obj_type:  # wrapper object
-        if 'Parameter' in obj_type:
-            return obj.gmat_base
-        return obj.gmat_obj
-    elif 'gmat_py' in obj_type:  # native GMAT object
-        return obj
-    else:
-        raise TypeError(f'obj type not recognised in utils.extract_gmat_obj: {obj_type}')
-
-
-class APIException(Exception):
-    pass
-
-
-class GMATNameError(Exception):
-    def __init__(self, attempted_name):
-        raise RuntimeError(f'No object currently exists in GMAT with the name "{attempted_name}"') from None
-
-
-def GetTypeNameFromID(type_id: int) -> str:
+def get_type_name_from_id(type_id: int) -> str:
     type_names = ['SPACECRAFT',
                   'FORMATION',
                   'SPACEOBJECT',
@@ -652,15 +508,145 @@ def GetTypeNameFromID(type_id: int) -> str:
     raise RuntimeError(f'Type name could not be found for ID {type_id}')
 
 
+def gmat_field_string_to_list(string: str) -> list[str]:
+    if string == '{}':  # GMAT list is empty
+        string_list = []
+
+    elif ',' not in string:  # GMAT list contains exactly one item
+        string_list = [string[1:-1]]  # remove GMAT's curly braces and replace with Python square brackets
+
+    else:  # GMAT list contains more than one item
+        string_no_curly_braces = f'{string[1:-1]}'
+        string_list = list(string_no_curly_braces.split(', '))  # convert to list using comma as separator
+        string_list = [substring[1:-1] for substring in string_list]  # remove extra quotes from each item
+
+    return string_list
+
+
+def gmat_liststr_to_python_liststr(string_list: list[str], is_attr_list: bool = False) -> list[str]:
+    for index, string in enumerate(string_list):
+        new_string = gmat_str_to_py_str(string, is_attr_list)
+        string_list[index] = new_string
+
+    return string_list
+
+
+def gmat_obj_field_list(gmat_obj):
+    gmat_obj = gpy.extract_gmat_obj(gmat_obj)
+
+    fields = []
+    for i in range(gmat_obj.GetParameterCount()):
+        try:
+            field_str: str = gmat_obj.GetParameterText(i)
+            field = field_str.replace('\n', '')
+            fields.append(field)
+            i += 1
+
+        except Exception as e:
+            if type(e).__name__ == 'APIException':
+                break
+            else:
+                raise
+
+    return fields
+
+
+def gmat_str_to_py_str(string: str, is_attr: bool = False) -> str:
+    new_string = ''
+    chars_added = 0
+    for i, char in enumerate(string):
+        if char.isupper():
+            new_string = new_string[0:i + chars_added + 1] + '_' + char.lower()
+            chars_added += 1
+        else:
+            new_string = new_string + char
+
+    if not is_attr:  # don't want leading underscores
+        if new_string[0] == '_':
+            new_string = new_string[1:]
+
+    return new_string
+
+
+def GroundStations() -> list[str]:
+    return get_gmat_objects_of_type('GroundStation')
+
+
+def hamilton_product(p: np.ndarray, q: np.ndarray) -> np.array:
+    """
+    Multiply two quaternions, assuming each has scalar part as final element.
+    :param p:
+    :param q:
+    :return:
+    """
+    p1, p2, p3, p4 = p[0:4]
+    m = np.array([[p4, -p3, p2, p1],
+                  [p3, p4, -p1, p2],
+                  [-p2, p1, p4, p3],
+                  [-p1, -p2, -p3, p4]])
+    result = np.matmul(m, q)
+    return result
+
+
+def LibrationPoints() -> list[str]:
+    return get_gmat_objects_of_type('LibrationPoint')
+
+
+def list_to_gmat_field_string(data_list: list) -> str:
+    """
+    Convert a Python list to a format that GMAT can handle in SetField
+    :param data_list:
+    :return string:
+    """
+    if data_list is not []:  # Python list contains at least one item
+        string = ', '.join(data_list)  # convert the list to a string, with a comma between each item
+        # if len(data_list) > 1:
+        #     string = '{' + string + '}'  # add curly braces for GMAT to interpret as a list
+
+    else:  # Python list is empty
+        string = '{}'
+
+    return string
+
+
+def ls2str(py_list: list) -> str:
+    """
+    Convert a Python list to a string.
+    :param py_list: a Python list
+    :return: a Python string
+    """
+    return str(py_list)[1:-1]
+
+
+def python_liststr_to_gmat_liststr(string_list: list[str]) -> list[str]:
+    for index, string in enumerate(string_list):
+        string_list[index] = py_str_to_gmat_str(string)  # convert each string and put it back in the list
+    return string_list
+
+
+def py_str_to_gmat_str(string: str) -> str:
+    string = string.replace('_', ' ')  # replace each underscore with a space
+    string = string.title()  # set first letter of each word to upper case
+    string = string.replace(' ', '')  # remove spaces
+    return string
+
+
 # Line below disables false positive "This code is unreachable" warning with np.cross()
 # noinspection PyUnreachableCode
 def quat_between_vecs(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
     """
     Find a quaternion representing the shortest-path transformation between two vectors.
-    :param v1:
-    :param v2:
-    :return:
+    :param v1: a 3-element np.ndarray representing the starting vector
+    :param v2: a 3-element np.ndarray representing the final vector
+    :return: quaternion that rotates from v1 to v2
     """
+    # cross product below to find quat vector part cannot be found if vectors parallel/antiparallel, so check
+    check_dot = np.dot(v1, v2)
+    if np.isclose(check_dot, 1):  # v1 and v2 are parallel
+        return np.array([0, 0, 0, 1])  # identity quaternion to cause no rotation
+    elif np.isclose(check_dot, -1):  # v1 and v2 are antiparallel
+        return np.array([1, 0, 0, 0])  # quaternion for 180-degree rotation around arbitrary axis
+
     q_xyz = np.cross(v1, v2)  # quat vector part is cross product of old and new boresights
     mag_v1 = np.linalg.norm(v1)
     mag_v2 = np.linalg.norm(v2)
@@ -697,8 +683,8 @@ def rotx(vec: np.ndarray | list, angle: int | float) -> np.ndarray:
     sa = np.sin(angle)
 
     rotation_matrix = np.array([[1, 0, 0],
-                            [0, ca, -sa],
-                            [0, sa, ca]])
+                                [0, ca, -sa],
+                                [0, sa, ca]])
 
     new_vec = np.matmul(rotation_matrix, vec)
     return new_vec
@@ -719,8 +705,8 @@ def roty(vec: np.ndarray | list, angle: int | float) -> np.ndarray:
     sa = np.sin(angle)
 
     rotation_matrix = np.array([[ca, 0, sa],
-                            [0, 1, 0],
-                            [-sa, 0, ca]])
+                                [0, 1, 0],
+                                [-sa, 0, ca]])
 
     new_vec = np.matmul(rotation_matrix, vec)
     return new_vec
@@ -741,14 +727,40 @@ def rotz(vec: np.ndarray | list, angle: int | float) -> np.ndarray:
     sa = np.sin(angle)
 
     rotation_matrix = np.array([[ca, -sa, 0],
-                            [sa, ca, 0],
-                            [0, 0, 1]])
+                                [sa, ca, 0],
+                                [0, 0, 1]])
 
     new_vec = np.matmul(rotation_matrix, vec)
     return new_vec
 
 
+def rvector6_to_list(rv6) -> list[float | int]:
+    rv6_str: str = str(rv6)
+    list_str = rv6_str.split(' ')
+    ele_strs = [string for string in list_str if string != '']  # remove all the empty strings
+    eles_list: list[None | float | int] = [None] * 6
+    for index, ele in enumerate(ele_strs):
+        try:
+            num = float(ele)  # convert string to float
+        except ValueError:  # number is likely an int
+            num = int(ele)  # convert string to int
+        eles_list[index] = num
+
+    return eles_list
+
+
+def SpacecraftObjs() -> list[str]:
+    return get_gmat_objects_of_type('Spacecraft')
+
+
 def transform_vec_quat(vec: np.ndarray, quat: np.ndarray) -> np.ndarray:
+    """
+    Rotate a vector using a quaternion and return the resulting vector.
+
+    :param vec:
+    :param quat:
+    :return:
+    """
     vec = np.append(vec, 0)
 
     q_norm = quat / np.sqrt(sum(quat ** 2))
@@ -760,3 +772,14 @@ def transform_vec_quat(vec: np.ndarray, quat: np.ndarray) -> np.ndarray:
     new_vec = np.delete(final_prod / np.linalg.norm(final_prod), 3)
 
     return new_vec
+
+
+def vectors_orthogonal(vec1: np.ndarray, vec2: np.ndarray) -> bool:
+    """
+    Return True if the two vectors are orthogonal, False otherwise.
+
+    :param vec1: 3-element np.ndarray
+    :param vec2: 3-element np.ndarray
+    :return: True if the two vectors are orthogonal, False otherwise.
+    """
+    return True if np.dot(vec1, vec2) == 0 else False

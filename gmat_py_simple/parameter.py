@@ -109,7 +109,7 @@ class Parameter:
         resp = self.gmat_base.SetRefObjectName(type_int, name)
         if not resp:
             raise RuntimeError(f'Parameter.SetRefObjectName() failed for Parameter {self.name} with arguments:'
-                               f'\n\t- type_int:  {type_int} (gmat.{gpy.GetTypeNameFromID(type_int)})'
+                               f'\n\t- type_int:  {type_int} (gmat.{gpy.get_type_name_from_id(type_int)})'
                                f'\n\t- name:      {name}')
         return resp
 
