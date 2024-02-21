@@ -164,15 +164,17 @@ class RectangularFOV(FieldOfView):
 
         self._boresight = self.attached_obj.boresight  # inherit boresight from attached Imager/Antenna
 
+        # TODO set second_vec
+
         # Set initial angle width, in degrees
         if angle_width is None:
-            self._angle_width = self.GetRealParameter('AngleWidth')
+            self._angle_width = self.GetRealParameter('AngleWidth')  # use underscore variant to not re-set in GMAT obj
         else:
             self.angle_width = angle_width  # RealParameter set in angle_width.setter
 
         # Set initial angle height, in degrees
         if angle_height is None:
-            self._angle_height = self.GetRealParameter('AngleHeight')
+            self._angle_height = self.GetRealParameter('AngleHeight')  # underscore variant to not re-set in GMAT obj
         else:
             self.angle_height = angle_height  # RealParameter set in angle_height.setter
 
@@ -253,7 +255,7 @@ class RectangularFOV(FieldOfView):
         if len(target) != 3:
             raise AttributeError(f'target has an invalid number of elements ({len(target)}) - must be 3 to represent a '
                                  f'3D position vector for the target point')
-        # Convert to numpy array if a list to use numpy's better performance
+        # Convert target to numpy array if it's a list to use numpy's better performance
         if isinstance(target, list):
             target: np.ndarray = np.array(target)
 
@@ -302,7 +304,19 @@ class Imager(GmatObject):
                  rotation_matrix: np.ndarray = None, boresight: np.ndarray | list = None,
                  second_vec: np.ndarray | list = None, origin=None):
         super().__init__('Imager', name)
-        self.Initialize()  # must be initialized here so vector/matrix parameters are set correctly
+        # print(f'Im g location: {self.gmat_obj.GetLocation()}')
+        # print(f'Im g direction: {self.gmat_obj.GetDirection()}')
+        # print(f'Im g second direction: {self.gmat_obj.GetSecondDirection()}')
+        # gpy.CustomHelp(self)
+        # self.Initialize()  # must be initialized here so vector/matrix parameters are set correctly
+        #
+        # # gpy.CustomHelp(self)
+        #
+        # print(f'Imager coords: {self.GetField("Coordinates")}')
+        #
+        # print(f'Im g location: {self.gmat_obj.GetLocation()}')
+        # print(f'Im g direction: {self.gmat_obj.GetDirection()}')
+        # print(f'Im g second direction: {self.gmat_obj.GetSecondDirection()}')
 
         self.spacecraft = None
 
@@ -316,52 +330,28 @@ class Imager(GmatObject):
             gmat_rot_mat_vals = [self.GetRealParameter(field) for field in self.rot_mat_fields]
             self._rotation_matrix: np.ndarray = np.reshape(np.array(gmat_rot_mat_vals), (3, 3))
         else:
-            self._rotation_matrix = rotation_matrix  # TODO use rotation_matrix setter once written
+            self._rotation_matrix: np.ndarray = rotation_matrix  # TODO use rotation_matrix setter once written
 
-        if boresight is None:
-            dir_x_def: float = self.GetRealParameter('DirectionX')
-            dir_y_def: float = self.GetRealParameter('DirectionY')
-            dir_z_def: float = self.GetRealParameter('DirectionZ')
-            self._boresight = np.array([dir_x_def, dir_y_def, dir_z_def])
-        else:  # a boresight vector has been provided
-            if len(boresight) != 3:
-                raise AttributeError(
-                    f'Imager boresight argument an invalid number of elements ({len(boresight)}) - must'
-                    f' be 3 to represent a 3D direction vector for the Imager\'s boresight')
-            # Ensure self._boresight is a np.ndarray - convert from list if necessary
-            if isinstance(boresight, list):
-                self._boresight: np.ndarray = np.array([float(ele) for ele in boresight])
-            else:
-                self._boresight = boresight
-            self.SetRealParameter('DirectionX', float(self._boresight[0]))
-            self.SetRealParameter('DirectionY', float(self._boresight[1]))
-            self.SetRealParameter('DirectionZ', float(self._boresight[2]))
+        # boresight is the 3D vector, expressed in the body frame, that is at the center of the Imager's FOV
+        if boresight is not None:  # user provided a boresight vector
+            self.boresight = boresight
 
         # second_vec is the 3D vector, expressed in the body frame, used to resolve the sensor's orientation about the
-        #  boresite vector
-        if second_vec is None:  # user did not provide second_vec, so get default from gmat_obj
-            # TODO use second_vec getter once written
-            sec_dir_x_def: float = self.GetRealParameter('SecondDirectionX')
-            sec_dir_y_def: float = self.GetRealParameter('SecondDirectionY')
-            sec_dir_z_def: float = self.GetRealParameter('SecondDirectionZ')
-
-            self.second_vec = np.array([sec_dir_x_def, sec_dir_y_def, sec_dir_z_def])
-        else:  # second_vec is not None, so the user provided one
+        #  boresight vector
+        if second_vec is not None:  # user provided a second_vec vector
             # TODO use second_vec setter once written
             # Expecting a 3D vector
             if len(second_vec) != 3:
                 raise AttributeError(
                     f'Imager second_vec argument an invalid number of elements ({len(second_vec)}) - must'
                     f' be 3 to represent a 3D direction vector for the Imager\'s second vector')
+
+            # TODO move ndarray conversion to setter
             # Ensure self.second_vec is a np.ndarray - convert from list if necessary
             if isinstance(second_vec, list):
                 self.second_vec: np.ndarray = np.array([float(ele) for ele in second_vec])
             elif isinstance(second_vec, np.ndarray):
                 self.second_vec: np.ndarray = second_vec
-
-            self.SetRealParameter('DirectionX', float(self._boresight[0]))
-            self.SetRealParameter('DirectionY', float(self._boresight[1]))
-            self.SetRealParameter('DirectionZ', float(self._boresight[2]))
 
         # TODO: pass self.rotation_matrix, self._boresight, self.second_vec to FieldOfView creation
         #  but also check against FieldOfView creation in src
@@ -428,10 +418,32 @@ class Imager(GmatObject):
 
     @property
     def boresight(self):
-        return self._boresight
+        """
+        Update boresight attribute.
+        :return:
+        """
+        bs = getattr(self, '_boresight', None)
+        if bs is not None:
+            return bs
+        else:  # self._boresight not yet set - use value from GMAT obj
+            dir_x_default: float = self.GetRealParameter('DirectionX')
+            dir_y_default: float = self.GetRealParameter('DirectionY')
+            dir_z_default: float = self.GetRealParameter('DirectionZ')
+            self._boresight = np.array([dir_x_default, dir_y_default, dir_z_default])
+            return self._boresight
 
     @boresight.setter
-    def boresight(self, new_boresight: np.ndarray):
+    def boresight(self, new_boresight: np.ndarray | list):
+        """
+        Set a new boresight vector in the Imager.
+
+        :param new_boresight: a 3-element numpy ndarray or list representing the boresight in the spacecraft body frame.
+        """
+        if len(new_boresight) != 3:
+            raise AttributeError(
+                f'Imager boresight argument has an invalid number of elements ({len(new_boresight)}) - must'
+                f' be 3 to represent a 3D direction vector for the Imager\'s boresight')
+
         if not isinstance(new_boresight, np.ndarray):
             new_boresight = np.array(new_boresight)
 
@@ -441,6 +453,7 @@ class Imager(GmatObject):
         # Assume that the transformation being applied between the old and new boresights will also apply to the
         #  second_vec, so update that too. That will prevent the new boresight having a problematic cross product with
         #  the old second_vec
+        # If self.boresight not yet set, self.boresight will set it from GMAT obj (likely default value)
         old_boresight = self.boresight
 
         # Find quaternion for shortest path rotation from old_boresight to new_boresight
@@ -450,16 +463,27 @@ class Imager(GmatObject):
         old_second_vec = self.second_vec
         new_second_vec = gpy.transform_vec_quat(old_second_vec, quat)
 
+        # Check new_boresight and new_second_vec are orthogonal (dot product = 0) as required
+        new_dot = np.dot(new_boresight, new_second_vec)
+        if new_dot != 0:
+            raise AttributeError(f'new_boresight and new_second_vec are not orthogonal - dot product is {new_dot}, '
+                                 f'not 0.'
+                                 f'\n-\tnew_boresight:\t{new_boresight}'
+                                 f'\n-\tnew_second_vec:\t{new_second_vec}')
+
         self._boresight = new_boresight
         self.SetRealParameter('DirectionX', float(new_boresight[0]))
         self.SetRealParameter('DirectionY', float(new_boresight[1]))
         self.SetRealParameter('DirectionZ', float(new_boresight[2]))
 
         # Also update boresight in attached FOV object (if there is one)
-        if self.fov is not None:
+        if getattr(self, 'fov', None) is not None:
             self.fov.boresight = new_boresight
 
-        self.second_vec = new_second_vec
+        self._second_vec = new_second_vec  # underscore version to avoid changing boresight again
+        self.SetRealParameter('SecondDirectionX', float(new_second_vec[0]))
+        self.SetRealParameter('SecondDirectionY', float(new_second_vec[1]))
+        self.SetRealParameter('SecondDirectionZ', float(new_second_vec[2]))
 
         self.Initialize()
 
@@ -503,6 +527,12 @@ class Imager(GmatObject):
         return self.fov.CheckTargetVisibility(vec)
 
     def CustomCheckTargetVisibility(self, target: np.ndarray | list) -> bool:
+        """
+        Call CustomCheckTargetVisibility for the Imager's particular FieldOfView object.
+
+        :param target: a 3-element numpy ndarray or list representing a position vector in the spacecraft body frame.
+        :return: True if target is within the field of view, otherwise False.
+        """
         # TODO - see print string
         print('\n** WARNING: self.boresight may not already be in spacecraft body frame (TODO check) - use '
               'self.rotation_matrix to transform if not (printed in Imager.CustomCheckTargetVisibility) **\n')
@@ -537,16 +567,73 @@ class Imager(GmatObject):
 
     @property
     def second_vec(self):
-        return self._second_vec
+        """
+        Update second_vec attribute.
+        :return:
+        """
+        sv = getattr(self, '_second_vec', None)
+        if sv is not None:
+            return sv
+        else:  # self._second_vec not yet set - use value from GMAT obj
+            sv_x_default: float = self.GetRealParameter('SecondDirectionX')
+            sv_y_default: float = self.GetRealParameter('SecondDirectionY')
+            sv_z_default: float = self.GetRealParameter('SecondDirectionZ')
+            self._second_vec = np.array([sv_x_default, sv_y_default, sv_z_default])
+            return self._second_vec
 
     @second_vec.setter
-    def second_vec(self, second_vec):
-        self._second_vec = second_vec
-        self.SetRealParameter('SecondDirectionX', second_vec[0])
-        self.SetRealParameter('SecondDirectionY', second_vec[1])
-        self.SetRealParameter('SecondDirectionZ', second_vec[2])
+    def second_vec(self, new_second_vec: np.ndarray | list):
+        if len(new_second_vec) != 3:
+            raise AttributeError(
+                f'Imager second_vec argument has an invalid number of elements ({len(new_second_vec)}) - must'
+                f' be 3 to represent a 3D direction vector for the Imager\'s second vector')
 
-        # rotation_matrix is based on second_vec, so needs updating
+        if not isinstance(new_second_vec, np.ndarray):
+            new_second_vec = np.array(new_second_vec)
+
+        if not all([1 >= ele >= -1 for ele in new_second_vec]):
+            raise AttributeError('All second_vec elements must be between -1 and 1 inclusive.')
+
+        # Assume that the transformation being applied between the old and new second_vec will also apply to the
+        #  boresight, so update that too. That will prevent the new second_vec having a problematic cross product
+        #  with the old boresight
+        # If self.second_vec not yet set, self.second_vec will set it from GMAT obj (likely default value)
+        old_sv = self.second_vec
+
+        # Find quaternion for shortest path rotation from old_sv to new_second_vec
+        quat = gpy.quat_between_vecs(old_sv, new_second_vec)
+
+        # Assume boresight will be rotated same as second_vec, so apply quat to old_boresight to get new_boresight
+        old_boresight = self.boresight
+        new_boresight = gpy.transform_vec_quat(old_boresight, quat)
+
+        # Check new_second_vec and new_boresight are orthogonal (dot product = 0) as required
+        new_dot = np.dot(new_second_vec, new_boresight)
+        if new_dot != 0:
+            raise AttributeError(f'new_second_vec and new_boresight are not orthogonal - dot product is {new_dot}, '
+                                 f'not 0.'
+                                 f'\n-\told_second_vec:\t{old_sv}'
+                                 f'\n-\told_boresight:\t{old_boresight}'
+                                 f'\n-\tnew_second_vec:\t{new_second_vec}'
+                                 f'\n-\tnew_boresight:\t{new_boresight}')
+
+        self._second_vec = new_second_vec
+        self.SetRealParameter('SecondDirectionX', float(new_second_vec[0]))
+        self.SetRealParameter('SecondDirectionY', float(new_second_vec[1]))
+        self.SetRealParameter('SecondDirectionZ', float(new_second_vec[2]))
+
+        # Also update second_vec in attached FOV object (if there is one)
+        if getattr(self, 'fov', None) is not None:
+            self.fov.second_vec = new_second_vec
+
+        self._boresight = new_boresight
+        self.SetRealParameter('DirectionX', float(new_boresight[0]))
+        self.SetRealParameter('DirectionY', float(new_boresight[1]))
+        self.SetRealParameter('DirectionZ', float(new_boresight[2]))
+
+        self.Initialize()
+
+        # rotation_matrix is calculated based on boresight, so needs updating
         self.update_rotation_matrix()
 
     def update_rotation_matrix(self):

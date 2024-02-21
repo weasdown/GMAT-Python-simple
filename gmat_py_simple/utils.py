@@ -655,6 +655,12 @@ def GetTypeNameFromID(type_id: int) -> str:
 # Line below disables false positive "This code is unreachable" warning with np.cross()
 # noinspection PyUnreachableCode
 def quat_between_vecs(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
+    """
+    Find a quaternion representing the shortest-path transformation between two vectors.
+    :param v1:
+    :param v2:
+    :return:
+    """
     q_xyz = np.cross(v1, v2)  # quat vector part is cross product of old and new boresights
     mag_v1 = np.linalg.norm(v1)
     mag_v2 = np.linalg.norm(v2)
