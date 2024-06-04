@@ -1,0 +1,26 @@
+GMAT Build Date: Jan 10 2023 17:58:52
+
+GMAT API Log: Created Fri Jan  5 20:08:01 2024
+
+
+Logging to C:\Users\weasd\Documents\! Will's stuff\Programming\Python\GMAT-Python-simple\GMAT-Log.txt
+Kernel C:/Users/weasd/Desktop/GMAT/gmat-win-R2022a/GMAT/data/planetary_ephem/spk/DE405AllPlanets.bsp has been loaded.
+Kernel C:\Users\weasd\Desktop\GMAT\gmat-win-R2022a\GMAT\data\planetary_coeff\SPICEPlanetaryConstantsKernel.tpc has been loaded.
+Kernel C:\Users\weasd\Desktop\GMAT\gmat-win-R2022a\GMAT\data\time\SPICELeapSecondKernel.tls has been loaded.
+Kernel C:\Users\weasd\Desktop\GMAT\gmat-win-R2022a\GMAT\data\planetary_coeff\SPICEEarthPredictedKernel.bpc has been loaded.
+Kernel C:\Users\weasd\Desktop\GMAT\gmat-win-R2022a\GMAT\data\planetary_coeff\SPICEEarthCurrentKernel.bpc has been loaded.
+Kernel C:\Users\weasd\Desktop\GMAT\gmat-win-R2022a\GMAT\data\planetary_coeff\earth_latest_high_prec.bpc has been loaded.
+Kernel C:\Users\weasd\Desktop\GMAT\gmat-win-R2022a\GMAT\data\planetary_coeff\SPICELunaCurrentKernel.bpc has been loaded.
+Kernel C:\Users\weasd\Desktop\GMAT\gmat-win-R2022a\GMAT\data\planetary_coeff\SPICELunaFrameKernel.tf has been loaded.
+In Moderator::CreateDefaultCommand()
+Interpreter Exception: The Object Map is not set in the Validator.
+Interpreter Exception: The Object Map is not set in the Validator.
+
+Running mission...
+Successfully set Planetary Source to use: DE405
+Successfully set Planetary Source to use: DE405
+
+Mission run completed.
+===> Total Run Time: 0.028 seconds
+
+========================================
