@@ -7,6 +7,7 @@ from gmat_py_simple.basics import GmatObject
 from gmat_py_simple.orbit import OrbitState
 from gmat_py_simple.utils import (gmat_str_to_py_str, gmat_field_string_to_list,
                                   list_to_gmat_field_string, rvector6_to_list)
+from gmat_py_simple.hardware import Imager
 
 from typing import Union
 import logging
@@ -210,8 +211,7 @@ class Spacecraft(GmatObject):
         # Setup imagers
         self.imagers = None
         if self.hardware.imagers is not None:
-            # FIXME
-            self.imagers: hardware.Imager | list[hardware.Imager] = self.hardware.imagers
+            self.imagers: Imager | list[Imager] = self.hardware.imagers
             if isinstance(self.imagers, list):
                 for imager in self.imagers:
                     imager.attach_to_sat(self)
