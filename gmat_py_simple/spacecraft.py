@@ -30,7 +30,7 @@ class Spacecraft(GmatObject):
                         f'\n\t- chemical:     {self.chemical},'
                         f'\n\t- Electrical:   {self.electric}')
 
-        def __init__(self, spacecraft: Spacecraft = None,
+        def __init__(self,
                      chem_tanks: gpy.ChemicalTank | list[gpy.ChemicalTank] = None,
                      elec_tanks: gpy.ElectricTank | list[gpy.ElectricTank] = None,
                      chem_thrusters: gpy.ChemicalThruster | list[gpy.ChemicalThruster] = None,
@@ -61,8 +61,8 @@ class Spacecraft(GmatObject):
                     f'\n- Imagers: {self.imagers}')
 
         @classmethod
-        def from_dict(cls, hw: dict, sc: Spacecraft) -> Spacecraft.SpacecraftHardware:
-            sc_hardware = cls(sc)
+        def from_dict(cls, hw: dict) -> Spacecraft.SpacecraftHardware:
+            sc_hardware = cls()
 
             # parse ChemicalTanks
             cp_tanks_list: list[dict] = hw.get('ChemicalTanks', [{}])
@@ -116,7 +116,7 @@ class Spacecraft(GmatObject):
         def ElectricThrusters(self):
             return self.elec_thrusters
 
-    def __init__(self, name, hardware: SpacecraftHardware = None, **kwargs):
+    def __init__(self, name, hardware: SpacecraftHardware = None):
         super().__init__('Spacecraft', name)
         self.was_propagated = False  # determines whether to use GetObject() or GetRuntimeObject()
 
@@ -146,7 +146,7 @@ class Spacecraft(GmatObject):
         _allowed_fields.update(_gmat_allowed_fields,
                                ['Name', 'Orbit', 'Hardware'])
 
-        self.hardware: Spacecraft.SpacecraftHardware = self.SpacecraftHardware(self) if hardware is None else hardware
+        self.hardware: Spacecraft.SpacecraftHardware = self.SpacecraftHardware() if hardware is None else hardware
 
         # TODO confirm fixed - FIXME - not being updated by from_dict()
         # Setup tanks
@@ -249,7 +249,7 @@ class Spacecraft(GmatObject):
             logging.info('No hardware parameters specified in Spacecraft dictionary - none will be built')
             hardware = {}
 
-        hardware_obj = Spacecraft.SpacecraftHardware.from_dict(hardware, sc)  # build wrapper Hardware object from specs
+        hardware_obj = Spacecraft.SpacecraftHardware.from_dict(hardware)  # build wrapper Hardware object from specs
         sc.hardware = sc.update_hardware(hardware_obj)  # apply the new Hardware object to the spacecraft
 
         # use any Orbit params specified in the specs dictionary
@@ -288,8 +288,8 @@ class Spacecraft(GmatObject):
         if self.hardware.chem_thrusters is not None:
             for thruster in self.hardware.chem_thrusters:
                 # if not thruster:
-                #     raise RuntimeError(f'No chemical thrusters found, chemical thruster list is: {self.chem_thrusters}'
-                #                        f'\n{self.hardware.chem_thrusters}')
+                #     raise RuntimeError(f"No chemical thrusters found, chemical thruster list is: "
+                #                        f"{self.chem_thrusters}\n{self.hardware.chem_thrusters}")
                 if thruster is not None:
                     thruster.attach_to_sat(self)
                     thruster.attach_to_tanks(thruster.tanks)
@@ -297,7 +297,8 @@ class Spacecraft(GmatObject):
         if self.hardware.elec_thrusters is not None:
             for thruster in self.hardware.elec_thrusters:
                 # if not thruster:
-                #     raise RuntimeError(f'No electric thrusters found, electric thruster list is: {self.elec_thrusters}')
+                #     raise RuntimeError(f"No electric thrusters found, electric thruster list is:
+                #     {self.elec_thrusters}")
                 if thruster is not None:
                     thruster.attach_to_sat(self)
                     thruster.attach_to_tanks(thruster.tanks)
@@ -328,7 +329,7 @@ class Spacecraft(GmatObject):
         self.orbit = orbit
         pass
 
-    def GetState(self, state_type: str = 'Current', coord_sys: str = 'EarthMJ2000Eq') -> list[float]:
+    def GetState(self, state_type: str = 'Current') -> list[float]:
         # Get latest data (e.g. from mission run)
         up_to_date_obj = self.GetObject()
 
@@ -535,7 +536,8 @@ class ChemicalTank(Tank):
         if pressure_model is not None:
             if pressure_model not in allowed_pressure_models:
                 raise AttributeError(
-                    f'Invalid pressure model specified for {self.GetTypeName()} {self.name}. Must be one of: {allowed_pressure_models}')
+                    f'Invalid pressure model specified for {self.GetTypeName()} {self.name}. Must be one of: '
+                    f'{allowed_pressure_models}')
             self.pressure_model = pressure_model
             self.SetStringParameter('PressureModel', self.pressure_model)
 
@@ -583,8 +585,7 @@ class ElectricTank(Tank):
 
 class Thruster(GmatObject):
     def __init__(self, fuel_type: str, name: str, tanks: str | gpy.Tank | gmat.Tank | list[gpy.Tank] |
-                                                         list[gmat.FuelTank],
-                 mix_ratio: int | float | list[int | float] = None):
+                 list[gmat.FuelTank], mix_ratio: int | float | list[int | float] = None):
         self.fuel_type = fuel_type
         self.thruster_type = f'{self.fuel_type}Thruster'  # 'ChemicalThruster' or 'ElectricThruster'
         super().__init__(self.thruster_type, name)
@@ -672,7 +673,7 @@ class Thruster(GmatObject):
 
 class ChemicalThruster(Thruster):
     def __init__(self, name: str, tanks: str | gpy.ChemicalTank | gmat.ChemicalTank |
-                                         list[gpy.ChemicalTank] | list[gmat.ChemicalTank]):
+                 list[gpy.ChemicalTank] | list[gmat.ChemicalTank]):
         super().__init__('Chemical', name, tanks)
 
         self.Validate()
@@ -690,7 +691,7 @@ class ChemicalThruster(Thruster):
 
 class ElectricThruster(Thruster):
     def __init__(self, name: str, tanks: str | gpy.ElectricTank | gmat.ElectricTank |
-                                         list[gpy.ElectricTank] | list[gmat.ElectricTank]):
+                 list[gpy.ElectricTank] | list[gmat.ElectricTank]):
         super().__init__('Electric', name, tanks)
         self.Initialize()
 
@@ -721,4 +722,3 @@ class ElectricThruster(Thruster):
     #                 self._mix_ratio = mix_ratio
     #     else:
     #         raise SyntaxError('All elements of mix_ratio must be of type int')
-
