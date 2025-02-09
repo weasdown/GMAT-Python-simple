@@ -2,6 +2,10 @@
 examples/scripts/Tut*.script
 examples/tutorials/GmatAPILog.txt
 
+# Ignore config.py instances to avoid overwrite of example paths
+config.py
+examples/tutorials/config.py
+
 # Ensure repo version of load_gmat.py is always the example one.
 load_gmat.py
 
