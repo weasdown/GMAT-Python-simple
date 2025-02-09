@@ -14,21 +14,21 @@ log_path = os.path.normpath(f'{os.getcwd()}/examples/logs/GMAT-Tut02-Log.txt')
 gmat.UseLogFile(log_path)
 gmat.EchoLogFile(False)  # set to True to view log output in console (e.g. live iteration results)
 
-sat = gpy.Spacecraft('DefaultSC')
+sat: gpy.Spacecraft = gpy.Spacecraft('DefaultSC')
 
-prop = gpy.PropSetup('NonDefaultProp', gator=gpy.PropSetup.Propagator('RungeKutta89'),
+prop: gpy.PropSetup = gpy.PropSetup('NonDefaultProp', gator=gpy.PropSetup.Propagator('RungeKutta89'),
                      accuracy=9.999999999999999e-12)
 
-toi = gpy.ImpulsiveBurn('TOI')
-goi = gpy.ImpulsiveBurn('GOI')
+toi: gpy.ImpulsiveBurn = gpy.ImpulsiveBurn('TOI')
+goi: gpy.ImpulsiveBurn = gpy.ImpulsiveBurn('GOI')
 
-dc1 = gpy.DifferentialCorrector('DC1')
+dc1: gpy.DifferentialCorrector = gpy.DifferentialCorrector('DC1')
 
 print(f'Sat state before running: {sat.GetState()}')
 print(f"Epoch before running: {sat.GetField('Epoch')}")
 
 # Targeting sequence to adjust parameters of the two burns (TOI and GOI) to achieve desired final orbit
-tg1 = gpy.Target('Hohmann Transfer', dc1, exit_mode='SaveAndContinue', command_sequence=[
+tg1: gpy.Target = gpy.Target('Hohmann Transfer', dc1, exit_mode='SaveAndContinue', command_sequence=[
         # Vary the velocity of the TOI burn to achieve an apoapsis with RMAG = 42165 km
         gpy.Vary('Vary TOI', dc1, f'{toi.name}.Element1'),
         gpy.Maneuver('Perform TOI', toi, sat),
