@@ -1,6 +1,6 @@
 GMAT Build Date: Jan 10 2023 17:58:52
 
-GMAT API Log: Created Sun Feb  9 19:50:19 2025
+GMAT API Log: Created Sun Feb  9 20:05:32 2025
 
 
 Logging to C:\Users\weasd\dev\non-OH\GMAT\GMAT-Python-simple\examples\logs\GMAT-Tut02-Log.txt
@@ -91,6 +91,6 @@ Final Variable values:
 
 
 Mission run completed.
-===> Total Run Time: 0.158 seconds
+===> Total Run Time: 0.153 seconds
 
 ========================================
