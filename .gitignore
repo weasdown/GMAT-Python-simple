@@ -1,6 +1,9 @@
 # Avoid a commit every time tutorials are re-run and the run time changes slightly.
 examples/scripts/Tut*.script
 
+# Ensure repo version of load_gmat.py is always the example one.
+load_gmat.py
+
 # Created by https://www.toptal.com/developers/gitignore/api/python,pycharm,pycharm+all
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,pycharm,pycharm+all
 
