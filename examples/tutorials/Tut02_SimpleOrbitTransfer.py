@@ -2,6 +2,8 @@
 # Written by William Easdown Babb
 
 from __future__ import annotations
+import config  # Assumes there is a config.py file in the same folder as this tutorial (see README.md).
+
 from load_gmat import gmat
 import gmat_py_simple as gpy
 import os
