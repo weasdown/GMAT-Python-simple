@@ -1,5 +1,6 @@
-# Avoid a commit every time tutorials are re-run and the run time changes slightly.
+# Avoid a commit every time tutorials are re-run and the run files change slightly.
 examples/scripts/Tut*.script
+examples/tutorials/GmatAPILog.txt
 
 # Ensure repo version of load_gmat.py is always the example one.
 load_gmat.py
