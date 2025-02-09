@@ -2,9 +2,11 @@
 # Written by William Easdown Babb
 
 from __future__ import annotations
-import config  # Assumes there is a config.py file in the same folder as this tutorial (see README.md).
 
-from load_gmat import gmat
+# Assumes there is a config.py file in the same folder as this tutorial (see README.md).
+# This is only needed if not using PyCharm's "Add content roots to PYTHONPATH" option in your run configuration.
+from config import gmat
+
 import gmat_py_simple as gpy
 import os
 
