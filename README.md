@@ -6,6 +6,9 @@ Due to the wrapper's extensive use of classes and methods rather than strings, i
 
 **This wrapper requires Python 3.10-3.12. It does not yet work with Python 3.13.**
 
+## Getting Started
+To set up the wrapper and API correctly, please see the instructions in [plugins/API_setup.txt](plugins/API_setup.txt).
+
 ## Examples
 
 To demonstrate the wrapper, tutorials will be added to the [examples](https://github.com/weasdown/GMAT-Python-simple/tree/main/examples)/[tutorials](https://github.com/weasdown/GMAT-Python-simple/tree/main/examples/tutorials) directory as the required feature level is reached. These tutorials will match those distributed with GMAT by default (in the \[GMAT root]/samples folder) and will demonstrate the power of the wrapper to create missions using very little code.
