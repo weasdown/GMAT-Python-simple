@@ -18,6 +18,8 @@ sat_params = {
         'DateFormat': 'UTCGregorian',
         'Epoch': '18 Nov 2013 20:26:24.315',
         'DisplayStateType': 'Keplerian',
+
+        # FIXME: state elements getting slight differences when saved to script.
         'ECC': 1.202872548116186,
         'SMA': -32593.21599272774,  # km
         'INC': 28.80241266404144,  # degrees
@@ -33,7 +35,7 @@ main_tank = gpy.ChemicalTank('MainTank', fuel_mass=1718, allow_negative_fuel_mas
 sat.add_tanks(main_tank)
 
 # Setup ForceModels and Propagators
-near_earth_fm = gpy.ForceModel('NearEarthFM', primary_body='Earth',
+near_earth_fm = gpy.ForceModel('NearEarth_ForceModel', primary_body='Earth',
                                gravity_field=gpy.ForceModel.GravityField(degree=8, order=8),
                                point_masses=['Luna', 'Sun'],
                                srp=True)
@@ -41,7 +43,7 @@ near_earth = gpy.PropSetup('NearEarth',
                            gator=gpy.PropSetup.Propagator('RungeKutta89'), fm=near_earth_fm,
                            initial_step_size=600, accuracy=1e-13, min_step=0, max_step=600, max_step_attempts=50)
 
-deep_space_fm = gpy.ForceModel('DeepSpaceFM', central_body='Sun', primary_body='Sun',
+deep_space_fm = gpy.ForceModel('DeepSpace_ForceModel', central_body='Sun', primary_body='Sun',
                                point_masses=['Earth', 'Jupiter', 'Luna', 'Mars',
                                              'Neptune', 'Saturn', 'Sun', 'Uranus',
                                              'Venus'], srp=True)
@@ -50,7 +52,7 @@ deep_space = gpy.PropSetup('DeepSpace',
                            initial_step_size=600, accuracy=1e-12, min_step=0, max_step=864000, max_step_attempts=50)
 
 mars_gravity_file = f'{gmat.FileManager.Instance().GetRootPath()}data/gravity/mars/Mars50c.cof'
-near_mars_fm = gpy.ForceModel('NearMarsFM', central_body='Mars', primary_body='Mars',
+near_mars_fm = gpy.ForceModel('NearMars_ForceModel', central_body='Mars', primary_body='Mars',
                               gravity_field=gpy.ForceModel.GravityField(body='Mars', model='Mars-50C', degree=8,
                                                                         order=8, gravity_file=mars_gravity_file),
                               point_masses=['Sun'], srp=True)
@@ -62,12 +64,12 @@ near_mars = gpy.PropSetup('NearMars',
 mars_inertial = gpy.OrbitState.CoordinateSystem('MarsInertial', 'Mars', 'BodyInertial')
 
 # Setup ImpulsiveBurns
-tcm = gpy.ImpulsiveBurn('TCM', coord_sys={'CoordinateSystem': 'Local', 'Origin': 'Mars', 'Axes': 'VNB'},
+tcm = gpy.ImpulsiveBurn('TCM', coord_sys={'CoordinateSystem': 'Local', 'Origin': 'Earth', 'Axes': 'VNB'},
                         decrement_mass=True, tanks='MainTank')
 moi = gpy.ImpulsiveBurn('MOI', coord_sys={'CoordinateSystem': 'Local', 'Origin': 'Mars', 'Axes': 'VNB'},
                         decrement_mass=True, tanks='MainTank')
 
-dc1 = gpy.DifferentialCorrector('DC1')
+dc1 = gpy.DifferentialCorrector('DefaultDC')
 
 print(f'Sat state before running: {sat.GetState()}')
 print(f"Epoch before running: {sat.GetEpoch()}")
@@ -105,7 +107,7 @@ mcs = [
 
 gpy.RunMission(mcs)  # Run the mission
 
-print(f'Sat state after running: {sat.GetState(coord_sys=mars_inertial.name)}')
+print(f'Sat state after running: {sat.GetState()}')  # coord_sys=mars_inertial.name # TODO remove this comment
 print(f'Epoch after running: {sat.GetEpoch()}')
 
 script_path = os.path.normpath(f'{os.getcwd()}/examples/scripts/Tut04_Mars_B-Plane_Targeting.script')
