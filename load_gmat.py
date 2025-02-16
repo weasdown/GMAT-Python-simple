@@ -12,9 +12,9 @@ api_startup = 'api_startup_file.txt'
 
 # Absolute path to your root GMAT folder (below is just an example).
 # On Windows, be sure to use either double backslashes or single forward slashes.
-GmatInstall = 'C:/Users/[USERNAME]/dev/GMAT/gmat-win-R2022a/GMAT'
+gmat_install = 'C:/Users/[USERNAME]/dev/GMAT/gmat-win-R2022a/GMAT'
 
-gmat_bin_path = GmatInstall + '/bin'
+gmat_bin_path = gmat_install + '/bin'
 startup_file = f'{gmat_bin_path}/{api_startup}'
 
 if path.exists(startup_file):
