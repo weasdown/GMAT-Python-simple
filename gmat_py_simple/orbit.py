@@ -544,7 +544,8 @@ class OrbitState:
                      secondary: str = None, xaxis: str = None, yaxis: str = None, zaxis: str = None, epoch: str = None,
                      alignment_vec_x: int = None, alignment_vec_y: int = None, alignment_vec_z: int = None,
                      constraint_vec_x: int = None, constraint_vec_y: int = None, constraint_vec_z: int = None,
-                     constraint_ref_vec_x: int = None, constraint_ref_vec_y: int = None, constraint_ref_vec_z: int = None,
+                     constraint_ref_vec_x: int = None, constraint_ref_vec_y: int = None,
+                     constraint_ref_vec_z: int = None,
                      constraint_coord_sys: str = None, ref_object: str = None
                      ):
             # TODO: remove kwargs if possible, if not document as another 2do
@@ -607,7 +608,7 @@ class OrbitState:
                 raise AttributeError(f'Specified axes type "{axes}" is not recognized. Please specify one of the '
                                      f'following:\n\t{self.allowed_values["Axes"]}')
             else:
-                self.axes: str = axes
+                self.axes: OrbitState.CoordinateSystem.Axes = OrbitState.CoordinateSystem.Axes(axes, f'{origin}_{axes}')
                 if self.axes in list(self.allowed_values['AxesTypeSpecific'].keys()):
                     axes_specific_values = self.allowed_values['AxesTypeSpecific'][self.axes]
 
@@ -635,7 +636,6 @@ class OrbitState:
                         self.constraint_coord_sys = constraint_coord_sys
                         self.ref_object = ref_object
 
-            self.axes = OrbitState.CoordinateSystem.Axes(axes, f'{origin}_{axes}')
             self.SetRefObject(self.axes, gmat.AXIS_SYSTEM, self.axes.name)
 
             # gpy.Initialize()
