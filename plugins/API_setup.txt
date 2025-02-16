@@ -12,7 +12,7 @@ These instructions will help you setup GMAT's Python API, using its default conf
 
 5) Change the GmatInstall variable from <TopLevelGMATFolder> to the path for [GMAT], making sure you keep the quotes around it. You can get the [GMAT] path by going back to its File Explorer window, right clicking the address and the top and clicking Copy Address as Text. Then paste this between the quotes on the GmatInstall line of load_gmat.py.
 
-6) Python doesn't like the single backslashes that Windows puts in file addresses, so put an extra backslash in front of each existing one. The line should now read something like:
+6) If you're using Windows, Python doesn't like the single backslashes that Windows puts in file addresses, so put an extra backslash in front of each existing one (or swap them all for forward slashes). The line should now read something like:
 
 GmatInstall = "C:\\Users\\{username}\\Downloads\\gmat-win-R2022a\\GMAT"
 

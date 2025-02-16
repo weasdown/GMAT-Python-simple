@@ -7,9 +7,10 @@ from load_gmat import gmat
 import gmat_py_simple as gpy
 import os
 
-log_path = os.path.normpath(f'{os.getcwd()}/examples/logs/GMAT-Tut03-Log.txt')
-gmat.UseLogFile(log_path)
-gmat.EchoLogFile(False)  # set to True to view log output in console (e.g. live iteration results)
+# # Uncomment to enable logging
+# log_path = os.path.normpath(f'{os.getcwd()}/examples/logs/GMAT-Tut03-Log.txt')
+# gmat.UseLogFile(log_path)
+# gmat.EchoLogFile(False)  # set to True to view log output in console (e.g. live iteration results)
 
 sat_params = {
     'Name': 'DefaultSC',

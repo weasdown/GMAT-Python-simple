@@ -2,28 +2,30 @@
 #
 # Coded by D. Conway. Thinking Systems, Inc.
 #
-# This file is a template for files used run the GMAT API from a folder outside  
-# of the GMAT application folder.
+# This file is a template for files used run the GMAT API from a folder outside
+# the GMAT application folder.
 
 import sys
 from os import path
 
-apistartup = "api_startup_file.txt"
-GmatInstall = "C:\\Users\\weasd\\Desktop\\GMAT\\gmat-win-R2022a\\GMAT"
-GmatBinPath = GmatInstall + "/bin"
-Startup = GmatBinPath + "/" + apistartup
+api_startup = 'api_startup_file.txt'
 
-if path.exists(Startup):
-    print(f'Running GMAT in {GmatInstall}')
+# Absolute path to your root GMAT folder (below is just an example).
+# On Windows, be sure to use either double backslashes or single forward slashes.
+GmatInstall = 'C:/Users/[USERNAME]/dev/GMAT/gmat-win-R2022a/GMAT'
 
-    sys.path.insert(1, GmatBinPath)
+gmat_bin_path = GmatInstall + '/bin'
+startup_file = f'{gmat_bin_path}/{api_startup}'
+
+if path.exists(startup_file):
+
+    sys.path.insert(1, gmat_bin_path)
 
     import gmatpy as gmat
 
-    gmat.Setup(Startup)
+    gmat.Setup(startup_file)
 
 else:
-    print("Cannot find ", Startup)
-    print()
-    print("Please set up a GMAT startup file named ", apistartup, " in the ",
-          GmatBinPath, " folder.")
+    print(f'Cannot find {startup_file}\n'
+          f'\n'
+          f'Please set up a GMAT startup file named {api_startup} in the {gmat_bin_path} folder.')
