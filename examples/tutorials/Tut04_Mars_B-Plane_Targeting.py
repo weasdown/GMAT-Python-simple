@@ -49,7 +49,7 @@ deep_space = gpy.PropSetup('DeepSpace',
                            gator=gpy.PropSetup.Propagator('PrinceDormand78'), fm=deep_space_fm,
                            initial_step_size=600, accuracy=1e-12, min_step=0, max_step=864000, max_step_attempts=50)
 
-mars_gravity_file = f'{gmat.FileManager.Instance().GetRootPath()}data\\gravity\\mars\\Mars50c.cof'
+mars_gravity_file = f'{gmat.FileManager.Instance().GetRootPath()}data/gravity/mars/Mars50c.cof'
 near_mars_fm = gpy.ForceModel('NearMarsFM', central_body='Mars', primary_body='Mars',
                               gravity_field=gpy.ForceModel.GravityField(body='Mars', model='Mars-50C', degree=8,
                                                                         order=8, gravity_file=mars_gravity_file),
