@@ -50,7 +50,10 @@ class GmatObject:
         :param field:
         :return:
         """
-        return self.gmat_obj.GetField(field)
+        if field == 'Epoch':
+            return self.GetEpoch()
+        else:
+            return self.gmat_obj.GetField(field)
 
     def GetGeneratingString(self) -> str:
         """
