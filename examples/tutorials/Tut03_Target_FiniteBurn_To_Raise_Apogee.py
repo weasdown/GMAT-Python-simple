@@ -13,9 +13,10 @@ gmat.EchoLogFile(False)  # set to True to view log output in console (e.g. live 
 
 sat_params = {
     'Name': 'DefaultSC',
-    'Hardware': {'Tanks': {'chemical': [{'Name': 'ChemicalTank1'}], },
-                 'Thrusters': {'chemical': [{'Name': 'ChemicalThruster1', 'Tanks': 'ChemicalTank1'}]},
-                 }
+    'Hardware': {
+        'ChemicalTanks': [{'Name': 'ChemicalTank1'}, ],
+        'ChemicalThrusters': [{'Name': 'ChemicalThruster1', 'Tanks': 'ChemicalTank1'}, ],
+    }
 }
 sat = gpy.Spacecraft.from_dict(sat_params)
 
