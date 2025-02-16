@@ -1,0 +1,96 @@
+GMAT Build Date: Jan 10 2023 17:58:52
+
+GMAT API Log: Created Sun Feb  9 20:05:32 2025
+
+
+Logging to C:\Users\weasd\dev\non-OH\GMAT\GMAT-Python-simple\examples\logs\GMAT-Tut02-Log.txt
+Kernel C:/Users/weasd/OneDrive/Desktop/GMAT/gmat-win-R2022a/GMAT/data/planetary_ephem/spk/DE405AllPlanets.bsp has been loaded.
+Kernel C:\Users\weasd\OneDrive\Desktop\GMAT\gmat-win-R2022a\GMAT\data\planetary_coeff\SPICEPlanetaryConstantsKernel.tpc has been loaded.
+Kernel C:\Users\weasd\OneDrive\Desktop\GMAT\gmat-win-R2022a\GMAT\data\time\SPICELeapSecondKernel.tls has been loaded.
+Kernel C:\Users\weasd\OneDrive\Desktop\GMAT\gmat-win-R2022a\GMAT\data\planetary_coeff\SPICEEarthPredictedKernel.bpc has been loaded.
+Kernel C:\Users\weasd\OneDrive\Desktop\GMAT\gmat-win-R2022a\GMAT\data\planetary_coeff\SPICEEarthCurrentKernel.bpc has been loaded.
+Kernel C:\Users\weasd\OneDrive\Desktop\GMAT\gmat-win-R2022a\GMAT\data\planetary_coeff\earth_latest_high_prec.bpc has been loaded.
+Kernel C:\Users\weasd\OneDrive\Desktop\GMAT\gmat-win-R2022a\GMAT\data\planetary_coeff\SPICELunaCurrentKernel.bpc has been loaded.
+Kernel C:\Users\weasd\OneDrive\Desktop\GMAT\gmat-win-R2022a\GMAT\data\planetary_coeff\SPICELunaFrameKernel.tf has been loaded.
+Running mission...
+Successfully set Planetary Source to use: DE405
+Successfully set Planetary Source to use: DE405
+********************************************************
+*** Performing Differential Correction (using "DC1")
+*** 2 variables; 2 goals
+   Variables:  TOI.Element1, GOI.Element1
+   Goals:  DefaultSC.Earth.RMAG, DefaultSC.Earth.ECC
+   SolverMode:  Solve
+********************************************************
+DC1 Iteration 1; Nominal Pass
+   Variables:  TOI.Element1 = 1, GOI.Element1 = 1
+   Goals and achieved values:
+      DefaultSC.Earth.RMAG  Desired: 42164.169  Achieved: 13335.3198453  Variance: 28828.8491547
+      DefaultSC.Earth.ECC  Desired: 0.005  Achieved: 0.026509250118  Variance: -0.021509250118
+
+   Completed iteration 1, pert 1 (TOI.Element1 = 1.0001)
+   Completed iteration 1, pert 2 (GOI.Element1 = 1.0001)
+
+DC1 Iteration 2; Nominal Pass
+   Variables:  TOI.Element1 = 1.30890884342, GOI.Element1 = 1.2
+   Goals and achieved values:
+      DefaultSC.Earth.RMAG  Desired: 42164.169  Achieved: 16611.1925425  Variance: 25552.9764575
+      DefaultSC.Earth.ECC  Desired: 0.005  Achieved: 0.0311717006342  Variance: -0.0261717006342
+
+   Completed iteration 2, pert 1 (TOI.Element1 = 1.30900884342)
+   Completed iteration 2, pert 2 (GOI.Element1 = 1.2001)
+
+DC1 Iteration 3; Nominal Pass
+   Variables:  TOI.Element1 = 1.69495556208, GOI.Element1 = 1.4
+   Goals and achieved values:
+      DefaultSC.Earth.RMAG  Desired: 42164.169  Achieved: 22858.4095157  Variance: 19305.7594843
+      DefaultSC.Earth.ECC  Desired: 0.005  Achieved: 0.0412477108409  Variance: -0.0362477108409
+
+   Completed iteration 3, pert 1 (TOI.Element1 = 1.69505556208)
+   Completed iteration 3, pert 2 (GOI.Element1 = 1.4001)
+
+DC1 Iteration 4; Nominal Pass
+   Variables:  TOI.Element1 = 2.19495556208, GOI.Element1 = 1.54050270339
+   Goals and achieved values:
+      DefaultSC.Earth.RMAG  Desired: 42164.169  Achieved: 39595.8471393  Variance: 2568.3218607
+      DefaultSC.Earth.ECC  Desired: 0.005  Achieved: 0.0691430880227  Variance: -0.0641430880227
+
+   Completed iteration 4, pert 1 (TOI.Element1 = 2.19505556208)
+   Completed iteration 4, pert 2 (GOI.Element1 = 1.54060270339)
+
+DC1 Iteration 5; Nominal Pass
+   Variables:  TOI.Element1 = 2.24287068902, GOI.Element1 = 1.44008710484
+   Goals and achieved values:
+      DefaultSC.Earth.RMAG  Desired: 42164.169  Achieved: 42320.6173622  Variance: -156.448362194
+      DefaultSC.Earth.ECC  Desired: 0.005  Achieved: 0.00467895028646  Variance: 0.000321049713541
+
+   Completed iteration 5, pert 1 (TOI.Element1 = 2.24297068902)
+   Completed iteration 5, pert 2 (GOI.Element1 = 1.44018710484)
+
+DC1 Iteration 6; Nominal Pass
+   Variables:  TOI.Element1 = 2.24027813144, GOI.Element1 = 1.44064572815
+   Goals and achieved values:
+      DefaultSC.Earth.RMAG  Desired: 42164.169  Achieved: 42164.7037824  Variance: -0.534782356684
+      DefaultSC.Earth.ECC  Desired: 0.005  Achieved: 0.00500200713846  Variance: -2.00713845502e-06
+
+   Completed iteration 6, pert 1 (TOI.Element1 = 2.24037813144)
+   Completed iteration 6, pert 2 (GOI.Element1 = 1.44074572815)
+
+DC1 Iteration 7; Nominal Pass
+   Variables:  TOI.Element1 = 2.24026921075, GOI.Element1 = 1.44064285825
+   Goals and achieved values:
+      DefaultSC.Earth.RMAG  Desired: 42164.169  Achieved: 42164.1690739  Variance: -7.39484166843e-05
+      DefaultSC.Earth.ECC  Desired: 0.005  Achieved: 0.00500000041126  Variance: -4.11264688104e-10
+
+
+*** Targeting Completed in 7 iterations.
+*** The Targeter converged!
+Final Variable values:
+   TOI.Element1 = 2.24026921075
+   GOI.Element1 = 1.44064285825
+
+
+Mission run completed.
+===> Total Run Time: 0.153 seconds
+
+========================================
