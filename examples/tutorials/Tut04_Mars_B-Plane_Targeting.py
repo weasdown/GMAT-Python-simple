@@ -108,7 +108,7 @@ mcs = [
 gpy.RunMission(mcs)  # Run the mission
 
 print(f'Sat state after running: {sat.GetState()}')  # coord_sys=mars_inertial.name # TODO remove this comment
-print(f'Epoch after running: {sat.GetEpoch()}')
+print(f'Epoch after running: {sat.GetEpoch()}')  # UTC format
 
 script_path = os.path.normpath(f'{os.getcwd()}/examples/scripts/Tut04_Mars_B-Plane_Targeting.script')
 gmat.SaveScript(script_path)
