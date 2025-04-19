@@ -6,6 +6,8 @@ examples/tutorials/GmatAPILog.txt
 config.py
 examples/tutorials/config.py
 
+GmatAPILog.txt
+
 # Ensure repo version of load_gmat.py is always the example one.
 load_gmat.py
 
