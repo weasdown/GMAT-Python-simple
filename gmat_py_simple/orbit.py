@@ -805,6 +805,10 @@ class OrbitState:
 
         # TODO parse orbit params in orbit_dict
 
+        # TODO remove commented chunk
+        # if orbit_dict.get('ECC', 0) > 1.0 and orbit_dict.get('SMA', 0) > 0:
+        #     print('Warning: Eccentricity is greater than 1.0 while SMA is positive.')
+
         for attr in orbit_dict:  # initialize other key attrs to None
             if attr[0].islower():
                 raise SyntaxError(f'Invalid attribute found - {attr}. Must be in GMAT string format')
