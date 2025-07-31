@@ -1,24 +1,27 @@
-import sys
-from os import path
+from load_gmat import gmat
 
-apistartup = "gmat_startup_file.txt"
-GmatInstall = r"D:\GMAT\gmat-win-R2025a\GMAT_R2025a"
-GmatBinPath = GmatInstall + "/bin"
-Startup = GmatBinPath + "/" + apistartup
-
-if path.exists(Startup):
-print(f'Running GMAT in {GmatInstall}')
-
-sys.path.insert(1, GmatBinPath)
-
-import gmatpy as gmat
-
-gmat.Setup(Startup)
-else:
-print("Cannot find ", Startup)
-print()
-print("Please set up a GMAT startup file named ", apistartup, " in the ",
-GmatBinPath, " folder.")
+# # The import code below is unnecessary if you instead have that in a file called load_gmat
+# import sys
+# from os import path
+#
+# apistartup = "gmat_startup_file.txt"
+# GmatInstall = r"D:\GMAT\gmat-win-R2025a\GMAT_R2025a"
+# GmatBinPath = GmatInstall + "/bin"
+# Startup = GmatBinPath + "/" + apistartup
+#
+# if path.exists(Startup):
+#     print(f'Running GMAT in {GmatInstall}')
+#
+#     sys.path.insert(1, GmatBinPath)
+#
+#     import gmatpy as gmat
+#
+#     gmat.Setup(Startup)
+# else:
+#     print("Cannot find ", Startup)
+#     print()
+#     print("Please set up a GMAT startup file named ", apistartup, " in the ",
+#           GmatBinPath, " folder.")
 
 sat = gmat.Construct("Spacecraft", "LNSS_Sat1")
 sat.SetField("DateFormat", "UTCGregorian")
@@ -37,8 +40,19 @@ sat.SetField("SRPArea", 1.5)
 sat.SetField("Cd", 2.2)
 sat.SetField("DragArea", 1.0)
 
-cs = gmat.Construct("CoordinateSystem", "LunaMJ2000Eq")
-cs.SetField("Origin", "Luna")
-cs.SetField("Axes", "MJ2000Eq")
+# # The CoordinateSystem part is commented out as it causes an error if you try to call gmat.Initialize():
+# # "gmatpy._py311.gmat_py.APIException: GmatBase Exception Thrown: Cannot initialize NULL axes of CoordinateSystem "LunaMJ2000Eq""
+# cs = gmat.Construct("CoordinateSystem", "LunaMJ2000Eq")
+# cs.SetField("Origin", "Luna")
+# cs.SetField("Axes", "MJ2000Eq")
 
 gds = gmat.Construct("GroundStation", "GroundStation1")
+
+gmat.Initialize()
+
+gmat.Help('GroundStation1')
+
+gmat.Initialize()
+
+print('\nAll objects:')
+gmat.ShowObjects()
