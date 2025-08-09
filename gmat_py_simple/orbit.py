@@ -606,22 +606,21 @@ class OrbitState:
                 raise AttributeError(f'Specified axes type "{axes}" is not recognized. Please specify one of the '
                                      f'following:\n\t{self.allowed_values["Axes"]}')
             else:
-                self.axes: str = axes
-                if self.axes in list(self.allowed_values['AxesTypeSpecific'].keys()):
-                    axes_specific_values = self.allowed_values['AxesTypeSpecific'][self.axes]
+                if axes in list(self.allowed_values['AxesTypeSpecific'].keys()):
+                    axes_specific_values = self.allowed_values['AxesTypeSpecific'][axes]
 
                     # TODO set params/ref objs for all axes types
-                    if self.axes == 'ObjectReferenced':
+                    if axes == 'ObjectReferenced':
                         self.primary = primary
                         self.secondary = secondary
                         self.xaxis = xaxis
                         self.yaxis = yaxis
                         self.zaxis = zaxis
 
-                    elif self.axes == 'TOE' or self.axes == 'MOE':
+                    elif (axes == 'TOE') or (axes == 'MOE'):
                         self.epoch = epoch
 
-                    elif self.axes == 'LocalAlignedConstrained':
+                    elif axes == 'LocalAlignedConstrained':
                         self.alignment_vec_x = alignment_vec_x
                         self.alignment_vec_y = alignment_vec_y
                         self.alignment_vec_z = alignment_vec_z
