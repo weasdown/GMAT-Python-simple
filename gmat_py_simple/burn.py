@@ -142,6 +142,7 @@ class ImpulsiveBurn(Burn):
                     self.origin_name: str = self.origin_body.GetName()
                     self.axes: gpy.OrbitState.CoordinateSystem.Axes = coord_sys_new.axes
                     self.axes_name: str = self.axes.name
+
                 elif isinstance(coord_sys_new, gmat.CoordinateSystem):
                     # coord_sys is of type gmat.CoordinateSystem
                     self.origin_name: str = coord_sys_new.GetField('Origin')
