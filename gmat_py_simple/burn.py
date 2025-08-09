@@ -105,8 +105,8 @@ class ImpulsiveBurn(Burn):
         # Get default coordinate system from GMAT object
         self.coord_sys_name = self.GetStringParameter('CoordinateSystem')
         self.origin: str = self.GetStringParameter('Origin')
-        self.axes: str = self.GetStringParameter('Axes')
         self.origin = self.GetStringParameter('Origin')
+        self.axes_name: str = self.GetStringParameter('Axes')
 
         # Update coordinate system if user has supplied one
         if coord_sys is not None:
