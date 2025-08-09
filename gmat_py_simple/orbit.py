@@ -653,7 +653,7 @@ class OrbitState:
             sc_cs_gmat_obj = sc.gmat_obj.GetRefObject(150, name)
             origin = sc_cs_gmat_obj.GetField('Origin')
             axes = sc_cs_gmat_obj.GetField('Axes')
-            coord_sys = cls(name=name, origin=origin, axes=axes, no_gmat_object=True)
+            coord_sys: OrbitState.CoordinateSystem = cls(name=name, origin=origin, axes=axes)
             return coord_sys
 
         @property
