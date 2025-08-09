@@ -104,8 +104,8 @@ class ImpulsiveBurn(Burn):
 
         # Get default coordinate system from GMAT object
         self.coord_sys_name = self.GetStringParameter('CoordinateSystem')
-        self.origin: str = self.GetStringParameter('Origin')
-        self.origin = self.GetStringParameter('Origin')
+        self.origin_name: str = self.GetStringParameter('Origin')
+        self.origin_body: gmat.Planet = None
         self.axes_name: str = self.GetStringParameter('Axes')
 
         # Update coordinate system if user has supplied one
@@ -135,7 +135,8 @@ class ImpulsiveBurn(Burn):
 
                 # Extract celestial body (e.g. Earth) and axes (e.g. MJ2000Eq) from CoordinateSystem
                 if isinstance(coord_sys_new, gpy.OrbitState.CoordinateSystem):
-                    self.origin: gmat.Planet = coord_sys_new.origin  # obj for celestial body at coord sys origin
+                    self.origin_body: gmat.Planet = coord_sys_new.origin  # obj for celestial body at coord sys origin
+                    self.origin_name: str = self.origin_body.GetName()
                     self.axes: gpy.OrbitState.CoordinateSystem.Axes = coord_sys_new.axes
                     self.axes_name: str = self.axes.name
                 elif isinstance(coord_sys_new, gmat.CoordinateSystem):
@@ -152,10 +153,11 @@ class ImpulsiveBurn(Burn):
 
                 # Attach CoordinateSystem's celestial body (Origin) to the ImpulsiveBurn
                 self.SetStringParameter(2, self.origin_name)  # 1 for CS, 2 for Origin, 3 for Axes
-                self.SetRefObject(self.origin, gmat.CELESTIAL_BODY, self.origin_name)
+                self.SetRefObject(self.origin_body, gmat.CELESTIAL_BODY, self.origin_name)
 
-                # Attach CoordinateSystem's Axes to the ImpulsiveBurn
-                self.SetStringParameter(3, self.axes_name)  # 1 for CS, 2 for Origin, 3 for Axes
+                # Attach CoordinateSystem's Axes to the ImpulsiveBurn. param is 1 for CS, 2 for Origin, 3 for Axes
+                self.SetStringParameter(3, self.axes_name.replace('_', '').replace(self.origin_name,
+                                                                                   ''))
 
             else:
                 raise TypeError(f'CoordinateSystem type "{type(coord_sys).__name__}" not recognized in '
