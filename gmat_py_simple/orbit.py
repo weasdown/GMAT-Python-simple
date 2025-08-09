@@ -262,7 +262,7 @@ class ForceModel(GmatObject):
         # TODO: use fact that PrimaryBody is alias for GravityField - in init call GravityField.__init__
         def __init__(self, fm: ForceModel, body: str = 'Earth',
                      gravity: ForceModel.GravityField = None,
-                     drag: ForceModel.DragForce | False = False):
+                     drag: ForceModel.DragForce | bool = False):
             self._force_model = fm
             self._body = body if body else self._force_model.central_body
             self._gravity = gravity if gravity else ForceModel.GravityField()
