@@ -130,6 +130,9 @@ class ImpulsiveBurn(Burn):
             elif isinstance(coord_sys,
                             gpy.OrbitState.CoordinateSystem | gmat.CoordinateSystem):  # coord_sys is a wrapper or GMAT CoordinateSystem object
                 coord_sys.Initialize()
+
+                # Below avoids false positive type hint warning in PyCharm 2025.2.
+                # noinspection PyTypeHints
                 coord_sys_new: gpy.OrbitState.CoordinateSystem | gmat.CoordinateSystem = coord_sys
                 self.coord_sys_name = coord_sys_new.GetName()
 
