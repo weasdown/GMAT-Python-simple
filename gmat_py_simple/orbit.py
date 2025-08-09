@@ -633,7 +633,7 @@ class OrbitState:
                         self.constraint_coord_sys = constraint_coord_sys
                         self.ref_object = ref_object
 
-            self.axes = OrbitState.CoordinateSystem.Axes(axes, f'{origin}_{axes}')
+            self.axes: OrbitState.CoordinateSystem.Axes = OrbitState.CoordinateSystem.Axes(axes, f'{origin}_{axes}')
             self.SetRefObject(self.axes, gmat.AXIS_SYSTEM, self.axes.name)
 
             # gpy.Initialize()
