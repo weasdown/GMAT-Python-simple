@@ -1,5 +1,5 @@
 %General Mission Analysis Tool(GMAT) Script
-%Created: 2024-01-19 14:31:25
+%Created: 2025-08-09 21:24:21
 
 
 %----------------------------------------
@@ -7,109 +7,109 @@
 %----------------------------------------
 
 Create Spacecraft ExampleSat;
-GMAT ExampleSat.DateFormat = UTCGregorian;
-GMAT ExampleSat.Epoch = '01 Jan 2000 12:00:00.000';
-GMAT ExampleSat.CoordinateSystem = EarthMJ2000Eq;
-GMAT ExampleSat.DisplayStateType = Keplerian;
-GMAT ExampleSat.SMA = 83474.31799999907;
-GMAT ExampleSat.ECC = 0.8965199999999991;
-GMAT ExampleSat.INC = 12.4606;
-GMAT ExampleSat.RAAN = 292.8362;
-GMAT ExampleSat.AOP = 218.9805;
-GMAT ExampleSat.TA = 181.0000000000006;
-GMAT ExampleSat.DryMass = 850;
-GMAT ExampleSat.Cd = 2.2;
-GMAT ExampleSat.Cr = 1.8;
-GMAT ExampleSat.DragArea = 15;
-GMAT ExampleSat.SRPArea = 1;
-GMAT ExampleSat.SPADDragScaleFactor = 1;
-GMAT ExampleSat.SPADSRPScaleFactor = 1;
-GMAT ExampleSat.AtmosDensityScaleFactor = 1;
-GMAT ExampleSat.ExtendedMassPropertiesModel = 'None';
-GMAT ExampleSat.NAIFId = -10000001;
-GMAT ExampleSat.NAIFIdReferenceFrame = -9000001;
-GMAT ExampleSat.OrbitColor = Red;
-GMAT ExampleSat.TargetColor = Teal;
-GMAT ExampleSat.OrbitErrorCovariance = [ 1e+70 0 0 0 0 0 ; 0 1e+70 0 0 0 0 ; 0 0 1e+70 0 0 0 ; 0 0 0 1e+70 0 0 ; 0 0 0 0 1e+70 0 ; 0 0 0 0 0 1e+70 ];
-GMAT ExampleSat.CdSigma = 1e+70;
-GMAT ExampleSat.CrSigma = 1e+70;
-GMAT ExampleSat.Id = 'SatId';
-GMAT ExampleSat.Attitude = CoordinateSystemFixed;
-GMAT ExampleSat.SPADSRPInterpolationMethod = Bilinear;
-GMAT ExampleSat.SPADSRPScaleFactorSigma = 1e+70;
-GMAT ExampleSat.SPADDragInterpolationMethod = Bilinear;
-GMAT ExampleSat.SPADDragScaleFactorSigma = 1e+70;
-GMAT ExampleSat.AtmosDensityScaleFactorSigma = 1e+70;
-GMAT ExampleSat.ModelFile = 'aura.3ds';
-GMAT ExampleSat.ModelOffsetX = 0;
-GMAT ExampleSat.ModelOffsetY = 0;
-GMAT ExampleSat.ModelOffsetZ = 0;
-GMAT ExampleSat.ModelRotationX = 0;
-GMAT ExampleSat.ModelRotationY = 0;
-GMAT ExampleSat.ModelRotationZ = 0;
-GMAT ExampleSat.ModelScale = 1;
-GMAT ExampleSat.AttitudeDisplayStateType = 'Quaternion';
-GMAT ExampleSat.AttitudeRateDisplayStateType = 'AngularVelocity';
-GMAT ExampleSat.AttitudeCoordinateSystem = EarthMJ2000Eq;
-GMAT ExampleSat.EulerAngleSequence = '321';
+ExampleSat.DateFormat = UTCGregorian;
+ExampleSat.Epoch = '01 Jan 2000 12:00:00.000';
+ExampleSat.CoordinateSystem = EarthMJ2000Eq;
+ExampleSat.DisplayStateType = Keplerian;
+ExampleSat.SMA = 83474.31799999907;
+ExampleSat.ECC = 0.8965199999999991;
+ExampleSat.INC = 12.4606;
+ExampleSat.RAAN = 292.8362;
+ExampleSat.AOP = 218.9805;
+ExampleSat.TA = 181.0000000000006;
+ExampleSat.DryMass = 850;
+ExampleSat.Cd = 2.2;
+ExampleSat.Cr = 1.8;
+ExampleSat.DragArea = 15;
+ExampleSat.SRPArea = 1;
+ExampleSat.SPADDragScaleFactor = 1;
+ExampleSat.SPADSRPScaleFactor = 1;
+ExampleSat.AtmosDensityScaleFactor = 1;
+ExampleSat.ExtendedMassPropertiesModel = 'None';
+ExampleSat.NAIFId = -10000001;
+ExampleSat.NAIFIdReferenceFrame = -9000001;
+ExampleSat.OrbitColor = Red;
+ExampleSat.TargetColor = Teal;
+ExampleSat.OrbitErrorCovariance = [ 1e+70 0 0 0 0 0 ; 0 1e+70 0 0 0 0 ; 0 0 1e+70 0 0 0 ; 0 0 0 1e+70 0 0 ; 0 0 0 0 1e+70 0 ; 0 0 0 0 0 1e+70 ];
+ExampleSat.CdSigma = 1e+70;
+ExampleSat.CrSigma = 1e+70;
+ExampleSat.Id = 'SatId';
+ExampleSat.Attitude = CoordinateSystemFixed;
+ExampleSat.SPADSRPInterpolationMethod = Bilinear;
+ExampleSat.SPADSRPScaleFactorSigma = 1e+70;
+ExampleSat.SPADDragInterpolationMethod = Bilinear;
+ExampleSat.SPADDragScaleFactorSigma = 1e+70;
+ExampleSat.AtmosDensityScaleFactorSigma = 1e+70;
+ExampleSat.ModelFile = 'aura.3ds';
+ExampleSat.ModelOffsetX = 0;
+ExampleSat.ModelOffsetY = 0;
+ExampleSat.ModelOffsetZ = 0;
+ExampleSat.ModelRotationX = 0;
+ExampleSat.ModelRotationY = 0;
+ExampleSat.ModelRotationZ = 0;
+ExampleSat.ModelScale = 1;
+ExampleSat.AttitudeDisplayStateType = 'Quaternion';
+ExampleSat.AttitudeRateDisplayStateType = 'AngularVelocity';
+ExampleSat.AttitudeCoordinateSystem = EarthMJ2000Eq;
+ExampleSat.EulerAngleSequence = '321';
 
 %----------------------------------------
 %---------- ForceModels
 %----------------------------------------
 
 Create ForceModel LowEarthProp_ForceModel;
-GMAT LowEarthProp_ForceModel.CentralBody = Earth;
-GMAT LowEarthProp_ForceModel.PrimaryBodies = {Earth};
-GMAT LowEarthProp_ForceModel.PointMasses = {Luna, Sun};
-GMAT LowEarthProp_ForceModel.SRP = On;
-GMAT LowEarthProp_ForceModel.RelativisticCorrection = Off;
-GMAT LowEarthProp_ForceModel.ErrorControl = RSSStep;
-GMAT LowEarthProp_ForceModel.GravityField.Earth.Degree = 10;
-GMAT LowEarthProp_ForceModel.GravityField.Earth.Order = 10;
-GMAT LowEarthProp_ForceModel.GravityField.Earth.StmLimit = 100;
-GMAT LowEarthProp_ForceModel.GravityField.Earth.PotentialFile = 'JGM2.cof';
-GMAT LowEarthProp_ForceModel.GravityField.Earth.TideModel = 'None';
-GMAT LowEarthProp_ForceModel.SRP.Flux = 1367;
-GMAT LowEarthProp_ForceModel.SRP.SRPModel = Spherical;
-GMAT LowEarthProp_ForceModel.SRP.Nominal_Sun = 149597870.691;
-GMAT LowEarthProp_ForceModel.Drag.AtmosphereModel = JacchiaRoberts;
-GMAT LowEarthProp_ForceModel.Drag.HistoricWeatherSource = 'ConstantFluxAndGeoMag';
-GMAT LowEarthProp_ForceModel.Drag.PredictedWeatherSource = 'ConstantFluxAndGeoMag';
-GMAT LowEarthProp_ForceModel.Drag.CSSISpaceWeatherFile = 'SpaceWeather-All-v1.2.txt';
-GMAT LowEarthProp_ForceModel.Drag.SchattenFile = 'SchattenPredict.txt';
-GMAT LowEarthProp_ForceModel.Drag.F107 = 150;
-GMAT LowEarthProp_ForceModel.Drag.F107A = 150;
-GMAT LowEarthProp_ForceModel.Drag.MagneticIndex = 3;
-GMAT LowEarthProp_ForceModel.Drag.SchattenErrorModel = 'Nominal';
-GMAT LowEarthProp_ForceModel.Drag.SchattenTimingModel = 'NominalCycle';
-GMAT LowEarthProp_ForceModel.Drag.DragModel = 'Spherical';
+LowEarthProp_ForceModel.CentralBody = Earth;
+LowEarthProp_ForceModel.PrimaryBodies = {Earth};
+LowEarthProp_ForceModel.PointMasses = {Luna, Sun};
+LowEarthProp_ForceModel.SRP = On;
+LowEarthProp_ForceModel.RelativisticCorrection = Off;
+LowEarthProp_ForceModel.ErrorControl = RSSStep;
+LowEarthProp_ForceModel.GravityField.Earth.Degree = 10;
+LowEarthProp_ForceModel.GravityField.Earth.Order = 10;
+LowEarthProp_ForceModel.GravityField.Earth.StmLimit = 100;
+LowEarthProp_ForceModel.GravityField.Earth.PotentialFile = 'JGM2.cof';
+LowEarthProp_ForceModel.GravityField.Earth.TideModel = 'None';
+LowEarthProp_ForceModel.SRP.Flux = 1367;
+LowEarthProp_ForceModel.SRP.SRPModel = Spherical;
+LowEarthProp_ForceModel.SRP.Nominal_Sun = 149597870.691;
+LowEarthProp_ForceModel.Drag.AtmosphereModel = JacchiaRoberts;
+LowEarthProp_ForceModel.Drag.HistoricWeatherSource = 'ConstantFluxAndGeoMag';
+LowEarthProp_ForceModel.Drag.PredictedWeatherSource = 'ConstantFluxAndGeoMag';
+LowEarthProp_ForceModel.Drag.CSSISpaceWeatherFile = 'SpaceWeather-All-v1.2.txt';
+LowEarthProp_ForceModel.Drag.SchattenFile = 'SchattenPredict.txt';
+LowEarthProp_ForceModel.Drag.F107 = 150;
+LowEarthProp_ForceModel.Drag.F107A = 150;
+LowEarthProp_ForceModel.Drag.MagneticIndex = 3;
+LowEarthProp_ForceModel.Drag.SchattenErrorModel = 'Nominal';
+LowEarthProp_ForceModel.Drag.SchattenTimingModel = 'NominalCycle';
+LowEarthProp_ForceModel.Drag.DragModel = 'Spherical';
 
 %----------------------------------------
 %---------- Propagators
 %----------------------------------------
 
 Create Propagator LowEarthProp;
-GMAT LowEarthProp.FM = LowEarthProp_ForceModel;
-GMAT LowEarthProp.Type = RungeKutta89;
-GMAT LowEarthProp.InitialStepSize = 60;
-GMAT LowEarthProp.Accuracy = 9.999999999999999e-12;
-GMAT LowEarthProp.MinStep = 0.001;
-GMAT LowEarthProp.MaxStep = 2700;
-GMAT LowEarthProp.MaxStepAttempts = 50;
-GMAT LowEarthProp.StopIfAccuracyIsViolated = true;
+LowEarthProp.FM = LowEarthProp_ForceModel;
+LowEarthProp.Type = RungeKutta89;
+LowEarthProp.InitialStepSize = 60;
+LowEarthProp.Accuracy = 9.999999999999999e-12;
+LowEarthProp.MinStep = 0;
+LowEarthProp.MaxStep = 2700;
+LowEarthProp.MaxStepAttempts = 50;
+LowEarthProp.StopIfAccuracyIsViolated = true;
 
 %----------------------------------------
 %---------- Burns
 %----------------------------------------
 
 Create ImpulsiveBurn IB1;
-GMAT IB1.CoordinateSystem = EarthMJ2000Eq;
-GMAT IB1.Element1 = 0.2;
-GMAT IB1.Element2 = 0;
-GMAT IB1.Element3 = 0;
-GMAT IB1.DecrementMass = false;
-GMAT IB1.Isp = 300;
-GMAT IB1.GravitationalAccel = 9.81;
+IB1.CoordinateSystem = EarthMJ2000Eq;
+IB1.Element1 = 0.2;
+IB1.Element2 = 0;
+IB1.Element3 = 0;
+IB1.DecrementMass = false;
+IB1.Isp = 300;
+IB1.GravitationalAccel = 9.81;
 
 
 %----------------------------------------

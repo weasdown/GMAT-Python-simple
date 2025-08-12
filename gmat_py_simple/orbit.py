@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import gmat_py_simple
 from load_gmat import gmat
 
-import gmat_py_simple as gpy
 from gmat_py_simple.basics import GmatObject
 from gmat_py_simple.utils import *
 
@@ -264,7 +262,7 @@ class ForceModel(GmatObject):
         # TODO: use fact that PrimaryBody is alias for GravityField - in init call GravityField.__init__
         def __init__(self, fm: ForceModel, body: str = 'Earth',
                      gravity: ForceModel.GravityField = None,
-                     drag: ForceModel.DragForce | False = False):
+                     drag: ForceModel.DragForce | bool = False):
             self._force_model = fm
             self._body = body if body else self._force_model.central_body
             self._gravity = gravity if gravity else ForceModel.GravityField()
@@ -544,7 +542,8 @@ class OrbitState:
                      secondary: str = None, xaxis: str = None, yaxis: str = None, zaxis: str = None, epoch: str = None,
                      alignment_vec_x: int = None, alignment_vec_y: int = None, alignment_vec_z: int = None,
                      constraint_vec_x: int = None, constraint_vec_y: int = None, constraint_vec_z: int = None,
-                     constraint_ref_vec_x: int = None, constraint_ref_vec_y: int = None, constraint_ref_vec_z: int = None,
+                     constraint_ref_vec_x: int = None, constraint_ref_vec_y: int = None,
+                     constraint_ref_vec_z: int = None,
                      constraint_coord_sys: str = None, ref_object: str = None
                      ):
             # TODO: remove kwargs if possible, if not document as another 2do
@@ -607,22 +606,21 @@ class OrbitState:
                 raise AttributeError(f'Specified axes type "{axes}" is not recognized. Please specify one of the '
                                      f'following:\n\t{self.allowed_values["Axes"]}')
             else:
-                self.axes: str = axes
-                if self.axes in list(self.allowed_values['AxesTypeSpecific'].keys()):
-                    axes_specific_values = self.allowed_values['AxesTypeSpecific'][self.axes]
+                if axes in list(self.allowed_values['AxesTypeSpecific'].keys()):
+                    axes_specific_values = self.allowed_values['AxesTypeSpecific'][axes]
 
                     # TODO set params/ref objs for all axes types
-                    if self.axes == 'ObjectReferenced':
+                    if axes == 'ObjectReferenced':
                         self.primary = primary
                         self.secondary = secondary
                         self.xaxis = xaxis
                         self.yaxis = yaxis
                         self.zaxis = zaxis
 
-                    elif self.axes == 'TOE' or self.axes == 'MOE':
+                    elif (axes == 'TOE') or (axes == 'MOE'):
                         self.epoch = epoch
 
-                    elif self.axes == 'LocalAlignedConstrained':
+                    elif axes == 'LocalAlignedConstrained':
                         self.alignment_vec_x = alignment_vec_x
                         self.alignment_vec_y = alignment_vec_y
                         self.alignment_vec_z = alignment_vec_z
@@ -635,7 +633,7 @@ class OrbitState:
                         self.constraint_coord_sys = constraint_coord_sys
                         self.ref_object = ref_object
 
-            self.axes = OrbitState.CoordinateSystem.Axes(axes, f'{origin}_{axes}')
+            self.axes: OrbitState.CoordinateSystem.Axes = OrbitState.CoordinateSystem.Axes(axes, f'{origin}_{axes}')
             self.SetRefObject(self.axes, gmat.AXIS_SYSTEM, self.axes.name)
 
             # gpy.Initialize()
@@ -655,7 +653,7 @@ class OrbitState:
             sc_cs_gmat_obj = sc.gmat_obj.GetRefObject(150, name)
             origin = sc_cs_gmat_obj.GetField('Origin')
             axes = sc_cs_gmat_obj.GetField('Axes')
-            coord_sys = cls(name=name, origin=origin, axes=axes, no_gmat_object=True)
+            coord_sys: OrbitState.CoordinateSystem = cls(name=name, origin=origin, axes=axes)
             return coord_sys
 
         @property
