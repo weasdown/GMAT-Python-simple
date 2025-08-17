@@ -1,3 +1,5 @@
+from .import_lib import gmat_path
+
 from .api_funcs import *
 from .basics import *
 from .burn import *
