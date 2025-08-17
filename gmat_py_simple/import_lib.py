@@ -22,10 +22,4 @@ def _gmat_path_from_config_file() -> str:
     raise NotImplementedError
 
 
-# TODO remove prints (debugging only)
-print('Attempting to import...')
-
 gmat_path: str = _gmat_path()
-print(f'GMAT found at {gmat_path}')
-
-print('\nImport complete!')
