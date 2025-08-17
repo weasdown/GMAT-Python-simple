@@ -2,6 +2,9 @@ from .import_lib import gmat_path
 
 from .load_gmat import *
 
+# GMAT's built-in library that interfaces to GMAT's source code.
+gmat: types.ModuleType = load_gmat.gmat
+
 from .api_funcs import *
 from .basics import *
 from .burn import *
