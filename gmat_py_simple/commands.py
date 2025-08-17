@@ -1,8 +1,7 @@
 from __future__ import annotations
 from math import pi
 
-# from load_gmat import gmat
-from gmat_py_simple.load_gmat import gmat
+from gmat_py_simple import gmat
 
 import gmat_py_simple as gpy
 from gmat_py_simple.utils import *

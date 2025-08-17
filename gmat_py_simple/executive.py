@@ -1,14 +1,10 @@
 from __future__ import annotations
 
 import gmat_py_simple as gpy
-# from load_gmat import gmat
-from gmat_py_simple.load_gmat import gmat
-from gmat_py_simple import GmatCommand
-
-import sys
+from gmat_py_simple import gmat
 
 
-def RunMission(mcs: list[GmatCommand]) -> int:
+def RunMission(mcs: list[gpy.GmatCommand]) -> int:
     # Shortcut for running missions
     return gpy.Moderator().RunMission(mcs)
 
@@ -200,13 +196,13 @@ class Moderator:
     def Initialize(self):
         self.gmat_obj.Initialize()
 
-    def InsertCommand(self, command_to_insert: GmatCommand, preceding_command: GmatCommand):
+    def InsertCommand(self, command_to_insert: gpy.GmatCommand, preceding_command: gpy.GmatCommand):
         return self.gmat_obj.InsertCommand(command_to_insert, preceding_command)
 
     def RemoveObject(self, obj_type: int, name: str, del_only_if_not_used: bool = True) -> bool:
         return self.gmat_obj.RemoveObject(obj_type, name, del_only_if_not_used)
 
-    def RunMission(self, mission_command_sequence: list[GmatCommand]) -> int:
+    def RunMission(self, mission_command_sequence: list[gpy.GmatCommand]) -> int:
         """
         Run the mission command sequence
 

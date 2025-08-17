@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import gmat_py_simple as gpy
 
-# from load_gmat import gmat
-from gmat_py_simple.load_gmat import gmat
+from gmat_py_simple import gmat
 
 
 # def CreateParameter(param_type: str, name: str) -> Parameter:
