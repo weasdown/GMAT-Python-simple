@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import gmat_py_simple as gpy
-from load_gmat import gmat
+# from load_gmat import gmat
+from gmat_py_simple.load_gmat import gmat
 
 from gmat_py_simple.basics import GmatObject
 from gmat_py_simple.orbit import OrbitState
@@ -673,7 +674,7 @@ class Thruster(GmatObject):
 
 class ChemicalThruster(Thruster):
     def __init__(self, name: str, tanks: str | gpy.ChemicalTank | gmat.ChemicalTank |
-                 list[gpy.ChemicalTank] | list[gmat.ChemicalTank]):
+                                         list[gpy.ChemicalTank] | list[gmat.ChemicalTank]):
         super().__init__('Chemical', name, tanks)
 
         self.Validate()
@@ -691,7 +692,7 @@ class ChemicalThruster(Thruster):
 
 class ElectricThruster(Thruster):
     def __init__(self, name: str, tanks: str | gpy.ElectricTank | gmat.ElectricTank |
-                 list[gpy.ElectricTank] | list[gmat.ElectricTank]):
+                                         list[gpy.ElectricTank] | list[gmat.ElectricTank]):
         super().__init__('Electric', name, tanks)
         self.Initialize()
 

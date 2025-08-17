@@ -5,7 +5,8 @@ from typing import Union
 
 import numpy as np
 
-from load_gmat import gmat
+# from load_gmat import gmat
+from gmat_py_simple.load_gmat import gmat
 import gmat_py_simple as gpy
 from gmat_py_simple import GmatObject
 
