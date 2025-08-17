@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from load_gmat import gmat
+from gmat_py_simple import gmat
 
 from gmat_py_simple.basics import GmatObject
 from gmat_py_simple.utils import *

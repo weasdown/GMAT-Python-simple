@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import gmat_py_simple as gpy
-from load_gmat import gmat
+
+from gmat_py_simple import gmat
 
 
 class Validator:
@@ -31,4 +32,3 @@ class Validator:
 
     def ValidateCommand(self, command: gpy.GmatCommand | gmat.GmatCommand):
         return gpy.extract_gmat_obj(self).ValidateCommand(gpy.extract_gmat_obj(command))
-
