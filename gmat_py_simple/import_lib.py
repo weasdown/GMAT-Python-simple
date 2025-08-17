@@ -18,6 +18,7 @@ def _gmat_path_from_env() -> str:
 
 def _gmat_path_from_config_file() -> str:
     """Gets the path to the GMAT directory from a configuration file."""
+    # TODO implement _gmat_path_from_config_file()
     raise NotImplementedError
 
 
