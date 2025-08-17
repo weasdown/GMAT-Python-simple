@@ -6,6 +6,7 @@ import gmat_py_simple as gpy
 import os.path
 
 
+## TODO remove commented code
 # def GetObject(name: str) -> gmat.GmatBase:
 #     try:
 #         obj: gmat.GmatBase = gmat.GetObject(name)
