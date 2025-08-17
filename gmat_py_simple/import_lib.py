@@ -2,7 +2,7 @@ import os
 
 
 def _gmat_path(from_env: bool = True) -> str:
-    """Import this library."""
+    """Import GMAT's built-in gmat library."""
     return _gmat_path_from_env() if from_env else _gmat_path_from_config_file()
 
 
