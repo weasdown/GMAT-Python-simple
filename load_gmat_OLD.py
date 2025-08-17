@@ -9,7 +9,7 @@ import sys
 from os import path
 
 apistartup = "api_startup_file.txt"
-GmatInstall = "C:\\Users\\weasd\\Desktop\\GMAT\\gmat-win-R2022a\\GMAT"
+GmatInstall = "C:\\Users\\weasd\\OneDrive\\Desktop\\GMAT\\gmat-win-R2025a"
 GmatBinPath = GmatInstall + "/bin"
 Startup = GmatBinPath + "/" + apistartup
 
