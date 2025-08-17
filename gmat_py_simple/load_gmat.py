@@ -1,6 +1,7 @@
 import errno
 import os
 import sys
+import types
 
 from gmat_py_simple.import_lib import gmat_path
 
@@ -13,7 +14,7 @@ if os.path.exists(startup):
 
     sys.path.insert(1, gmat_bin_path)
 
-    import gmatpy as gmat
+    gmat: types.ModuleType = __import__('gmatpy')
 
     gmat.Setup(startup)
 
