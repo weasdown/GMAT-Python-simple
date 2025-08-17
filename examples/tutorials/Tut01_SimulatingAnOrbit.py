@@ -2,9 +2,11 @@
 # Written by William Easdown Babb
 
 from __future__ import annotations
-from load_gmat import gmat
-import gmat_py_simple as gpy
+
 import os
+
+import gmat_py_simple as gpy
+from gmat_py_simple import gmat
 
 log_path = os.path.normpath(f'{os.getcwd()}/GMAT-Log.txt')
 gmat.UseLogFile(log_path)

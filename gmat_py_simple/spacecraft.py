@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import gmat_py_simple as gpy
-from load_gmat import gmat
+from gmat_py_simple import gmat
 
 from gmat_py_simple.basics import GmatObject
 from gmat_py_simple.orbit import OrbitState
@@ -585,7 +585,8 @@ class ElectricTank(Tank):
 
 class Thruster(GmatObject):
     def __init__(self, fuel_type: str, name: str, tanks: str | gpy.Tank | gmat.Tank | list[gpy.Tank] |
-                 list[gmat.FuelTank], mix_ratio: int | float | list[int | float] = None):
+                                                         list[gmat.FuelTank],
+                 mix_ratio: int | float | list[int | float] = None):
         self.fuel_type = fuel_type
         self.thruster_type = f'{self.fuel_type}Thruster'  # 'ChemicalThruster' or 'ElectricThruster'
         super().__init__(self.thruster_type, name)
@@ -673,7 +674,7 @@ class Thruster(GmatObject):
 
 class ChemicalThruster(Thruster):
     def __init__(self, name: str, tanks: str | gpy.ChemicalTank | gmat.ChemicalTank |
-                 list[gpy.ChemicalTank] | list[gmat.ChemicalTank]):
+                                         list[gpy.ChemicalTank] | list[gmat.ChemicalTank]):
         super().__init__('Chemical', name, tanks)
 
         self.Validate()
@@ -691,7 +692,7 @@ class ChemicalThruster(Thruster):
 
 class ElectricThruster(Thruster):
     def __init__(self, name: str, tanks: str | gpy.ElectricTank | gmat.ElectricTank |
-                 list[gpy.ElectricTank] | list[gmat.ElectricTank]):
+                                         list[gpy.ElectricTank] | list[gmat.ElectricTank]):
         super().__init__('Electric', name, tanks)
         self.Initialize()
 

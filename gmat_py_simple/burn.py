@@ -3,7 +3,7 @@ from __future__ import annotations
 import gmat_py_simple as gpy
 from gmat_py_simple.basics import GmatObject
 
-from load_gmat import gmat
+from gmat_py_simple import gmat
 
 
 class Burn(GmatObject):
