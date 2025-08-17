@@ -215,6 +215,7 @@ class Moderator:
         :param mission_command_sequence:
         :return:
         """
+
         def update_command_objs_post_run(command_sequence: list[gpy.GmatCommand | gmat.GmatCommand]):
             propagate_commands: list[gpy.Propagate] = []  # start a list of Propagates so their sats can be updated
             target_commands: list[gpy.Target] = []  # start a list of Targets for checking convergence

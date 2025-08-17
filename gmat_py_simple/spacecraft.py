@@ -586,7 +586,8 @@ class ElectricTank(Tank):
 
 class Thruster(GmatObject):
     def __init__(self, fuel_type: str, name: str, tanks: str | gpy.Tank | gmat.Tank | list[gpy.Tank] |
-                 list[gmat.FuelTank], mix_ratio: int | float | list[int | float] = None):
+                                                         list[gmat.FuelTank],
+                 mix_ratio: int | float | list[int | float] = None):
         self.fuel_type = fuel_type
         self.thruster_type = f'{self.fuel_type}Thruster'  # 'ChemicalThruster' or 'ElectricThruster'
         super().__init__(self.thruster_type, name)

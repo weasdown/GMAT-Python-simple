@@ -94,7 +94,8 @@ class FiniteThrust(GmatObject):  # TODO tidy: consider making subclass of Finite
 
 
 class ImpulsiveBurn(Burn):
-    def __init__(self, name, coord_sys: gpy.OrbitState.CoordinateSystem | dict | str = None, delta_v: list[int | float] = None,
+    def __init__(self, name, coord_sys: gpy.OrbitState.CoordinateSystem | dict | str = None,
+                 delta_v: list[int | float] = None,
                  decrement_mass: bool = False, tanks: gpy.Tank | list[gpy.Tank] | str = None, isp: int | float = 300,
                  gravitational_accel: float = 9.81):
         super().__init__('ImpulsiveBurn', name)
@@ -127,7 +128,8 @@ class ImpulsiveBurn(Burn):
                 self.SetStringParameter('Origin', dict_origin)
                 self.SetStringParameter('Axes', dict_axes)
 
-            elif isinstance(coord_sys, gpy.OrbitState.CoordinateSystem | gmat.CoordinateSystem):  # coord_sys is a wrapper or GMAT CoordinateSystem object
+            elif isinstance(coord_sys,
+                            gpy.OrbitState.CoordinateSystem | gmat.CoordinateSystem):  # coord_sys is a wrapper or GMAT CoordinateSystem object
                 coord_sys.Initialize()
                 coord_sys_new: gpy.OrbitState.CoordinateSystem | gmat.CoordinateSystem = coord_sys
                 self.coord_sys_name = coord_sys_new.GetName()

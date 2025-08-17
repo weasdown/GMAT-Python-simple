@@ -8,7 +8,8 @@ import os
 # Set log and script options
 log_path = os.path.normpath(f'{os.getcwd()}/GMAT-Log.txt')
 gmat.UseLogFile(log_path)
-gmat.GmatGlobal.Instance().SetCommandEchoMode(True)  # enables "CurrentCommand: [command generating string]" print out in log
+gmat.GmatGlobal.Instance().SetCommandEchoMode(
+    True)  # enables "CurrentCommand: [command generating string]" print out in log
 gmat.EchoLogFile(False)  # set to True to have the log also print to the console as it's written
 
 # Shortcuts for later

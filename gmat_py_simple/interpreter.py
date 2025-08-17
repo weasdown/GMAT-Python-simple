@@ -33,4 +33,3 @@ class Validator:
 
     def ValidateCommand(self, command: gpy.GmatCommand | gmat.GmatCommand):
         return gpy.extract_gmat_obj(self).ValidateCommand(gpy.extract_gmat_obj(command))
-

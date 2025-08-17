@@ -544,7 +544,8 @@ class OrbitState:
                      secondary: str = None, xaxis: str = None, yaxis: str = None, zaxis: str = None, epoch: str = None,
                      alignment_vec_x: int = None, alignment_vec_y: int = None, alignment_vec_z: int = None,
                      constraint_vec_x: int = None, constraint_vec_y: int = None, constraint_vec_z: int = None,
-                     constraint_ref_vec_x: int = None, constraint_ref_vec_y: int = None, constraint_ref_vec_z: int = None,
+                     constraint_ref_vec_x: int = None, constraint_ref_vec_y: int = None,
+                     constraint_ref_vec_z: int = None,
                      constraint_coord_sys: str = None, ref_object: str = None
                      ):
             # TODO: remove kwargs if possible, if not document as another 2do
