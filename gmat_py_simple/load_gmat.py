@@ -3,7 +3,7 @@ import os
 import sys
 import types
 
-from gmat_py_simple.import_lib import gmat_path
+from gmat_py_simple import gmat_path
 
 api_startup = "api_startup_file.txt"
 gmat_bin_path = gmat_path + "/bin"
