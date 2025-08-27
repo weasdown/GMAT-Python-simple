@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling >= 1.26", "numpy >= 2.0.0"]
+requires = ["hatchling >= 1.26"]
 build-backend = "hatchling.build"
 
 [project]
@@ -11,6 +11,7 @@ authors = [
 description = "An extra wrapper for the GMAT Python API to simplify setting up mission simulations."
 readme = "README.md"
 requires-python = ">=3.9"
+dependencies = ["numpy > 2.0.0"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
