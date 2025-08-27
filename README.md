@@ -11,32 +11,59 @@ has been designed to be as intuitive as possible for the user, while still close
 
 **This wrapper requires Python 3.10-3.12. It does not yet work with Python 3.13.**
 
-<details> <summary><b>Pre-fix</b></summary>
+## Getting Started
 
-**On 19/4/25, NASA released [GMAT-R2025a](https://sourceforge.net/projects/gmat/). This wrapper was developed and tested
-with R2022a, so while I expect everything to still work, I cannot guarantee it. If you find any parts that don't work
-with R2025a, please raise an [issue](https://github.com/weasdown/GMAT-Python-simple/issues).**
+[//]: # (TODO: remove TestPyPI specifying)
+You can install this library with `pip install -i https://test.pypi.org/simple/ gmat-py-simple`.
 
 ## Examples
 
-To demonstrate the wrapper, tutorials will be added to
-the [examples](https://github.com/weasdown/GMAT-Python-simple/tree/main/examples)/[tutorials](https://github.com/weasdown/GMAT-Python-simple/tree/main/examples/tutorials)
-directory as the required feature level is reached. These tutorials will match those distributed with GMAT by default (
-in the \[GMAT root]/samples folder) and will demonstrate the power of the wrapper to create missions using very little
-code.
+The [`examples`](examples) directory gives several example scripts that demonstrate the power of this library (and GMAT
+generally). GMAT has several tutorials built-in, supplied in its `[GMAT root]/samples` folder. The scripts in
+[`examples/tutorials`](examples/tutorials) have exactly the same functionality as these, but have been written using
+this library rather than GMAT's standard Python API or its scripting language. Tutorials 1 to 4 are currently
+implemented, with the rest planned to be added in future once the library has the required features.
 
-## Components implemented so far
+[//]: # (TODO: update above paragraph once more tutorials implemented.)
 
-* Spacecraft - mostly complete: not all fields settable with from_dict() but all settable with SetField()
-    * Tanks - complete
-    * Thrusters - complete
-* ImpulsiveBurn - complete
-* Propagate command - mostly complete
-    * StopCondition - tested so far: ElapsedSecs, ElapsedDays, Apoapsis, Periapsis
+[//]: # (<details> <summary><b>Pre-fix</b></summary>)
 
-## WIP components
+[//]: # ()
 
-* Maneuver command
-* FiniteBurn
+[//]: # (**On 19/4/25, NASA released [GMAT-R2025a]&#40;https://sourceforge.net/projects/gmat/&#41;. This wrapper was developed and tested)
 
-</details>
+[//]: # (with R2022a, so while I expect everything to still work, I cannot guarantee it. If you find any parts that don't work)
+
+[//]: # (with R2025a, please raise an [issue]&#40;https://github.com/weasdown/GMAT-Python-simple/issues&#41;.**)
+
+[//]: # ()
+
+[//]: # (## Components implemented so far)
+
+[//]: # ()
+
+[//]: # (* Spacecraft - mostly complete: not all fields settable with from_dict&#40;&#41; but all settable with SetField&#40;&#41;)
+
+[//]: # (    * Tanks - complete)
+
+[//]: # (    * Thrusters - complete)
+
+[//]: # (* ImpulsiveBurn - complete)
+
+[//]: # (* Propagate command - mostly complete)
+
+[//]: # (    * StopCondition - tested so far: ElapsedSecs, ElapsedDays, Apoapsis, Periapsis)
+
+[//]: # ()
+
+[//]: # (## WIP components)
+
+[//]: # ()
+
+[//]: # (* Maneuver command)
+
+[//]: # (* FiniteBurn)
+
+[//]: # ()
+
+[//]: # (</details>)
