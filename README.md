@@ -34,6 +34,8 @@ import gmat_py_simple as gp
 `gp` is the recommended abbreviation as is used throughout this
 documentation.
 
+[//]: # (TODO: add link to instructions for specifying GMAT path)
+
 ## Examples
 
 The [`examples`](examples) directory gives several example scripts that demonstrate the power of this library (and GMAT
