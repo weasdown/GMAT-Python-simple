@@ -21,7 +21,18 @@ with Python 3.9 to 3.12.** You can find the required plugins and instructions on
 ## Getting Started
 
 [//]: # (TODO: remove TestPyPI specifying)
-You can install this library with `pip install -i https://test.pypi.org/simple/ gmat-py-simple`.
+You can install this library with:
+
+`pip install -i https://test.pypi.org/simple/ gmat-py-simple`
+
+Then in your Python scripts, import the library:
+
+```python
+import gmat_py_simple as gp
+```
+
+`gp` is the recommended abbreviation as is used throughout this
+documentation.
 
 ## Examples
 
