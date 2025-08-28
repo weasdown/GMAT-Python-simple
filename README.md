@@ -34,7 +34,13 @@ import gmat_py_simple as gp
 `gp` is the recommended abbreviation as is used throughout this
 documentation.
 
+### Specifying GMAT path
+
 [//]: # (TODO: add link to instructions for specifying GMAT path)
+For this library to be able to communicate with GMAT, you will also need to specify the path that GMAT is installed in.
+You can do this either using an environment variable or in a configuration file.
+
+[//]: # (TODO: add instructions for path specifying via environment variable or config file.)
 
 ## Examples
 
