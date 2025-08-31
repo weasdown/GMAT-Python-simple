@@ -38,9 +38,29 @@ documentation.
 
 [//]: # (TODO: add link to instructions for specifying GMAT path)
 For this library to be able to communicate with GMAT, you will also need to specify the path that GMAT is installed in.
-You can do this either using an environment variable or in a configuration file.
+You can do this either using an environment variable or in a configuration file. As an example, we'll assume that your 
+path to GMAT is "C:\Users\joebloggs\Desktop\GMAT\gmat-win-R2025a".
 
 [//]: # (TODO: add instructions for path specifying via environment variable or config file.)
+#### Environment variable
+Create an environment variable called "GMAT" with its value set to the path to the GMAT folder.
+
+<details> <summary><b>Windows</b></summary>
+You can set the environment variable as either a user variable or system variable - we recommend a user variable.
+
+To set it, open the Start menu, start typing "environment" and click the option for `Edit the system environment 
+variables` (shown below).
+
+![`Edit the system environment variables` option in Start menu](docs/images/edit_system_environment_variables.png)
+
+A window will appear: click the `Environment Variables...` button at the bottom. Then, either under the user variables 
+section at the top, or system variables section at the bottom, click `New...` to specify a new variable. Then enter 
+"GMAT" as the name and your path to GMAT's root folder as the value.
+
+!["Edit User Variable" window](docs/images/edit_user_variable.png)
+</details>
+
+[//]: # (TODO add environment variable instructions for Linux and macOS)
 
 ## Examples
 
