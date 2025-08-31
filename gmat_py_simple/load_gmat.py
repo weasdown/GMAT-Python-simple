@@ -22,5 +22,4 @@ else:
     message: str = ("Please set up a GMAT startup file named " + api_startup +
                     " in the " + gmat_bin_path + " folder.")
 
-    raise FileNotFoundError(
-        errno.ENOENT, message, startup)
+    raise FileNotFoundError(errno.ENOENT, message)
