@@ -5,10 +5,12 @@
       <sourceFolder url="file://$MODULE_DIR$/gmat_py_simple" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/tests" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/.venv311" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv312" />
       <excludeFolder url="file://$MODULE_DIR$/.venv313" />
       <excludeFolder url="file://$MODULE_DIR$/dist" />
+      <excludeFolder url="file://$MODULE_DIR$/.idea/dictionaries" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.11 (GMAT-Python-simple)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.12 (GMAT-Ps)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="PyDocumentationSettings">
