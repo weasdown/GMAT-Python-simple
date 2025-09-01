@@ -42,8 +42,6 @@ You can do this either using an environment variable or in a configuration file.
 path to GMAT is `C:\Users\joebloggs\Desktop\GMAT\gmat-win-R2025a` on Windows, or
 `/home/joebloggs/Desktop/GMAT/gmat-win-R2025a` on Linux or macOS.
 
-[//]: # (TODO: add instructions for path specifying via environment variable or config file.)
-
 #### Environment variable
 
 Create an environment variable called "GMAT" with its value set to the path to the GMAT folder.
@@ -80,6 +78,8 @@ To set the variable permanently, add the line above to your `~/.bash_profile` or
 </details>
 
 [//]: # (TODO add environment variable instructions for macOS)
+
+[//]: # (TODO: add instructions for path specifying via config file.)
 
 ## Examples
 
