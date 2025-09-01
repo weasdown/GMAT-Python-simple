@@ -8,6 +8,9 @@ You can add support for extra Python versions by adding the relevant files in th
 These have been compiled and tested with GMAT R2025a. You can also compile the plugins yourself by following the [GMAT 
 compilation tutorial](https://gmat.atlassian.net/wiki/spaces/GW/pages/380273355/Compiling+GMAT+CMake+Build+System).
 
+Throughout these instructions, `[GMAT]` refers to the root directory of your GMAT installation, e.g. 
+`.../gmat-win-2025a`.
+
 ## Installation steps
 
 1) Download a fresh copy of GMAT from https://sourceforge.net/projects/gmat/files/latest/download and extract it. For 
@@ -18,11 +21,11 @@ of folders and files (`api`, `bin`, and so on).
 
 3) From the `plugins` folder that you're reading these instructions from, copy the contents of the `gmatpy` folder. 
 Paste the files into `GMAT/bin/gmatpy`. Back in the `plugins` folder, copy the contents of the `plugins`  folder (that 
-contains six `.dll` files). Paste the files into `GMAT/plugins`.
+contains six `.dll` files). Paste the files into `[GMAT]/plugins`.
    
-4) You should now have folders or files with names ending `py36` to `py312` in `GMAT/bin/gmatpy` and `GMAT/plugins`.
+4) You should now have folders or files with names ending `py36` to `py312` in `[GMAT]/bin/gmatpy` and `[GMAT]/plugins`.
 
-5) To get GMAT to use a non-default version of Python, you need to modify two files in `GMAT/bin`: 
+5) To get GMAT to use a non-default version of Python, you need to modify two files in `[GMAT]/bin`: 
 `api_startup_file.txt` and `gmat_startup_file.txt`. In each of these, within the `Plugins` section, replace the endings 
 for library files `libPythonInterface_py3xx` and `libExternalForceModel_py3xx` with the Python version you want to use. 
 For example, if GMAT is currently setup for Python 3.9, but you want to use Python 3.12, `libPythonInterface_py39` would
