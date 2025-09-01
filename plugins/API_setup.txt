@@ -1,6 +1,6 @@
 Written by William Easdown Babb, 7/12/2023.
 
-These instructions will help you setup GMAT's Python API, using its default configuration. To use versions of Python later than 3.9, follow these instructions then those in README.txt.
+These instructions will help you set up GMAT's Python API, using its default configuration. To use versions of Python later than 3.9, follow these instructions then those in README.txt.
 
 1) Go into the GMAT root folder (containing folders called api, bin etc). We'll call this [GMAT]. Go to [GMAT]/bin. If there is already a file in there named api_startup_file.txt, delete it.
 
