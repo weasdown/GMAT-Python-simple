@@ -79,7 +79,7 @@ export GMAT="/home/joebloggs/Desktop/GMAT/gmat-win-R2025a"
 To set the variable permanently, add the line above to your `~/.bash_profile` or `~/.bashrc` file.
 </details>
 
-[//]: # (TODO add environment variable instructions for Linux and macOS)
+[//]: # (TODO add environment variable instructions for macOS)
 
 ## Examples
 
