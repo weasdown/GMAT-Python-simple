@@ -95,9 +95,11 @@ implemented, with the rest planned to be added in future once the library has th
 
 [//]: # ()
 
-[//]: # (**On 19/4/25, NASA released [GMAT-R2025a]&#40;https://sourceforge.net/projects/gmat/&#41;. This wrapper was developed and tested)
+[//]: # (**On 19/4/25, NASA released [GMAT-R2025a]&#40;https://sourceforge.net/projects/gmat/&#41;. This wrapper was 
+developed and tested)
 
-[//]: # (with R2022a, so while I expect everything to still work, I cannot guarantee it. If you find any parts that don't work)
+[//]: # (with R2022a, so while I expect everything to still work, I cannot guarantee it. If you find any parts that 
+don't work)
 
 [//]: # (with R2025a, please raise an [issue]&#40;https://github.com/weasdown/GMAT-Python-simple/issues&#41;.**)
 
@@ -107,7 +109,8 @@ implemented, with the rest planned to be added in future once the library has th
 
 [//]: # ()
 
-[//]: # (* Spacecraft - mostly complete: not all fields settable with from_dict&#40;&#41; but all settable with SetField&#40;&#41;)
+[//]: # (* Spacecraft - mostly complete: not all fields settable with from_dict&#40;&#41; but all settable with 
+SetField&#40;&#41;)
 
 [//]: # (    * Tanks - complete)
 
