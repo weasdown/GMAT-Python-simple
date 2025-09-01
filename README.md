@@ -70,7 +70,13 @@ On Linux, to set the environment variable for just your current session, run the
 export GMAT="/path/to/GMAT"
 ```
 
-To set the variable permanently, add `export GMAT="/path/to/GMAT"` to your `~/.bash_profile` or `~/.bashrc` file.
+For our example path, this would be:
+
+```bash
+export GMAT="/home/joebloggs/Desktop/GMAT/gmat-win-R2025a"
+```
+
+To set the variable permanently, add the line above to your `~/.bash_profile` or `~/.bashrc` file.
 </details>
 
 [//]: # (TODO add environment variable instructions for Linux and macOS)
