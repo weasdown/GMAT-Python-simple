@@ -129,6 +129,10 @@ class CoordinateSystem(GmatObject):
         return coord_sys
 
     @property
+    def origin(self) -> gmat.SpacePoint:
+        return gp.GetObject(self.origin_name)
+
+    @property
     def origin_name(self) -> str:
         return self.GetStringParameter('Origin')
 
