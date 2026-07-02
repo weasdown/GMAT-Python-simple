@@ -68,6 +68,7 @@ class CoordinateSystem(GmatObject):
                                  f'following:\n\t{self._allowed_values["Origin"]}')
 
         # get current (default) origin
+        # Allowed origin types as per User Guide pg. 369: CelestialBody, Spacecraft, LibrationPoint, Barycenter, SolarSystemBarycenter, GroundStation
         self.origin: gmat.SpacePoint = gp.GetObject(origin)  # : gmat.Planet | TBC (? gmat.SpacePoint)
         # attach new origin to CoordinateSystem
         self.SetStringParameter(1, self.origin.GetName())  # 1 for ORIGIN_NAME, 2 for J2000_BODY_NAME
