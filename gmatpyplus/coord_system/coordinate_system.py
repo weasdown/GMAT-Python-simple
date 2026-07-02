@@ -9,7 +9,7 @@ from gmatpyplus.utils import Barycenter, CelestialBodies, GroundStations, Librat
 # TODO add CoordinateBase class in a separate file and make it CoordinateSystem's parent type (see CoordinateBase.cpp in GMAT source code).
 class CoordinateSystem(GmatObject):
     # TODO convert __init__ params to args with default values
-    def __init__(self, name: str, origin: str = 'Earth', axes: str = 'MJ2000Eq', primary: str | None = None,
+    def __init__(self, name: str, origin_name: str = 'Earth', axes: str = 'MJ2000Eq', primary: str | None = None,
                  secondary: str | None = None, xaxis: str | None = None, yaxis: str | None = None,
                  zaxis: str | None = None, epoch: str | None = None, alignment_vec_x: int | None = None,
                  alignment_vec_y: int | None = None, alignment_vec_z: int | None = None,
@@ -63,13 +63,13 @@ class CoordinateSystem(GmatObject):
                                 }
 
         # Parse origin argument
-        if origin not in self._allowed_values['Origin']:
-            raise AttributeError(f'Specified origin "{origin}" is not recognized. Please specify one of the '
+        if origin_name not in self._allowed_values['Origin']:
+            raise AttributeError(f'Specified origin "{origin_name}" is not recognized. Please specify one of the '
                                  f'following:\n\t{self._allowed_values["Origin"]}')
 
         # get current (default) origin
         # Allowed origin types as per User Guide pg. 369: CelestialBody, Spacecraft, LibrationPoint, Barycenter, SolarSystemBarycenter, GroundStation
-        self.origin: gmat.SpacePoint = gp.GetObject(origin)  # : gmat.Planet | TBC (? gmat.SpacePoint)
+        self.origin: gmat.SpacePoint = gp.GetObject(origin_name)  # : gmat.Planet | TBC (? gmat.SpacePoint)
         # attach new origin to CoordinateSystem
         self.SetStringParameter(1, self.origin.GetName())  # 1 for ORIGIN_NAME, 2 for J2000_BODY_NAME
         self.SetRefObject(self.origin, gmat.SPACE_POINT, self.origin.GetName())
@@ -106,7 +106,7 @@ class CoordinateSystem(GmatObject):
                     self.constraint_coord_sys = constraint_coord_sys
                     self.ref_object = ref_object
 
-        self.axes: Axes = Axes(axes, f'{origin}_{axes}')
+        self.axes: Axes = Axes(axes, f'{origin_name}_{axes}')
         self.SetRefObject(self.axes, gmat.AXIS_SYSTEM, self.axes.name)
 
         # gp.Initialize()
@@ -125,7 +125,7 @@ class CoordinateSystem(GmatObject):
         sc_cs_gmat_obj = sc.gmat_obj.GetRefObject(gmat.COORDINATE_SYSTEM, name)
         origin = sc_cs_gmat_obj.GetField('Origin')
         axes = sc_cs_gmat_obj.GetField('Axes')
-        coord_sys: CoordinateSystem = cls(name=name, origin=origin, axes=axes)
+        coord_sys: CoordinateSystem = cls(name=name, origin_name=origin, axes=axes)
         return coord_sys
 
     @property
