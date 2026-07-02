@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os.path
 
-import gmatpyplus as gp
 from gmatpyplus import gmat
 from gmatpyplus.errors import InvalidGMATTypeException
 from gmatpyplus.foundation import GmatObject
@@ -20,48 +19,50 @@ from gmatpyplus.foundation import GmatObject
 #             raise ex
 
 
+# TODO confirm return type. Same for gmat.GetObject and GetRuntimeObject?
 def GetObject(obj: GmatObject | str) -> gmat.GmatBase:
-    # TODO determine return type. Same for gmat.GetObject and GetRuntimeObject?
     """
     Return the latest version of an object so its state info is up-to-date.
 
     :return: gmat_py.GmatBase
     """
 
-    if isinstance(obj, str):
+    def _safe_get_object(object_to_get: object):
         try:
-            return gmat.GetObject(obj)
-        except AttributeError as ex:
-            if str(ex) == "'NoneType' object has no attribute 'GetTypeName'":
-                raise gp.GMATNameError(obj) from ex
-            else:
-                raise ex
+            return gmat.GetObject(object_to_get)
+        except AttributeError as ae:
+            raise InvalidGMATTypeException(object_to_get) from ae
 
-    try:
-        if not obj.was_propagated:  # sat not yet propagated
-            try:
-                return gmat.GetObject(obj.name)
-            except AttributeError as ae:
-                raise InvalidGMATTypeException(obj) from ae
+    if isinstance(obj, str):
+        return _safe_get_object(obj)
 
-        elif obj.was_propagated:  # sat has been propagated - gmat.GetObject() would return incorrect values
-            # TODO apply RuntimeObject fields to Object so we can keep the native type rather than GmatBase
-            # rt_obj = gmat.GetRuntimeObject(obj.GetName())
-            # fields = [rt_obj.GetField(val) for val in range(250)]
-            # for index, value in enumerate(fields):
-            #     obj.SetField(index, value)
+    # obj is not a str
+    else:
+        try:
+            # obj (e.g. sat) not yet propagated
+            if not obj.was_propagated:
+                return _safe_get_object(obj.name)
 
-            # if isinstance(obj, gp.Spacecraft):
-            #     objs_to_update = [obj.hardware.chem_thrusters, obj.hardware.chem_tanks,
-            #                       obj.hardware.elec_thrusters, obj.hardware.elec_tanks]
-            #     for hw_list in objs_to_update:
-            #         for hw_item in hw_list:
-            #             hw_item.GetObject()
+            # obj (e.g. sat) has been propagated - gmat.GetObject() would return incorrect values
+            elif obj.was_propagated:
+                # TODO apply RuntimeObject fields to Object so we can keep the native type rather than GmatBase
+                # rt_obj = gmat.GetRuntimeObject(obj.GetName())
+                # fields = [rt_obj.GetField(val) for val in range(250)]
+                # for index, value in enumerate(fields):
+                #     obj.SetField(index, value)
 
-            return gmat.GetRuntimeObject(obj.GetName())
+                # if isinstance(obj, gp.Spacecraft):
+                #     objs_to_update = [obj.hardware.chem_thrusters, obj.hardware.chem_tanks,
+                #                       obj.hardware.elec_thrusters, obj.hardware.elec_tanks]
+                #     for hw_list in objs_to_update:
+                #         for hw_item in hw_list:
+                #             hw_item.GetObject()
 
-    except AttributeError:  # object may not have a self.was_propagated attribute
-        raise
+                return gmat.GetRuntimeObject(obj.GetName())
+
+        # object may not have a self.was_propagated attribute
+        except AttributeError:
+            raise
 
 
 def Initialize() -> bool:
