@@ -132,6 +132,22 @@ class CoordinateSystem(GmatObject):
     def origin(self) -> gmat.SpacePoint:
         return gp.GetObject(self.origin_name)
 
+    @origin.setter
+    def origin(self, origin: gmat.SpacePoint) -> None:  # TODO verify type hint for argument
+        """
+        Sets the ``Origin`` field of this ``CoordinateSystem``.
+
+        Allowed origin types as per User Guide (pg. 369):
+          - ``CelestialBody``
+          - ``Spacecraft``
+          - ``LibrationPoint``
+          - ``Barycenter``
+          - ``SolarSystemBarycenter``
+          - ``GroundStation``
+        """
+        self.SetStringParameter(1, origin.GetName())  # 1 for ORIGIN_NAME, 2 for J2000_BODY_NAME
+        self.SetRefObject(origin, gmat.SPACE_POINT, origin.GetName())
+
     @property
     def origin_name(self) -> str:
         return self.GetStringParameter('Origin')
