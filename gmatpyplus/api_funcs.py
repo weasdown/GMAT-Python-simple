@@ -4,6 +4,7 @@ import os.path
 
 import gmatpyplus as gp
 from gmatpyplus import gmat
+from gmatpyplus.errors import InvalidGMATTypeException
 from gmatpyplus.foundation import GmatObject
 
 
@@ -38,7 +39,11 @@ def GetObject(obj: GmatObject | str) -> gmat.GmatBase:
 
     try:
         if not obj.was_propagated:  # sat not yet propagated
-            return gmat.GetObject(obj.name)
+            try:
+                return gmat.GetObject(obj.name)
+            except AttributeError as ae:
+                raise InvalidGMATTypeException(obj) from ae
+
         elif obj.was_propagated:  # sat has been propagated - gmat.GetObject() would return incorrect values
             # TODO apply RuntimeObject fields to Object so we can keep the native type rather than GmatBase
             # rt_obj = gmat.GetRuntimeObject(obj.GetName())
