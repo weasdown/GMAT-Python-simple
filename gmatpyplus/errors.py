@@ -5,7 +5,7 @@ class InvalidGMATTypeException(Exception):
 
 class GMATNameError(Exception):
     def __init__(self, attempted_name):
-        raise RuntimeError(f'No object currently exists in GMAT with the name "{attempted_name}"') from None
+        self.add_note(f'No object currently exists in GMAT with the name "{attempted_name}"')
 
 
 class HardwareException(Exception):
